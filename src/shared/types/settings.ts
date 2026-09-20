@@ -218,6 +218,10 @@ export interface MotrixAppSettings {
   launchAtStartup: boolean
   showMainWindowAtLogin: boolean
   theme: 'system' | 'light' | 'dark'
+  /** Desktop interface scale in percent. */
+  uiScale: number
+  /** Linux tray artwork color, independent of the application theme. */
+  trayIconTheme: 'auto' | 'light' | 'dark'
   reduceMotion: boolean
   byteUnitSystem: ByteUnitPreference
   language: SupportedLocale

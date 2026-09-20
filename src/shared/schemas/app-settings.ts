@@ -11,6 +11,8 @@ import { supportedLocaleSchema } from './locale'
 import { settingsInputObject } from './settings-input'
 
 export const appUpdateChannelSchema = z.enum(['stable', 'beta'])
+export const UI_SCALE_MIN = 75
+export const UI_SCALE_MAX = 200
 
 export const MAGNET_FILE_SELECTION_TIMEOUT_MIN_SECONDS = 10
 export const MAGNET_FILE_SELECTION_TIMEOUT_MAX_SECONDS = 3600
@@ -24,6 +26,8 @@ export const appSettingsSchema = z.object({
   launchAtStartup: z.boolean().catch(false),
   showMainWindowAtLogin: z.boolean().catch(false),
   theme: z.enum(['system', 'light', 'dark']).catch('system'),
+  uiScale: z.number().int().min(UI_SCALE_MIN).max(UI_SCALE_MAX).catch(100),
+  trayIconTheme: z.enum(['auto', 'light', 'dark']).catch('auto'),
   reduceMotion: z.boolean().catch(false),
   language: supportedLocaleSchema.catch(DEFAULT_LOCALE),
   byteUnitSystem: byteUnitSystemSchema.catch(DEFAULT_BYTE_UNIT_PREFERENCE),

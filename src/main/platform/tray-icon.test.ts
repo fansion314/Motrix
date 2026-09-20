@@ -30,6 +30,40 @@ describe('createLinuxIconProvider', () => {
   })
 
   it.each([
+    { preference: 'light' as const, background: 'dark' },
+    { preference: 'dark' as const, background: 'light' },
+  ])(
+    'keeps $preference artwork despite native theme changes',
+    async ({ preference, background }) => {
+      const provider = createLinuxIconProvider(assetDir, () => preference)
+      for (const dark of [true, false]) {
+        nativeThemeMock.shouldUseDarkColors = dark
+        await provider.init()
+        for (const active of [false, true]) {
+          expect(provider.getIcon(active)).toEqual({
+            filePath: path.join(
+              assetDir,
+              `mo-tray-${background}-${active ? 'active' : 'normal'}.png`
+            ),
+          })
+        }
+      }
+    }
+  )
+
+  it('returns to automatic theme selection after a manual override', async () => {
+    let preference: 'auto' | 'light' | 'dark' = 'light'
+    const provider = createLinuxIconProvider(assetDir, () => preference)
+    await provider.init()
+    preference = 'auto'
+    nativeThemeMock.shouldUseDarkColors = false
+    await provider.init()
+    expect(provider.getIcon(false)).toEqual({
+      filePath: path.join(assetDir, 'mo-tray-light-normal.png'),
+    })
+  })
+
+  it.each([
     { dark: true, theme: 'dark', color: 'white' },
     { dark: false, theme: 'light', color: 'dark blue' },
   ])('uses $color icons for the $theme theme', async ({ dark, theme }) => {

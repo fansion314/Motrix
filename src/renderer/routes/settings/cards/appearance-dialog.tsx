@@ -19,7 +19,9 @@ import {
   FormDescription,
   FormField,
   FormLabel,
+  FormMessage,
 } from '@renderer/components/ui/form'
+import { Input } from '@renderer/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -35,6 +37,7 @@ import { isSupportedLocale, SUPPORTED_LOCALES } from '@shared/constants/locales'
 import { Commands } from '@shared/protocol/commands'
 import { Queries } from '@shared/protocol/queries'
 import { DEFAULT_APP_SETTINGS } from '@shared/schemas'
+import { UI_SCALE_MAX, UI_SCALE_MIN } from '@shared/schemas/app-settings'
 import { resolveByteUnitSystem } from '@shared/schemas/byte-unit-system'
 import type { AppSettings, MotrixAppSettings } from '@shared/types/settings'
 import { useTheme } from 'next-themes'
@@ -46,6 +49,8 @@ import { appearanceFormSchema } from './settings-form-schemas'
 type AppearanceFields = Pick<
   MotrixAppSettings,
   | 'theme'
+  | 'uiScale'
+  | 'trayIconTheme'
   | 'reduceMotion'
   | 'language'
   | 'byteUnitSystem'
@@ -60,6 +65,8 @@ type AppearanceFields = Pick<
 // fields it edits. Keep this Pick<> in sync if the schema fields change.
 const DEFAULTS: AppearanceFields = {
   theme: DEFAULT_APP_SETTINGS.theme,
+  uiScale: DEFAULT_APP_SETTINGS.uiScale,
+  trayIconTheme: DEFAULT_APP_SETTINGS.trayIconTheme,
   reduceMotion: DEFAULT_APP_SETTINGS.reduceMotion,
   language: DEFAULT_APP_SETTINGS.language,
   byteUnitSystem: DEFAULT_APP_SETTINGS.byteUnitSystem,
@@ -98,6 +105,8 @@ export function AppearanceDialog({
         if (all?.app) {
           form.reset({
             theme: all.app.theme,
+            uiScale: all.app.uiScale ?? DEFAULTS.uiScale,
+            trayIconTheme: all.app.trayIconTheme ?? DEFAULTS.trayIconTheme,
             reduceMotion: all.app.reduceMotion ?? DEFAULTS.reduceMotion,
             language: all.app.language,
             byteUnitSystem: all.app.byteUnitSystem ?? DEFAULTS.byteUnitSystem,
@@ -168,6 +177,11 @@ export function AppearanceDialog({
   }>
   const isMac = transport.platform === 'darwin'
   const isLinux = transport.platform === 'linux'
+  const trayIconOptions = [
+    { value: 'auto', label: t('settings.appearance.trayIconAuto') },
+    { value: 'light', label: t('settings.appearance.trayIconLight') },
+    { value: 'dark', label: t('settings.appearance.trayIconDark') },
+  ]
   const showRunMode = transport.platform !== 'web'
   const runModeOptions = isMac
     ? [
@@ -320,6 +334,86 @@ export function AppearanceDialog({
                   </SettingsFormRow>
                 )}
               />
+
+              {transport.platform !== 'web' && (
+                <FormField
+                  control={form.control}
+                  name="uiScale"
+                  render={({ field }) => (
+                    <SettingsFormRow>
+                      <div className="space-y-1">
+                        <FormLabel>
+                          {t('settings.appearance.uiScale')}
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                          {t('settings.appearance.uiScaleDesc')}
+                        </FormDescription>
+                        <FormMessage />
+                      </div>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min={UI_SCALE_MIN}
+                          max={UI_SCALE_MAX}
+                          step={1}
+                          className="h-8 w-30"
+                          value={
+                            Number.isFinite(field.value) ? field.value : ''
+                          }
+                          onChange={(event) =>
+                            field.onChange(event.target.valueAsNumber)
+                          }
+                        />
+                      </FormControl>
+                    </SettingsFormRow>
+                  )}
+                />
+              )}
+
+              {isLinux && (
+                <FormField
+                  control={form.control}
+                  name="trayIconTheme"
+                  render={({ field }) => (
+                    <SettingsFormRow>
+                      <div className="space-y-1">
+                        <FormLabel>
+                          {t('settings.appearance.trayIconTheme')}
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                          {t('settings.appearance.trayIconThemeDesc')}
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Select
+                          items={trayIconOptions}
+                          value={field.value}
+                          onValueChange={(value) => {
+                            if (value !== null) field.onChange(value)
+                          }}
+                        >
+                          <SettingsSelectTrigger>
+                            <SelectValue />
+                          </SettingsSelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {trayIconOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </SettingsFormRow>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}

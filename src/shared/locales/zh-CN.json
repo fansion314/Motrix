@@ -1041,6 +1041,13 @@
     },
     "appearance": {
       "theme": "主题",
+      "uiScale": "界面缩放（%）",
+      "uiScaleDesc": "75–200%，保存后立即应用到所有窗口。",
+      "trayIconTheme": "托盘图标颜色",
+      "trayIconThemeDesc": "深色面板请选择浅色图标，浅色面板请选择深色图标。",
+      "trayIconAuto": "自动",
+      "trayIconLight": "浅色图标",
+      "trayIconDark": "深色图标",
       "themeAuto": "跟随系统",
       "themeLight": "浅色",
       "themeDark": "深色",

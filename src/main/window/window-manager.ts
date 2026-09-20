@@ -303,6 +303,14 @@ export class WindowManager {
       .catch(() => {})
   }
 
+  applyUiScale(): void {
+    const zoomFactor =
+      (this.deps.settingsManager.get().app?.uiScale ?? 100) / 100
+    for (const win of this.getAllWindows()) {
+      win.webContents.setZoomFactor(zoomFactor)
+    }
+  }
+
   // ─── Private ──────────────────────────────────────────
 
   private resolveOpenTarget(id: WindowId): WindowId {
@@ -399,6 +407,9 @@ export class WindowManager {
       show: false,
       ...platformOpts,
       webPreferences: {
+        // Shared file origins must not reset another window's saved scale.
+        zoomMode: 'isolated',
+        zoomFactor: (this.deps.settingsManager.get().app?.uiScale ?? 100) / 100,
         preload: this.deps.preloadPath,
         nodeIntegration: false,
         contextIsolation: true,
@@ -549,7 +560,13 @@ export class WindowManager {
     // publishing the same stale native value over the transition.
     // Cocoa can leave the maximized state via a manual resize without emitting
     // unmaximize, so reconcile once the resize gesture finishes as well.
-    win.webContents.on('did-finish-load', publish)
+    win.webContents.on('did-finish-load', () => {
+      if (win.isDestroyed()) return
+      win.webContents.setZoomFactor(
+        (this.deps.settingsManager.get().app?.uiScale ?? 100) / 100
+      )
+      publish()
+    })
     win.on('maximize', publish)
     win.on('unmaximize', publish)
     win.on('enter-full-screen', () => {

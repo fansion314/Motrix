@@ -68,6 +68,60 @@ beforeEach(async () => {
 })
 
 describe('<AppearanceDialog>', () => {
+  it('saves custom zoom and Linux tray color only after Save', async () => {
+    Object.defineProperty(transport, 'platform', {
+      configurable: true,
+      value: 'linux',
+    })
+    render(
+      <AppearanceDialog
+        open
+        onClose={vi.fn()}
+        labelKey="settings.cards.appearance.title"
+        descKey="settings.cards.appearance.desc"
+      />
+    )
+    const zoom = await screen.findByRole('spinbutton', {
+      name: 'Interface scale (%)',
+    })
+    await waitFor(() => expect(zoom).toHaveValue(100))
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.clear(zoom)
+    await user.type(zoom, '137')
+    await user.click(screen.getByRole('combobox', { name: 'Tray icon color' }))
+    await user.click(await screen.findByRole('option', { name: 'Light icon' }))
+    expect(transport.invoke).not.toHaveBeenCalledWith(
+      Commands.UpdateSettings,
+      expect.anything()
+    )
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(transport.invoke).toHaveBeenCalledWith(Commands.UpdateSettings, {
+      app: { uiScale: 137, trayIconTheme: 'light' },
+    })
+  })
+
+  it('rejects out-of-range zoom without saving', async () => {
+    render(
+      <AppearanceDialog
+        open
+        onClose={vi.fn()}
+        labelKey="settings.cards.appearance.title"
+        descKey="settings.cards.appearance.desc"
+      />
+    )
+    const zoom = await screen.findByRole('spinbutton', {
+      name: 'Interface scale (%)',
+    })
+    const user = userEvent.setup()
+    await user.clear(zoom)
+    await user.type(zoom, '250')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(transport.invoke).not.toHaveBeenCalledWith(
+      Commands.UpdateSettings,
+      expect.anything()
+    )
+    expect(zoom).toHaveAttribute('aria-invalid', 'true')
+  })
   it.each(['darwin', 'win32', 'linux', 'web'])(
     'uses the existing glass switch and saves only that preference on %s',
     async (platform) => {

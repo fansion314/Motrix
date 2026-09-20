@@ -133,6 +133,25 @@ function getThemeUpdatedHandler(): () => Promise<void> {
 }
 
 describe('setupTray', () => {
+  it('refreshes the current Linux tray when its icon color is saved', async () => {
+    Object.defineProperty(process, 'platform', { value: 'linux' })
+    const deps = createDeps()
+    const handle = setupTray(deps)
+    await vi.waitFor(() => expect(trayConstructor).toHaveBeenCalledOnce())
+    const settingsChanged = vi
+      .mocked(deps.eventBus.on)
+      .mock.calls.find(([event]) => event === Events.SettingsChanged)?.[1]
+    settingsChanged?.({
+      old: { app: { trayIconTheme: 'auto' } },
+      updated: { app: { trayIconTheme: 'light' } },
+    })
+    await vi.waitFor(() =>
+      expect(trayInstance.setImage).toHaveBeenCalledWith(icon)
+    )
+    expect(iconProvider.init).toHaveBeenCalledTimes(2)
+    expect(trayConstructor).toHaveBeenCalledOnce()
+    handle.destroy()
+  })
   beforeEach(() => {
     vi.resetAllMocks()
     iconProvider.getIcon.mockReturnValue(icon)

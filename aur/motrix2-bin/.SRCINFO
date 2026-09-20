@@ -1,7 +1,7 @@
 pkgbase = motrix2-bin
 	pkgdesc = Motrix 2 download manager using system Electron and bundled Motrix aria2 (prebuilt ASAR)
 	pkgver = 2.0.0beta.39
-	pkgrel = 2
+	pkgrel = 3
 	url = https://github.com/fansion314/Motrix
 	arch = x86_64
 	license = MIT
@@ -21,9 +21,9 @@ pkgbase = motrix2-bin
 	conflicts = motrix-git
 	conflicts = motrix-beta-bin
 	conflicts = motrix2
-	noextract = motrix2-2.0.0-beta.39-2-x86_64.asar
+	noextract = motrix2-2.0.0-beta.39-3-x86_64.asar
 	options = !strip
-	source = https://github.com/fansion314/Motrix/releases/download/arch-v2.0.0-beta.39-2/motrix2-2.0.0-beta.39-2-x86_64.asar
-	sha256sums = afceb47226a169be046183a33a82a1759b972e4a73e61a6350942278d9e7c860
+	source = https://github.com/fansion314/Motrix/releases/download/arch-v2.0.0-beta.39-3/motrix2-2.0.0-beta.39-3-x86_64.asar
+	sha256sums = RELEASE_SHA256
 
 pkgname = motrix2-bin

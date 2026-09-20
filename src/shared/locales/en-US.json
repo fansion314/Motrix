@@ -1054,6 +1054,13 @@
     },
     "appearance": {
       "theme": "Theme",
+      "uiScale": "Interface scale (%)",
+      "uiScaleDesc": "75–200%. Changes apply to all windows when saved.",
+      "trayIconTheme": "Tray icon color",
+      "trayIconThemeDesc": "Choose a light icon for a dark panel, or a dark icon for a light panel.",
+      "trayIconAuto": "Automatic",
+      "trayIconLight": "Light icon",
+      "trayIconDark": "Dark icon",
       "themeAuto": "System",
       "themeLight": "Light",
       "themeDark": "Dark",

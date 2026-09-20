@@ -1,7 +1,7 @@
 pkgbase = motrix2
 	pkgdesc = Motrix 2 download manager using system Electron and bundled Motrix aria2
 	pkgver = 2.0.0beta.39
-	pkgrel = 2
+	pkgrel = 3
 	url = https://github.com/fansion314/Motrix
 	arch = x86_64
 	license = MIT
@@ -26,7 +26,7 @@ pkgbase = motrix2
 	conflicts = motrix-beta-bin
 	conflicts = motrix2-bin
 	options = !strip
-	source = Motrix::git+https://github.com/fansion314/Motrix.git#tag=arch-v2.0.0-beta.39-2
+	source = Motrix::git+https://github.com/fansion314/Motrix.git#tag=arch-v2.0.0-beta.39-3
 	sha256sums = SKIP
 
 pkgname = motrix2

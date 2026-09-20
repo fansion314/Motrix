@@ -11,6 +11,7 @@ vi.mock('electron', () => {
       on: ReturnType<typeof vi.fn>
       removeAllListeners: ReturnType<typeof vi.fn>
       setWindowOpenHandler: ReturnType<typeof vi.fn>
+      setZoomFactor: ReturnType<typeof vi.fn>
     }
     private _destroyed = false
     private _visible: boolean
@@ -30,6 +31,7 @@ vi.mock('electron', () => {
         on: vi.fn(),
         removeAllListeners: vi.fn(),
         setWindowOpenHandler: vi.fn(),
+        setZoomFactor: vi.fn(),
       }
       instances.push(this)
     }
@@ -127,6 +129,39 @@ function createMockSettingsManager(
 }
 
 describe('WindowManager', () => {
+  it('applies saved scale to new windows and updates every existing window', () => {
+    const settings = { app: { uiScale: 125 }, windowState: {} }
+    const sm = createMockSettingsManager()
+    vi.mocked(sm.get).mockReturnValue(
+      settings as ReturnType<SettingsManager['get']>
+    )
+    const wm = new WindowManager({
+      settingsManager: sm,
+      preloadPath: '/fake/preload.cjs',
+      loadUrl: vi.fn(),
+    })
+    const main = wm.open('main')
+    const secondary = wm.open('add-task')
+    expect(
+      (
+        main as unknown as {
+          options: { webPreferences: { zoomFactor: number } }
+        }
+      ).options.webPreferences.zoomFactor
+    ).toBe(1.25)
+    settings.app.uiScale = 150
+    wm.applyUiScale()
+    expect(main.webContents.setZoomFactor).toHaveBeenLastCalledWith(1.5)
+    expect(secondary.webContents.setZoomFactor).toHaveBeenLastCalledWith(1.5)
+    const listeners = (secondary.webContents.on as ReturnType<typeof vi.fn>)
+      .mock.calls
+    const onLoad = listeners.find(
+      ([event]) => event === 'did-finish-load'
+    )?.[1] as (() => void) | undefined
+    settings.app.uiScale = 175
+    onLoad?.()
+    expect(secondary.webContents.setZoomFactor).toHaveBeenLastCalledWith(1.75)
+  })
   beforeEach(() => {
     ;(BrowserWindow as unknown as { instances: unknown[] }).instances.length = 0
     ;(
@@ -280,6 +315,8 @@ describe('WindowManager', () => {
       .options
 
     expect(options.webPreferences).toEqual({
+      zoomMode: 'isolated',
+      zoomFactor: 1,
       preload: '/fake/preload.cjs',
       nodeIntegration: false,
       contextIsolation: true,

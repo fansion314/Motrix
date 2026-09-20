@@ -338,6 +338,9 @@ const settingsManager = new SettingsManager(settingsPath, {
   ...defaultSaveDirOptions,
   onChange: (old, updated) => {
     eventBus.emit(Events.SettingsChanged, { old, updated })
+    if (old.app.uiScale !== updated.app.uiScale) {
+      windowManager?.applyUiScale()
+    }
     if (old.app.liquidGlassEffect !== updated.app.liquidGlassEffect) {
       eventBus.emit(Events.LiquidGlassChanged, {
         liquidGlassEffect: updated.app.liquidGlassEffect,

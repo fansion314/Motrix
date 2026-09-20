@@ -1041,6 +1041,13 @@
     },
     "appearance": {
       "theme": "主題",
+      "uiScale": "介面縮放（%）",
+      "uiScaleDesc": "75–200%，儲存後立即套用至所有視窗。",
+      "trayIconTheme": "系統匣圖示顏色",
+      "trayIconThemeDesc": "深色面板請選擇淺色圖示，淺色面板請選擇深色圖示。",
+      "trayIconAuto": "自動",
+      "trayIconLight": "淺色圖示",
+      "trayIconDark": "深色圖示",
       "themeAuto": "跟隨系統",
       "themeLight": "淺色",
       "themeDark": "深色",

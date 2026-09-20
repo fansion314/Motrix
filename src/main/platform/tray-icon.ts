@@ -3,6 +3,7 @@ import {
   type ByteUnitSystem,
   DEFAULT_BYTE_UNIT_SYSTEM,
 } from '@shared/schemas/byte-unit-system'
+import type { MotrixAppSettings } from '@shared/types/settings'
 import type { NativeImage } from 'electron'
 import { nativeImage, nativeTheme } from 'electron'
 
@@ -109,13 +110,17 @@ export function createWindowsIconProvider(
 // ─── Linux: themed PNG icons ────────────────────────────────
 
 export function createLinuxIconProvider(
-  trayAssetDir: string
+  trayAssetDir: string,
+  getIconTheme: () => MotrixAppSettings['trayIconTheme'] = () => 'auto'
 ): TrayIconProvider {
   let normalIcon: NativeImage | null = null
   let activeIcon: NativeImage | null = null
 
   function getThemePrefix(): string {
     // Asset names describe the background: dark uses white artwork and vice versa.
+    const preference = getIconTheme()
+    if (preference === 'light') return 'dark'
+    if (preference === 'dark') return 'light'
     return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
   }
 
@@ -147,7 +152,8 @@ export function createLinuxIconProvider(
 
 export function createIconProvider(
   svgPath: string,
-  trayAssetDir: string
+  trayAssetDir: string,
+  getIconTheme?: () => MotrixAppSettings['trayIconTheme']
 ): TrayIconProvider {
   switch (process.platform) {
     case 'darwin':
@@ -155,6 +161,6 @@ export function createIconProvider(
     case 'win32':
       return createWindowsIconProvider(trayAssetDir)
     default:
-      return createLinuxIconProvider(trayAssetDir)
+      return createLinuxIconProvider(trayAssetDir, getIconTheme)
   }
 }

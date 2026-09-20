@@ -126,6 +126,8 @@ export async function verifyArchPackage(archive, { smoke = false } = {}) {
           version: 8,
           onboarding: { disclaimerAccepted: true },
           app: {
+            uiScale: 125,
+            trayIconTheme: 'light',
             browserBridgeEnabled: false,
             checkForUpdatesOnLaunch: false,
             warnBeforeQuit: false,
@@ -165,6 +167,12 @@ export async function verifyArchPackage(archive, { smoke = false } = {}) {
           .waitFor({ timeout: 60_000 })
         const packaged = await application.evaluate(({ app }) => app.isPackaged)
         assert.equal(packaged, true)
+        assert.equal(
+          await application.evaluate(({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows()[0].webContents.getZoomFactor()
+          ),
+          1.25
+        )
         // Prove that the application launched the exact verified Motrix engine.
         let owner
         for (let attempt = 0; attempt < 60; attempt++) {

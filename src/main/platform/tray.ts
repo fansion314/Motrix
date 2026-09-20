@@ -86,7 +86,11 @@ export function setupTray(deps: TrayDeps): TrayHandle {
     if (tray || isDisposed) return
     log.info('creating tray')
 
-    const nextIconProvider = createIconProvider(svgPath, trayAssetDir)
+    const nextIconProvider = createIconProvider(
+      svgPath,
+      trayAssetDir,
+      () => settingsManager.getApp().trayIconTheme
+    )
     await nextIconProvider.init()
     if (isDisposed) return
     iconProvider = nextIconProvider
@@ -265,6 +269,14 @@ export function setupTray(deps: TrayDeps): TrayHandle {
       speedometer?.setUnitSystem(
         resolveByteUnitSystem(updated.app.byteUnitSystem, process.platform)
       )
+    }
+
+    // Refresh a manual Linux icon preference without recreating the tray.
+    if (
+      process.platform === 'linux' &&
+      oldSettings.app.trayIconTheme !== updated.app.trayIconTheme
+    ) {
+      void onNativeThemeUpdated()
     }
 
     // Speedometer toggled

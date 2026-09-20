@@ -18,6 +18,8 @@ export const generalFormSchema = appSettingsInputSchema.pick({
 
 export const appearanceFormSchema = appSettingsInputSchema.pick({
   theme: true,
+  uiScale: true,
+  trayIconTheme: true,
   reduceMotion: true,
   language: true,
   byteUnitSystem: true,

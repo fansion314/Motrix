@@ -1,7 +1,7 @@
 # Maintainer: fansion314 <https://github.com/fansion314>
 pkgname=motrix2
 pkgver=2.0.0beta.39
-pkgrel=2
+pkgrel=3
 _version=2.0.0-beta.39
 _tag=arch-v${_version}-${pkgrel}
 pkgdesc='Motrix 2 download manager using system Electron and bundled Motrix aria2'

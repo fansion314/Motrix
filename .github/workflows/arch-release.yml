@@ -54,7 +54,8 @@ jobs:
           pnpm run lint
           pnpm exec tsc --noEmit
           pnpm run check:file-names
-          pnpm exec vitest run tests/scripts/arch-package.test.ts tests/scripts/stage-electron-app.test.ts tests/scripts/postinstall-flow.test.ts
+          pnpm run check:i18n
+          pnpm exec vitest run tests/scripts/arch-package.test.ts tests/scripts/stage-electron-app.test.ts tests/scripts/postinstall-flow.test.ts src/shared/schemas/app-settings.test.ts src/main/window/window-manager.test.ts src/main/platform/tray-icon.test.ts src/main/platform/tray.test.ts src/renderer/routes/settings/cards/appearance-dialog.test.tsx
           desktop-file-validate build/arch/motrix.desktop
           dbus-run-session -- xvfb-run -a pnpm run verify:arch -- release/*.asar --smoke
           mkdir -p "$GITHUB_WORKSPACE/release"

@@ -33,6 +33,13 @@ and `/usr/lib/motrix2/`. They conflict with each other and other native Motrix
 packages, and retain Motrix's existing user data. Updates are managed through
 pacman/AUR, not the application's bundled-runtime updater.
 
+## Appearance
+
+In Settings → Appearance, desktop users can set the interface scale from 75%
+to 200%. Linux users can also choose Automatic, Light icon or Dark icon for
+the tray independently of the application theme. Save applies both preferences
+immediately and preserves them across restarts. Choose Light icon on a dark panel.
+
 ## Build locally
 
 Install `base-devel git nodejs pnpm python rust electron asar xdg-utils`,
@@ -83,7 +90,8 @@ ASAR, AUR recipes and `SHA256SUMS`. No AppImage, Electron runtime or pacman bina
 ## Keeping the fork small
 
 The Arch scripts reuse upstream engine/plugin locks, downloaders, dependency
-staging and legal notices. Application source and upstream release workflows
-remain unchanged. To follow an upstream release, merge its tag, resolve any
+staging and legal notices. Upstream release workflows remain unchanged. The
+appearance additions are limited to settings, the appearance dialog, window
+scaling and Linux tray selection. To follow an upstream release, merge its tag, resolve any
 packaging contract changes, and push an Arch tag matching its package version.
 Actions fills the package versions and binary checksum automatically.

@@ -1,7 +1,30 @@
 import { describe, expect, it } from 'vitest'
-import { appSettingsSchema, DEFAULT_APP_SETTINGS } from './app-settings'
+import {
+  appSettingsInputSchema,
+  appSettingsSchema,
+  DEFAULT_APP_SETTINGS,
+} from './app-settings'
 
 describe('appSettingsSchema', () => {
+  it('defaults appearance controls for existing settings and preserves valid choices', () => {
+    expect(appSettingsSchema.parse({})).toMatchObject({
+      uiScale: 100,
+      trayIconTheme: 'auto',
+    })
+    expect(
+      appSettingsSchema.parse({ uiScale: 137, trayIconTheme: 'light' })
+    ).toMatchObject({ uiScale: 137, trayIconTheme: 'light' })
+  })
+
+  it.each([0, 74, 201, 125.5, '125', null])(
+    'recovers invalid saved scale %s but rejects it as input',
+    (uiScale) => {
+      expect(appSettingsSchema.parse({ uiScale }).uiScale).toBe(100)
+      expect(
+        appSettingsInputSchema.partial().safeParse({ uiScale }).success
+      ).toBe(false)
+    }
+  )
   it('keeps selection timeout downloads opt-in with a 60 second default', () => {
     expect(DEFAULT_APP_SETTINGS.magnetFileSelectionAutoDownload).toBe(false)
     expect(DEFAULT_APP_SETTINGS.magnetFileSelectionTimeoutSeconds).toBe(60)

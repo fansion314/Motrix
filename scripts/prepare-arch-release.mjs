@@ -117,6 +117,7 @@ async function main() {
     `Arch Linux x86_64 package based on Motrix ${metadata.version}.\n\n` +
       `Uses system Electron ${build.electron} (ABI ${build.electronAbi}) and the pinned Motrix aria2 fork. ` +
       'No Electron runtime is bundled. The ASAR contains the application, its native helpers and desktop resources.\n\n' +
+      'Settings → Appearance supports custom interface scaling and light/dark Linux tray icons. Changes apply immediately and persist across restarts.\n\n' +
       'The AUR source archive contains motrix2 and motrix2-bin PKGBUILDs with .SRCINFO; motrix2-bin pins the ASAR SHA-256. ' +
       'Install updates through pacman/your AUR helper. No AUR upload is performed by this workflow.\n'
   )

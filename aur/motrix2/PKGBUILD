@@ -1,0 +1,40 @@
+# Maintainer: fansion314 <https://github.com/fansion314>
+pkgname=motrix2
+pkgver=2.0.0beta.39
+pkgrel=1
+_version=2.0.0-beta.39
+_tag=arch-v${_version}-${pkgrel}
+pkgdesc='Motrix 2 download manager using system Electron and bundled Motrix aria2'
+arch=('x86_64')
+url='https://github.com/fansion314/Motrix'
+license=('MIT' 'GPL-2.0-or-later')
+depends=('electron>=1:44' 'electron<1:45' 'gcc-libs' 'glibc' 'xdg-utils')
+makedepends=('git' 'nodejs' 'pnpm' 'python' 'rust' 'asar')
+optdepends=('libayatana-appindicator: system tray integration' 'ffmpeg: media downloads')
+provides=("motrix=${pkgver}")
+conflicts=('motrix' 'motrix-bin' 'motrix-git' 'motrix-beta-bin' 'motrix2-bin')
+options=('!strip')
+source=("Motrix::git+${url}.git#tag=${_tag}")
+sha256sums=('SKIP')
+
+prepare() {
+  cd Motrix
+  export ELECTRON_SKIP_BINARY_DOWNLOAD=1
+  export MOTRIX_SKIP_ELECTRON_REBUILD=1
+  export MOTRIX_SKIP_ENGINE_FETCH=1
+  pnpm install --frozen-lockfile
+}
+
+build() {
+  cd Motrix
+  MOTRIX_ARCH_PKGREL="$pkgrel" pnpm run build:arch
+}
+
+check() {
+  cd Motrix
+  pnpm run verify:arch -- "release/motrix2-${_version}-${pkgrel}-x86_64.asar"
+}
+
+package() {
+  asar extract "Motrix/release/motrix2-${_version}-${pkgrel}-x86_64.asar" "$pkgdir"
+}

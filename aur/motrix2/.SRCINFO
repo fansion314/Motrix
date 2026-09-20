@@ -1,0 +1,32 @@
+pkgbase = motrix2
+	pkgdesc = Motrix 2 download manager using system Electron and bundled Motrix aria2
+	pkgver = 2.0.0beta.39
+	pkgrel = 1
+	url = https://github.com/fansion314/Motrix
+	arch = x86_64
+	license = MIT
+	license = GPL-2.0-or-later
+	makedepends = git
+	makedepends = nodejs
+	makedepends = pnpm
+	makedepends = python
+	makedepends = rust
+	makedepends = asar
+	depends = electron>=1:44
+	depends = electron<1:45
+	depends = gcc-libs
+	depends = glibc
+	depends = xdg-utils
+	optdepends = libayatana-appindicator: system tray integration
+	optdepends = ffmpeg: media downloads
+	provides = motrix=2.0.0beta.39
+	conflicts = motrix
+	conflicts = motrix-bin
+	conflicts = motrix-git
+	conflicts = motrix-beta-bin
+	conflicts = motrix2-bin
+	options = !strip
+	source = Motrix::git+https://github.com/fansion314/Motrix.git#tag=arch-v2.0.0-beta.39-1
+	sha256sums = SKIP
+
+pkgname = motrix2

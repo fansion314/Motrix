@@ -1,0 +1,25 @@
+# Maintainer: fansion314 <https://github.com/fansion314>
+pkgname=motrix2-bin
+pkgver=2.0.0beta.39
+pkgrel=1
+_version=2.0.0-beta.39
+_tag=arch-v${_version}-${pkgrel}
+pkgdesc='Motrix 2 download manager using system Electron and bundled Motrix aria2 (prebuilt ASAR)'
+arch=('x86_64')
+url='https://github.com/fansion314/Motrix'
+license=('MIT' 'GPL-2.0-or-later')
+depends=('electron>=1:44' 'electron<1:45' 'gcc-libs' 'glibc' 'xdg-utils')
+makedepends=('asar')
+optdepends=('libayatana-appindicator: system tray integration' 'ffmpeg: media downloads')
+provides=("motrix=${pkgver}" "motrix2=${pkgver}")
+conflicts=('motrix' 'motrix-bin' 'motrix-git' 'motrix-beta-bin' 'motrix2')
+options=('!strip')
+source=("${url}/releases/download/${_tag}/motrix2-${_version}-${pkgrel}-x86_64.asar")
+noextract=("motrix2-${_version}-${pkgrel}-x86_64.asar")
+# Replaced with the verified release digest by arch-release.yml.
+sha256sums=('RELEASE_SHA256')
+
+package() {
+  asar extract "motrix2-${_version}-${pkgrel}-x86_64.asar" "$pkgdir"
+  mv "$pkgdir/usr/share/licenses/motrix2" "$pkgdir/usr/share/licenses/$pkgname"
+}

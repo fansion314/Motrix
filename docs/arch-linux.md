@@ -2,6 +2,9 @@
 
 [简体中文](arch-linux.zh-CN.md)
 
+For this fork's x86_64 AUR packages using system Electron and bundled Motrix aria2, see
+[Arch AUR packaging](arch-aur.md). The guide below describes upstream's bundled packages.
+
 Omarchy uses Arch Linux packages and `pacman`. Motrix release builds include a
 native `.pacman` package for `x64` (`x86_64`) and `arm64` (`aarch64`). Download it
 from the assets of a [GitHub release](https://github.com/agalwood/Motrix/releases)

@@ -2,6 +2,9 @@
 
 [English](arch-linux.md)
 
+本分支使用系统 Electron 和捆绑 Motrix aria2 的 x86_64 AUR 包请参见
+[Arch AUR 打包说明](arch-aur.zh-CN.md)。下文介绍上游捆绑运行时的安装包。
+
 Omarchy 使用 Arch Linux 软件包和 `pacman`。Motrix 发布构建提供 `x64`
 （`x86_64`）和 `arm64`（`aarch64`）原生 `.pacman` 包。请从包含此格式的
 [GitHub Release](https://github.com/agalwood/Motrix/releases) 附件中下载。

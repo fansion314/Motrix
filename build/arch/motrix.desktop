@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Motrix 2
+GenericName=Download Manager
+Comment=Download HTTP, FTP, BitTorrent and Magnet links
+Exec=motrix %U
+Icon=motrix
+Terminal=false
+Categories=Network;FileTransfer;
+MimeType=application/x-bittorrent;x-scheme-handler/magnet;x-scheme-handler/motrix;
+StartupWMClass=Motrix
+Keywords=download;bittorrent;magnet;aria2;

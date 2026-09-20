@@ -1,0 +1,109 @@
+name: Arch Linux release
+
+on:
+  push:
+    tags:
+      - 'arch-v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arch-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'fansion314/Motrix'
+    runs-on: ubuntu-latest
+    container: archlinux:base
+    timeout-minutes: 45
+    env:
+      ARCH_TAG: ${{ github.ref_name }}
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      MOTRIX_SKIP_ELECTRON_REBUILD: '1'
+      MOTRIX_SKIP_ENGINE_FETCH: '1'
+    steps:
+      - name: Install Arch toolchain and system runtimes
+        run: |
+          pacman -Syu --noconfirm --needed base-devel git nodejs npm pnpm python rust electron asar xdg-utils xorg-server-xvfb xorg-xauth dbus desktop-file-utils
+          useradd --create-home builder
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate tag and build the source PKGBUILD as an unprivileged user
+        shell: bash
+        run: |
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          runuser -u builder -- bash -euo pipefail <<'BUILD'
+          node scripts/prepare-arch-release.mjs
+          cd aur/motrix2
+          makepkg --noconfirm --nodeps
+          BUILD
+
+      - name: Quality gates and packaged application smoke test
+        shell: bash
+        run: |
+          runuser -u builder -- bash -euo pipefail <<'CHECK'
+          source_root="$PWD/aur/motrix2/src/Motrix"
+          cd "$source_root"
+          pnpm run check:boundaries
+          pnpm run lint
+          pnpm exec tsc --noEmit
+          pnpm run check:file-names
+          pnpm exec vitest run tests/scripts/arch-package.test.ts tests/scripts/stage-electron-app.test.ts tests/scripts/postinstall-flow.test.ts
+          desktop-file-validate build/arch/motrix.desktop
+          dbus-run-session -- xvfb-run -a pnpm run verify:arch -- release/*.asar --smoke
+          mkdir -p "$GITHUB_WORKSPACE/release"
+          cp release/*.asar "$GITHUB_WORKSPACE/release/"
+          CHECK
+
+      - name: Generate AUR metadata and validate the binary PKGBUILD
+        shell: bash
+        run: |
+          runuser -u builder -- bash -euo pipefail <<'PACKAGE'
+          # Reuse the verified build's locked JavaScript tools.
+          ln -s aur/motrix2/src/Motrix/node_modules node_modules
+          node scripts/prepare-arch-release.mjs release/*.asar
+          cp release/*.asar release/aur/motrix2-bin/
+          cd release/aur/motrix2-bin
+          makepkg --noconfirm --nodeps
+          PACKAGE
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: arch-release
+          if-no-files-found: error
+          path: |
+            release/*.asar
+            release/*-aur.tar.gz
+            release/SHA256SUMS
+            release/notes.md
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: arch-release
+          path: release
+
+      - name: Publish verified Arch release
+        working-directory: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ARCH_TAG: ${{ github.ref_name }}
+        run: |
+          sha256sum --check SHA256SUMS
+          flags=()
+          if [[ "$ARCH_TAG" == *-beta.* ]]; then flags+=(--prerelease); fi
+          gh release create "$ARCH_TAG" --verify-tag --title "Motrix ${ARCH_TAG#arch-v} for Arch Linux" \
+            --notes-file notes.md "${flags[@]}" ./*.asar ./*-aur.tar.gz SHA256SUMS

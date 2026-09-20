@@ -46,6 +46,7 @@ jobs:
       - name: Quality gates and packaged application smoke test
         shell: bash
         run: |
+          chown builder:builder "$GITHUB_STEP_SUMMARY"
           runuser -u builder -- bash -euo pipefail <<'CHECK'
           source_root="$PWD/aur/motrix2/src/Motrix"
           cd "$source_root"

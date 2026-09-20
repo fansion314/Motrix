@@ -3,7 +3,16 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { mkdtemp, readdir, readFile, realpath, rm } from 'node:fs/promises'
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
+import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -108,7 +117,36 @@ export async function verifyArchPackage(archive, { smoke = false } = {}) {
     if (smoke) {
       const { _electron } = await import('playwright')
       const userData = path.join(temporary, 'user-data')
-      const env = { ...process.env, MOTRIX_USER_DATA: userData }
+      await mkdir(userData)
+      // Same isolated first-run fixture as upstream's packaged smoke test.
+      // Keep browser manifests, downloads, updates and ports out of the host.
+      await writeFile(
+        path.join(userData, 'settings.json'),
+        JSON.stringify({
+          version: 8,
+          onboarding: { disclaimerAccepted: true },
+          app: {
+            browserBridgeEnabled: false,
+            checkForUpdatesOnLaunch: false,
+            warnBeforeQuit: false,
+          },
+          nat: { enabled: false },
+        })
+      )
+      const rpcPort = await new Promise((resolve, reject) => {
+        const server = net.createServer()
+        server.once('error', reject)
+        server.listen(0, '127.0.0.1', () => {
+          const port = server.address().port
+          server.close((error) => (error ? reject(error) : resolve(port)))
+        })
+      })
+      const env = {
+        ...process.env,
+        MOTRIX_USER_DATA: userData,
+        MOTRIX_RPC_PORT: String(rpcPort),
+        MOTRIX_DEFAULT_SAVE_DIR: path.join(temporary, 'downloads'),
+      }
       delete env.ELECTRON_RUN_AS_NODE
       const application = await _electron.launch({
         executablePath: '/usr/bin/electron',
@@ -143,6 +181,13 @@ export async function verifyArchPackage(archive, { smoke = false } = {}) {
           await realpath(`/proc/${owner.pid}/exe`),
           await realpath(ariaBinary)
         )
+      } catch (error) {
+        console.error(
+          await readFile(path.join(userData, 'logs/motrix.log'), 'utf8').catch(
+            () => 'No application log was produced'
+          )
+        )
+        throw error
       } finally {
         await application.close()
       }

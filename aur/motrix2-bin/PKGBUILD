@@ -17,7 +17,7 @@ options=('!strip')
 source=("${url}/releases/download/${_tag}/motrix2-${_version}-${pkgrel}-x86_64.asar")
 noextract=("motrix2-${_version}-${pkgrel}-x86_64.asar")
 # Replaced with the verified release digest by arch-release.yml.
-sha256sums=('RELEASE_SHA256')
+sha256sums=('afceb47226a169be046183a33a82a1759b972e4a73e61a6350942278d9e7c860')
 
 package() {
   asar extract "motrix2-${_version}-${pkgrel}-x86_64.asar" "$pkgdir"

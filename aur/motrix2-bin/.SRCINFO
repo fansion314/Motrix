@@ -24,6 +24,6 @@ pkgbase = motrix2-bin
 	noextract = motrix2-2.0.0-beta.39-3-x86_64.asar
 	options = !strip
 	source = https://github.com/fansion314/Motrix/releases/download/arch-v2.0.0-beta.39-3/motrix2-2.0.0-beta.39-3-x86_64.asar
-	sha256sums = RELEASE_SHA256
+	sha256sums = 803a26ab1d73826a9ec62e88f44f3bf6dbde9fef19fe82b84ac12961d18c4d3a
 
 pkgname = motrix2-bin

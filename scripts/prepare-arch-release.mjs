@@ -15,7 +15,7 @@ export function parseArchTag(tag, version) {
   return { version, pkgver: version.replace('-', ''), pkgrel: match[2] }
 }
 
-export function renderArchPkgbuild(template, metadata, digest, major) {
+export function renderArchPkgbuild(template, metadata, digest) {
   let result = template
     .replace(/^pkgver=.*$/m, `pkgver=${metadata.pkgver}`)
     .replace(/^pkgrel=.*$/m, `pkgrel=${metadata.pkgrel}`)
@@ -23,13 +23,6 @@ export function renderArchPkgbuild(template, metadata, digest, major) {
   if (digest) {
     assert(/^[a-f0-9]{64}$/.test(digest), 'Invalid release SHA-256')
     result = result.replace(/^sha256sums=.*$/m, `sha256sums=('${digest}')`)
-  }
-  if (major !== undefined) {
-    assert(Number.isInteger(major) && major > 0, 'Invalid Electron major')
-    result = result.replace(
-      /'electron>=1:\d+' 'electron<1:\d+'/,
-      `'electron>=1:${major}' 'electron<1:${major + 1}'`
-    )
   }
   return result
 }
@@ -39,26 +32,11 @@ async function main() {
   const metadata = parseArchTag(process.env.ARCH_TAG, pkg.version)
   const archive = process.argv[2]
   if (!archive) {
-    const major = Number(
-      execFileSync(
-        '/usr/bin/electron',
-        ['-p', 'process.versions.electron.split(".")[0]'],
-        {
-          env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-          encoding: 'utf8',
-        }
-      ).trim()
-    )
     for (const name of ['motrix2', 'motrix2-bin']) {
       const file = `aur/${name}/PKGBUILD`
       await writeFile(
         file,
-        renderArchPkgbuild(
-          await readFile(file, 'utf8'),
-          metadata,
-          undefined,
-          major
-        )
+        renderArchPkgbuild(await readFile(file, 'utf8'), metadata)
       )
     }
     return
@@ -75,7 +53,6 @@ async function main() {
   await rm(inner)
   assert.equal(build.version, metadata.version)
   assert.equal(build.pkgrel, metadata.pkgrel)
-  const major = Number(build.electron.split('.')[0])
   await rm('release/aur', { recursive: true, force: true })
   for (const name of ['motrix2', 'motrix2-bin']) {
     const directory = `release/aur/${name}`
@@ -85,8 +62,7 @@ async function main() {
       renderArchPkgbuild(
         await readFile(`aur/${name}/PKGBUILD`, 'utf8'),
         metadata,
-        name.endsWith('-bin') ? digest : undefined,
-        major
+        name.endsWith('-bin') ? digest : undefined
       )
     )
     const srcinfo = execFileSync('makepkg', ['--printsrcinfo'], {

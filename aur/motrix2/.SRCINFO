@@ -12,8 +12,7 @@ pkgbase = motrix2
 	makedepends = python
 	makedepends = rust
 	makedepends = asar
-	depends = electron>=1:44
-	depends = electron<1:45
+	depends = electron
 	depends = gcc-libs
 	depends = glibc
 	depends = xdg-utils

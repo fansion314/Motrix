@@ -57,19 +57,20 @@ describe('Arch release contract', () => {
     }
   })
 
-  it('pins the binary checksum and compatible system Electron generation', async () => {
+  it('pins the binary checksum and keeps the system Electron dependency unversioned', async () => {
     const template = await readFile('aur/motrix2-bin/PKGBUILD', 'utf8')
     const output = renderArchPkgbuild(
       template,
       parseArchTag('arch-v2.0.0-beta.40-3', '2.0.0-beta.40'),
-      'a'.repeat(64),
-      45
+      'a'.repeat(64)
     )
     expect(output).toContain('pkgver=2.0.0beta.40')
     expect(output).toContain('pkgrel=3')
-    expect(output).toContain("'electron>=1:45' 'electron<1:46'")
+    expect(output).toMatch(
+      /^depends=\('electron' 'gcc-libs' 'glibc' 'xdg-utils'\)$/m
+    )
     expect(output).toContain(`sha256sums=('${'a'.repeat(64)}')`)
-    expect(() => renderArchPkgbuild(template, {}, 'SKIP', 45)).toThrow()
+    expect(() => renderArchPkgbuild(template, {}, 'SKIP')).toThrow()
   })
 
   it('rejects bundled system runtimes and incomplete distribution archives', () => {

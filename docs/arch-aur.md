@@ -51,7 +51,7 @@ then run in a checkout:
 ELECTRON_SKIP_BINARY_DOWNLOAD=1 MOTRIX_SKIP_ELECTRON_REBUILD=1 \
   MOTRIX_SKIP_ENGINE_FETCH=1 pnpm install --frozen-lockfile
 pnpm run build:arch
-pnpm run verify:arch -- release/motrix2-2.0.0-beta.39-1-x86_64.asar
+pnpm run verify:arch -- release/motrix2-2.0.0-beta.41-1-x86_64.asar
 ```
 
 The build queries `/usr/bin/electron`, compiles SQLite against that runtime,
@@ -59,7 +59,7 @@ builds Motrix's native helpers with Arch's Rust toolchain, verifies the pinned
 builtin plugins, and stages the runtime dependency closure. It never downloads
 or bundles an Electron runtime. The existing `scripts/fetch-engine.mjs` fetches
 aria2 from `scripts/engine.lock.json` and verifies both archive and binary hashes.
-For beta.39 this is `motrixapp/aria2` v1.37.0-motrix.14, a static musl Linux x64
+The beta.41 lock uses `motrixapp/aria2` v1.37.0-motrix.16, a static musl Linux x64
 binary with SQLite persistence and task-scoped cookies. It runs on Arch without
 recompilation; no separate aria2 build pipeline or system aria2 package is needed.
 
@@ -78,7 +78,7 @@ bypass pacman's dependency checks.
 ## Tag releases
 
 Push a tag `arch-v<package.json version>-<pkgrel>`, for example
-`arch-v2.0.0-beta.39-1`, to `fansion314/Motrix`. Increment `pkgrel` for packaging
+`arch-v2.0.0-beta.41-1`, to `fansion314/Motrix`. Increment `pkgrel` for packaging
 revisions; never move published tags. The independent `arch-v` prefix avoids
 the upstream `v*` multi-platform release pipeline.
 

@@ -44,14 +44,14 @@ Release 包含完整的 PKGBUILD 和 `.SRCINFO`，二进制包配方固定 ASAR 
 ELECTRON_SKIP_BINARY_DOWNLOAD=1 MOTRIX_SKIP_ELECTRON_REBUILD=1 \
   MOTRIX_SKIP_ENGINE_FETCH=1 pnpm install --frozen-lockfile
 pnpm run build:arch
-pnpm run verify:arch -- release/motrix2-2.0.0-beta.39-1-x86_64.asar
+pnpm run verify:arch -- release/motrix2-2.0.0-beta.41-1-x86_64.asar
 ```
 
 构建会查询 `/usr/bin/electron` 的版本，针对该运行时编译 SQLite，使用 Arch Rust
 工具链编译 Motrix 辅助程序，验证固定版本的内置插件，并收集应用运行依赖。
 流程不会下载或捆绑 Electron 运行时。已有的 `scripts/fetch-engine.mjs` 按照
 `scripts/engine.lock.json` 下载 aria2，并验证压缩包与可执行文件的 SHA-256。
-beta.39 锁定 `motrixapp/aria2` v1.37.0-motrix.14，提供静态链接 musl 的 Linux x64
+beta.41 锁定 `motrixapp/aria2` v1.37.0-motrix.16，提供静态链接 musl 的 Linux x64
 预构建程序，支持 SQLite 持久化和任务独立 Cookie。它可以直接在 Arch 运行，
 无需重新编译，也无需新增 aria2 构建流水线或安装系统 aria2 包。
 
@@ -67,7 +67,7 @@ pacman 的依赖检查。
 ## 标签发布
 
 向 `fansion314/Motrix` 推送 `arch-v<package.json version>-<pkgrel>` 标签，例如
-`arch-v2.0.0-beta.39-1`。打包修订递增 `pkgrel`，不要移动已发布的标签。
+`arch-v2.0.0-beta.41-1`。打包修订递增 `pkgrel`，不要移动已发布的标签。
 独立的 `arch-v` 前缀可避免触发上游 `v*` 多平台发布流程。
 
 `.github/workflows/arch-release.yml` 仅响应标签推送。它使用官方 `archlinux:base`

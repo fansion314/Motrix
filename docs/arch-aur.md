@@ -70,10 +70,9 @@ installation payload; it is not passed directly to Electron. `makepkg` extracts
 it into the package root. This preserves real filesystem paths
 required by native modules and helper processes while shipping one ASAR asset.
 
-Packages constrain Electron to the major version they were built and tested
-with, and the application checks its native ABI at startup. On a new Electron
-generation, rebuild `motrix2` or install a new `motrix2-bin` release. Do not
-bypass pacman's dependency checks.
+Packages depend on system `electron` without a version constraint. The application
+still checks its native ABI at startup. If an Electron update changes that ABI,
+rebuild `motrix2` or install a matching `motrix2-bin` release.
 
 ## Tag releases
 

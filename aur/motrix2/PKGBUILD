@@ -8,7 +8,7 @@ pkgdesc='Motrix 2 download manager using system Electron and bundled Motrix aria
 arch=('x86_64')
 url='https://github.com/fansion314/Motrix'
 license=('MIT' 'GPL-2.0-or-later')
-depends=('electron>=1:44' 'electron<1:45' 'gcc-libs' 'glibc' 'xdg-utils')
+depends=('electron' 'gcc-libs' 'glibc' 'xdg-utils')
 makedepends=('git' 'nodejs' 'pnpm' 'python' 'rust' 'asar')
 optdepends=('libayatana-appindicator: system tray integration' 'ffmpeg: media downloads')
 provides=("motrix=${pkgver}")

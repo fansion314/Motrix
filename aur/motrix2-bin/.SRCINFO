@@ -7,8 +7,7 @@ pkgbase = motrix2-bin
 	license = MIT
 	license = GPL-2.0-or-later
 	makedepends = asar
-	depends = electron>=1:44
-	depends = electron<1:45
+	depends = electron
 	depends = gcc-libs
 	depends = glibc
 	depends = xdg-utils

@@ -60,9 +60,8 @@ Motrix aria2 fork 和辅助程序、内置插件、许可声明、启动器、�
 外层 ASAR 是安装载荷，不能直接交给 Electron 启动。`makepkg` 将它解包至软件包根目录。这样既保留原生模块和辅助进程所需的真实文件路径，
 也能以一个 ASAR 文件分发应用。
 
-软件包依赖限定在实际构建、测试所用的 Electron 主版本，应用启动时还会检查原生 ABI。
-Electron 主版本更新后，请重新构建 `motrix2` 或安装新版 `motrix2-bin`，不要绕过
-pacman 的依赖检查。
+软件包仅依赖系统 `electron`，不限制版本。应用启动时仍会检查原生 ABI。
+如果 Electron 更新改变了 ABI，请重新构建 `motrix2` 或安装匹配的新版 `motrix2-bin`。
 
 ## 标签发布
 

@@ -335,16 +335,24 @@ describe('TaskInspectorActionBar', () => {
     expect(screen.queryByText('(1)')).toBeNull()
   })
 
-  it('clicking Remove opens the confirmation dialog', () => {
-    render(
-      <TaskInspectorActionBar
-        selected={[makeTask({ status: TaskStatus.Downloading })]}
-        onClose={vi.fn()}
-      />
-    )
-    fireEvent.click(screen.getByRole('button', { name: /Remove/ }))
-    expect(screen.getByText(/Remove “sample”\?/)).toBeDefined()
-  })
+  it.each([false, true])(
+    'clicking Remove preserves Shift=%s in the confirmation dialog',
+    (shift) => {
+      render(
+        <TaskInspectorActionBar
+          selected={[makeTask({ status: TaskStatus.Downloading })]}
+          onClose={vi.fn()}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /Remove/ }), {
+        shiftKey: shift,
+      })
+      expect(screen.getByText(/Remove “sample”\?/)).toBeDefined()
+      expect(screen.getByRole('checkbox').getAttribute('aria-checked')).toBe(
+        String(shift)
+      )
+    }
+  )
 
   describe('Copy URL', () => {
     beforeEach(() => {
@@ -369,7 +377,7 @@ describe('TaskInspectorActionBar', () => {
         />
       )
       const copyButton = screen.getByRole('button', { name: /Copy URL/ })
-      expect(copyButton.querySelector('.lucide-copy')).not.toBeNull()
+      expect(copyButton.querySelector('[data-icon="copy"]')).not.toBeNull()
 
       fireEvent.click(copyButton)
       await waitFor(() =>
@@ -377,7 +385,7 @@ describe('TaskInspectorActionBar', () => {
           'https://example.com/file.zip'
         )
       )
-      expect(copyButton.querySelector('.lucide-check')).not.toBeNull()
+      expect(copyButton.querySelector('[data-icon="check"]')).not.toBeNull()
     })
 
     it('BT task with infoHash copies a magnet URI carrying name + trackers', async () => {
@@ -493,8 +501,8 @@ describe('TaskInspectorActionBar', () => {
 
       await waitFor(() => expect(toastAddMock).toHaveBeenCalledTimes(1))
       expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
-      expect(copyButton.querySelector('.lucide-copy')).not.toBeNull()
-      expect(copyButton.querySelector('.lucide-check')).toBeNull()
+      expect(copyButton.querySelector('[data-icon="copy"]')).not.toBeNull()
+      expect(copyButton.querySelector('[data-icon="check"]')).toBeNull()
     })
   })
 })

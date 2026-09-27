@@ -1,3 +1,4 @@
+import '@test-utils/dom-animations'
 import '@renderer/lib/i18n'
 import '@testing-library/jest-dom/vitest'
 import { transport } from '@renderer/lib/transport'
@@ -32,6 +33,7 @@ beforeEach(() => {
   vi.mocked(transport.on).mockReset()
   vi.mocked(transport.off).mockReset()
   vi.mocked(transport.invoke).mockImplementation(async (channel) => {
+    if (channel === Commands.UpdateSettings) return { saved: true }
     if (channel === Queries.GetUpdateState) return idleState
     if (channel === Queries.GetSettings) {
       return {
@@ -368,7 +370,7 @@ describe('<AboutDialog>', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'This build of Motrix doesn’t support automatic updates. Download the latest release from the official website.'
+        'This version cannot update automatically. Download the latest version from the official website.'
       )
     ).toBeInTheDocument()
     const checkButton = screen.getByRole('button', {
@@ -410,10 +412,8 @@ describe('<AboutDialog>', () => {
       app: { updateChannel: 'beta' },
     })
     expect(channel).toHaveTextContent('Beta')
-    expect(
-      screen.getByText(/Beta releases may be less reliable/)
-    ).toHaveTextContent(
-      'Switching back to Stable stops future betas but never installs an older version automatically.'
+    expect(screen.getByText(/Beta may be less stable/)).toHaveTextContent(
+      'Switching back stops beta updates without downgrading.'
     )
   })
 
@@ -460,10 +460,9 @@ describe('<AboutDialog>', () => {
       'max-h-[calc(100svh-2rem)]',
       'overflow-hidden'
     )
-    expect(screen.getByTestId('about-dialog-scroll')).toHaveClass(
-      'min-h-0',
-      'flex-1',
-      'overflow-y-auto'
+    expect(screen.getByTestId('about-dialog-scroll')).toHaveAttribute(
+      'data-slot',
+      'scroll-area-viewport'
     )
   })
 

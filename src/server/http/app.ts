@@ -16,6 +16,7 @@ import type {
 } from '@shared/protocol/handler-types'
 import { Queries } from '@shared/protocol/queries'
 import { DirectoryPreferencesResultSchema } from '@shared/schemas/directory-preferences'
+import { downloadsSettingsResultSchema } from '@shared/schemas/downloads-settings'
 import { GeneralSettingsResultSchema } from '@shared/schemas/general-settings'
 import {
   CreateServerDirectoryResultSchema,
@@ -26,6 +27,7 @@ import {
 import { parseTaskInspectorActivitySnapshot } from '@shared/schemas/task-inspector-activity'
 import { torrentRpcBodyLimitSchema } from '@shared/schemas/torrent-request-limits'
 import Fastify, { type FastifyInstance, type FastifyReply } from 'fastify'
+import { bindEventHeartbeat } from './event-heartbeat'
 import { bindEventBroadcaster } from './events'
 import { type OperatorAuthOptions, registerOperatorAuth } from './operator-auth'
 import { ServiceUnavailableError } from './service-unavailable-error'
@@ -38,6 +40,8 @@ import {
 export { RPC_BODY_LIMIT_BYTES } from './torrent-command-routes'
 
 const directoryResultSchemas = {
+  [Commands.SaveDownloadsSettings]: downloadsSettingsResultSchema,
+  [Queries.GetDownloadsSettingsDraft]: downloadsSettingsResultSchema,
   [Commands.MutateDirectoryPreferences]: DirectoryPreferencesResultSchema,
   [Commands.SaveGeneralSettings]: GeneralSettingsResultSchema,
   [Queries.GetGeneralSettingsDraft]: GeneralSettingsResultSchema,
@@ -149,7 +153,8 @@ export async function createApp(
     if (
       channel === Commands.CreateServerDirectory ||
       channel === Commands.MutateDirectoryPreferences ||
-      channel === Commands.SaveGeneralSettings
+      channel === Commands.SaveGeneralSettings ||
+      channel === Commands.SaveDownloadsSettings
     ) {
       return directoryRpc(channel, req.body, handler)
     }
@@ -187,6 +192,7 @@ export async function createApp(
         req.params.channel === Queries.ValidateServerDirectory ||
         req.params.channel === Queries.GetDirectoryPreferences ||
         req.params.channel === Queries.GetGeneralSettingsDraft ||
+        req.params.channel === Queries.GetDownloadsSettingsDraft ||
         req.params.channel === Queries.ListServerDirectoryLocations
       ) {
         return directoryRpc(req.params.channel, req.body, handler)
@@ -229,7 +235,9 @@ export async function createApp(
     app.get('/rpc/events', { websocket: true }, (socket, request) => {
       const session = operatorSessions?.bindSocket(request, socket)
       broadcaster.register(socket, session?.eligible)
+      const stopHeartbeat = bindEventHeartbeat(socket)
       const cleanup = () => {
+        stopHeartbeat()
         broadcaster.unregister(socket)
         session?.dispose()
       }

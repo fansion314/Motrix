@@ -21,6 +21,7 @@ import type { RegistryClient } from '@core/plugin/registry/registry-client'
 import { parseProxyEnvironment } from '@core/proxy/system-proxy'
 import type { MotrixDatabase } from '@core/session/motrix-database'
 import { createDirectoryPreferencesHandlers } from '@core/settings/directory-preferences'
+import { createGetDownloadsSettingsDraftHandler } from '@core/settings/downloads-settings'
 import { createGetGeneralSettingsDraftHandler } from '@core/settings/general-settings'
 import type { SettingsManager } from '@core/settings/settings-manager'
 import type { SpeedLimitController } from '@core/speed-limit/speed-limit-controller'
@@ -33,9 +34,11 @@ import type {
 import { createGetTaskFilesHandler } from '@core/task/get-task-files'
 import { createGetTaskPeersHandler } from '@core/task/get-task-peers'
 import { createGetTaskPiecesHandler } from '@core/task/get-task-pieces'
+import type { MediaMetaStore } from '@core/task/media-meta-store'
 import { slimTasksForBroadcast } from '@core/task/slim-task-for-broadcast'
 import type { TaskManager } from '@core/task/task-manager'
 import type { TrackerManager } from '@core/tracker'
+import type { SupportedLocale } from '@shared/constants/locales'
 import type { QueryHandlerMap } from '@shared/protocol/handler-types'
 import { Queries } from '@shared/protocol/queries'
 import { ListServerDirectoryLocationsRequestSchema } from '@shared/schemas/server-directory'
@@ -98,6 +101,7 @@ const UNSUPPORTED_APPIMAGE_INTEGRATION: AppImageIntegrationView = {
 }
 
 export interface ServerQueryContext {
+  getResolvedLanguage: () => SupportedLocale
   taskManager: TaskManager
   statsAggregator: StatsAggregator
   speedHistoryStore: SpeedHistoryStore
@@ -111,6 +115,7 @@ export interface ServerQueryContext {
   settingsManager: SettingsManager
   trackerManager: TrackerManager
   engineAdapter: EngineAdapter
+  mediaMetaStore: MediaMetaStore
   motrixDatabase: MotrixDatabase
   geoipManager: Pick<GeoIPManager, 'getStatus' | 'isEnabled' | 'lookupCountry'>
   notificationCenter: NotificationCenter
@@ -183,6 +188,7 @@ export function buildServerQueryHandlers(
       ctx.serverDirectoryService.validate(request),
     [Queries.GetDisclaimerState]: async () => ({
       language: settingsManager.getApp().language,
+      resolvedLanguage: ctx.getResolvedLanguage(),
     }),
 
     [Queries.GetCliToolStatus]: async () => UNSUPPORTED_WEB_CLI_STATUS,
@@ -198,6 +204,7 @@ export function buildServerQueryHandlers(
       taskManager.getById(taskId) ?? null,
 
     [Queries.GetTaskFiles]: createGetTaskFilesHandler({
+      mediaMetaStore: ctx.mediaMetaStore,
       db: motrixDatabase,
       taskManager,
       engine: engineAdapter,
@@ -247,12 +254,19 @@ export function buildServerQueryHandlers(
 
     [Queries.GetNatDiagnostic]: async () => null,
 
+    [Queries.GetDownloadsSettingsDraft]:
+      createGetDownloadsSettingsDraftHandler(settingsManager),
     [Queries.GetGeneralSettingsDraft]:
       createGetGeneralSettingsDraftHandler(settingsManager),
     [Queries.GetDirectoryPreferences]:
       createDirectoryPreferencesHandlers(settingsManager).get,
 
-    [Queries.GetSettings]: async () => settingsManager.get(),
+    [Queries.GetSettings]: async () => ({
+      ...settingsManager.get(),
+      resolvedLanguage: ctx.getResolvedLanguage(),
+    }),
+    // A remote server cannot read the browser user's operating-system accent.
+    [Queries.GetSystemAccentColor]: async () => null,
 
     [Queries.GetGeoIPStatus]: createGetGeoIPStatusHandler({ geoipManager }),
 

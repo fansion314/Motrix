@@ -48,6 +48,8 @@ const taskListMock = vi.hoisted(() => {
 
 vi.mock('@renderer/hooks/use-task-list', () => ({
   useTaskList: () => taskListMock.current,
+  getTaskListSnapshot: () => taskListMock.current,
+  subscribeTaskList: () => () => {},
 }))
 vi.mock('@renderer/hooks/use-global-stats', () => ({
   useGlobalStats: () => ({ stats: null }),
@@ -192,6 +194,50 @@ beforeEach(() => {
 })
 
 describe('DownloadsPage', () => {
+  it('keeps the toolbar in sync with empty selection and requires an explicit reopen', async () => {
+    setTaskList({
+      tasks: [task('a', TaskStatus.Paused), task('b', TaskStatus.Paused)],
+    })
+    useDownloadsView.setState({ inspectorVisible: true })
+    renderAt('/downloads/all')
+
+    const toggle = screen.getByRole('button', { name: 'Show Inspector' })
+    expect(toggle).toBeDisabled()
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(toggle).toHaveAttribute(
+      'title',
+      'Select a task to view its details.'
+    )
+
+    act(() => useDownloadsSelection.getState().select('a'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Show Inspector' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Hide Inspector' })
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    act(() => useDownloadsSelection.getState().clearSelection())
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    )
+    expect(
+      screen.getByRole('button', { name: 'Show Inspector' })
+    ).toBeDisabled()
+
+    act(() => useDownloadsSelection.getState().select('b'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Show Inspector' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Hide Inspector' }))
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    )
+    act(() => useDownloadsSelection.getState().select('a'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Show Inspector' })).toBeEnabled()
+  })
+
   it('renders the status title heading and search trigger', () => {
     renderAt('/downloads/all')
     expect(
@@ -391,12 +437,18 @@ describe('DownloadsPage', () => {
     ['unknown', []],
     ['removed', [task('b', TaskStatus.Removed)]],
   ] as const)(
-    'consumes a %s id after ready and does not reopen on a later snapshot',
+    'replaces a %s task link with all downloads and does not reopen on a later snapshot',
     async (_label, initialTasks) => {
       setTaskList({ tasks: initialTasks })
-      const view = renderAt('/downloads/active?task=b')
-      await act(async () => Promise.resolve())
+      useDownloadsView.setState({ inspectorVisible: true })
+      const view = renderAt('/downloads/active?type=bt&q=old&task=b')
+      await waitFor(() =>
+        expect(screen.getByTestId('location').textContent).toBe(
+          '/downloads/all'
+        )
+      )
       expect(selectedIds()).toEqual([])
+      expect(useDownloadsView.getState().inspectorVisible).toBe(false)
 
       setTaskList({ tasks: [task('b', TaskStatus.Downloading)] })
       view.refresh()
@@ -405,6 +457,20 @@ describe('DownloadsPage', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     }
   )
+
+  it('does not classify an unhydrated task as deleted until a ready snapshot arrives', async () => {
+    setTaskList({ tasks: [], status: 'loading', hasReadySnapshot: false })
+    const view = renderAt('/downloads/active?task=deleted')
+    expect(screen.getByTestId('location').textContent).toBe(
+      '/downloads/active?task=deleted'
+    )
+    setTaskList({ tasks: [], status: 'ready', hasReadySnapshot: true })
+    view.refresh()
+    await waitFor(() =>
+      expect(screen.getByTestId('location').textContent).toBe('/downloads/all')
+    )
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 
   it('closing the Inspector preserves selection and consumes the task deep link', async () => {
     setTaskList({ tasks: [task('a', TaskStatus.Downloading)] })

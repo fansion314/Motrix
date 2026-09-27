@@ -7,6 +7,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@renderer/components/ui/dialog'
+import {
+  ScrollArea,
+  ScrollAreaContent,
+  ScrollAreaViewport,
+  ScrollBar,
+} from '@renderer/components/ui/scroll-area'
 import { EXTERNAL_URLS } from '@shared/external-urls'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -118,7 +124,7 @@ export function AboutDialog({
 
           <nav
             aria-label={t('settings.about.resources.title')}
-            className="-mb-1 -ml-2 mt-4 flex flex-wrap items-center gap-0.5 border-t border-border/60 pt-3"
+            className="-mb-1 -ms-2 mt-4 flex flex-wrap items-center gap-0.5 border-t border-border/60 pt-3"
           >
             <CompactLink
               href={EXTERNAL_URLS.motrix.home}
@@ -143,18 +149,24 @@ export function AboutDialog({
           </nav>
         </section>
 
-        <div
-          data-testid="about-dialog-scroll"
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable"
-        >
-          {showUpdates ? (
-            <AppUpdateSection />
-          ) : (
-            <p className="px-6 py-5 text-xs text-muted-foreground">
-              {t('settings.about.webVersionNote')}
-            </p>
-          )}
-        </div>
+        <ScrollArea className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <ScrollAreaViewport
+            data-testid="about-dialog-scroll"
+            tabIndex={-1}
+            className="min-h-0 flex-1 overscroll-contain"
+          >
+            <ScrollAreaContent style={{ minWidth: '100%' }}>
+              {showUpdates ? (
+                <AppUpdateSection />
+              ) : (
+                <p className="px-6 py-5 text-xs text-muted-foreground">
+                  {t('settings.about.webVersionNote')}
+                </p>
+              )}
+            </ScrollAreaContent>
+          </ScrollAreaViewport>
+          <ScrollBar />
+        </ScrollArea>
 
         <DialogFooter className="shrink-0 flex-row items-center justify-between gap-4 border-t border-border/70 bg-background/85 px-6 py-3.5 backdrop-blur-xl sm:justify-between">
           {showUpdates ? <AutomaticUpdateSetting /> : <span />}

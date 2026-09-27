@@ -1,5 +1,6 @@
 import './application-menu.css'
 import { useAddTaskDialogStore } from '@renderer/components/add-task-dialog/use-add-task-dialog-store'
+import { ArrowLeftIcon, ChevronRightIcon } from '@renderer/components/icons'
 import { Button } from '@renderer/components/ui/button'
 import {
   DropdownMenu,
@@ -31,7 +32,6 @@ import {
   type BulkTaskCommandResult,
   isStoppedTaskStatus,
 } from '@shared/types/task-actions'
-import { ArrowLeft, ChevronRight } from 'lucide-react'
 import {
   type ReactNode,
   useCallback,
@@ -260,7 +260,7 @@ export function WebMenuButton() {
         onClick={() => setLevel(section)}
       >
         {t(`menu.${section}.title`)}
-        <ChevronRight className="ms-auto size-3" />
+        <ChevronRightIcon className="ms-auto size-3" />
       </DropdownMenuItem>
     ) : (
       <DropdownMenuSub key={section}>
@@ -328,7 +328,7 @@ export function WebMenuButton() {
               variant="ghost"
               size="xs"
               aria-label={t('menu.app.title')}
-              className="app-no-drag h-7 w-[72px] gap-1 bg-transparent pl-2 pr-1 hover:bg-accent"
+              className="app-no-drag h-7 w-[72px] gap-1 bg-transparent ps-2 pe-1 hover:bg-accent"
               onPointerDownCapture={() => {
                 source.current =
                   document.activeElement instanceof HTMLElement
@@ -372,7 +372,7 @@ export function WebMenuButton() {
                 closeOnClick={false}
                 onClick={() => setLevel(null)}
               >
-                <ArrowLeft className="size-3" />
+                <ArrowLeftIcon className="size-3" />
                 {t('applicationMenu.back')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />

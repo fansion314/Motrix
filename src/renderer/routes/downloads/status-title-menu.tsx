@@ -1,4 +1,5 @@
 import { PANEL_TITLE_CLASS } from '@renderer/components/desktop-kit/panel/panel-shell'
+import { CheckIcon, ChevronDownIcon } from '@renderer/components/icons'
 import { Badge } from '@renderer/components/ui/badge'
 import {
   DropdownMenu,
@@ -7,7 +8,6 @@ import {
   DropdownMenuTrigger,
 } from '@renderer/components/ui/dropdown-menu'
 import { cn } from '@renderer/lib/utils'
-import { Check, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { DOWNLOADS_TABS, type DownloadsTab } from './filter'
 
@@ -25,8 +25,7 @@ export function StatusTitleMenu({
   visibleCount = counts[tab],
 }: StatusTitleMenuProps) {
   const { t } = useTranslation()
-  const statusLabel = t(`panel.downloads.tab.${tab}`)
-  const title = `${statusLabel} ${t('panel.downloads.title')}`
+  const title = t(`panel.downloads.heading.${tab}`)
 
   return (
     <div className="flex min-w-0 items-center gap-2">
@@ -41,7 +40,7 @@ export function StatusTitleMenu({
           }
         >
           <h1 className={cn(PANEL_TITLE_CLASS, 'truncate')}>{title}</h1>
-          <ChevronDown className="size-4 shrink-0 text-muted-foreground compact-header:size-3" />
+          <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground compact-header:size-3" />
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
@@ -54,7 +53,7 @@ export function StatusTitleMenu({
               onClick={() => onTabChange(key)}
               className="gap-2"
             >
-              <Check
+              <CheckIcon
                 className={cn(
                   'size-4',
                   key === tab ? 'opacity-100' : 'opacity-0'

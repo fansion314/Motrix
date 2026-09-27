@@ -18,13 +18,13 @@ export const FLATPAK_BUILDER_TOOLS_COMMIT =
 // tag resolves to is pinned by hand (and cross-checked against the manifest).
 export const ARIA2_SOURCE = Object.freeze({
   url: 'https://github.com/motrixapp/aria2.git',
-  // v1.37.0-motrix.14 — current Motrix aria2 fork release
-  commit: 'fb5aa179a3fa6649c59fcfe90b69c44165e32be3',
+  // v1.37.0-motrix.16 — current Motrix aria2 fork release
+  commit: 'e093973f113f0a880f9757a2ad0258cb2356295e',
 })
 
 const PNPM_SOURCE = Object.freeze({
-  url: 'https://registry.npmjs.org/pnpm/-/pnpm-12.4.2.tgz',
-  sha256: '3bb1683c7bff8bf8a810284d8b38af46ac22e2a732fca88de299fdc6b88af814',
+  url: 'https://registry.npmjs.org/pnpm/-/pnpm-12.5.1.tgz',
+  sha256: '3c1439171c1396d7f30892d2444135c9f11de739175058a1503cdf53788f2099',
 })
 
 const RUST_SOURCES = Object.freeze({
@@ -53,8 +53,6 @@ const COMPANION_PAIR_FRAME_HEX =
 const BUILTIN_SIGNATURE_DIGESTS = Object.freeze({
   'motrix.filename-template-1.1.1.moext.sig':
     '5b6bfcc74e0d923ed37c4f2340bfdc4cdac30f64191a15ce5c46ddc86590bc6d',
-  'motrix.scraper-hook-1.0.0.moext.sig':
-    '7403d5ec5f61819370bcf153fe955e0736109b844c1eb53f959e6ebd0790be78',
   'motrix.url-resolver-1.0.0.moext.sig':
     '716af87eb2adbb4796ed6ac600c9b14840cb8354eb9ccebfe6122615ba88c17c',
 })
@@ -284,7 +282,7 @@ export async function verifyFlatpakPackaging(root = REPO_ROOT) {
       'pnpm_root=/run/build/motrix/flatpak-node/pnpm-cli/lib/node_modules/pnpm'
     ) &&
       motrixCommands.includes('node "$pnpm_root/install.js"') &&
-      motrixCommands.includes('test "$(pnpm --version)" = \'12.4.2\'') &&
+      motrixCommands.includes('test "$(pnpm --version)" = \'12.5.1\'') &&
       motrixBuildOptions.includes(
         '/run/build/motrix/flatpak-node/pnpm-cli/bin'
       ),
@@ -444,7 +442,7 @@ export async function verifyFlatpakPackaging(root = REPO_ROOT) {
     'generated pnpm store must use v11'
   )
   for (const arch of ['x64', 'arm64']) {
-    const filename = `@pnpm__exe.linux-${arch}-12.4.2.tgz`
+    const filename = `@pnpm__exe.linux-${arch}-12.5.1.tgz`
     const source = generatedSources.find(
       (candidate) => candidate?.['dest-filename'] === filename
     )

@@ -1,3 +1,4 @@
+import { ResetIcon, UnlimitedIcon } from '@renderer/components/icons'
 import { Button } from '@renderer/components/ui/button'
 import { ButtonGroup } from '@renderer/components/ui/button-group'
 import {
@@ -12,7 +13,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@renderer/components/ui/tooltip'
-import { Infinity as InfinityIcon, RotateCcw } from 'lucide-react'
 import { type ComponentProps, forwardRef, useState } from 'react'
 
 type ZeroAction = 'unlimited' | 'inherit'
@@ -51,7 +51,7 @@ export const CompactLimitInput = forwardRef<
     null
   )
   const zero = value === 0
-  const ResetIcon = zeroAction === 'inherit' ? RotateCcw : InfinityIcon
+  const ZeroActionIcon = zeroAction === 'inherit' ? ResetIcon : UnlimitedIcon
 
   return (
     <ButtonGroup className="w-40 shrink-0">
@@ -70,7 +70,7 @@ export const CompactLimitInput = forwardRef<
                     onValueChange(0)
                   }}
                 >
-                  <ResetIcon aria-hidden />
+                  <ZeroActionIcon aria-hidden />
                 </Button>
               }
             />
@@ -91,7 +91,7 @@ export const CompactLimitInput = forwardRef<
           aria-valuemin={0}
           aria-valuenow={Number.isFinite(value) ? value : undefined}
           aria-valuetext={zero ? zeroLabel : `${value} ${unit}`}
-          className="h-8 min-w-0 px-2 text-right tabular-nums placeholder:text-right placeholder:text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="h-8 min-w-0 px-2 text-end tabular-nums placeholder:text-end placeholder:text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           value={
             draft?.unit === unit
               ? draft.text
@@ -125,7 +125,7 @@ export const CompactLimitInput = forwardRef<
           }}
         />
         {!zero && (
-          <InputGroupAddon align="inline-end" className="pr-2">
+          <InputGroupAddon align="inline-end" className="pe-2">
             <InputGroupText className="text-[11px]">{unit}</InputGroupText>
           </InputGroupAddon>
         )}

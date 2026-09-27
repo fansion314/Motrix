@@ -1,15 +1,17 @@
 import { useCompactHeader } from '@renderer/components/desktop-kit/hooks/use-compact-header'
 import type { SelectionStore } from '@renderer/components/desktop-kit/selection/types'
-import { ToolbarGlass } from '@renderer/components/desktop-kit/toolbar-glass/toolbar-glass'
-import { useLiquidGlass } from '@renderer/hooks/use-liquid-glass'
+import { Toolbar } from '@renderer/components/desktop-kit/toolbar/toolbar'
+import { ToolbarGroup } from '@renderer/components/desktop-kit/toolbar/toolbar-group'
 import type { DownloadTask } from '@shared/types/task'
 import { useLayoutEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   FilterSearchCommand,
   type FilterSearchCommandProps,
 } from './filter-search-command'
 import { InspectorToggle, ListViewMenu } from './list-view-menu'
 import { TaskActionsMenu } from './task-actions-menu'
+import { useTaskInspectorState } from './use-task-inspector-state'
 
 // Match the 30px / 24px targets, 4px gaps and capsule padding in both densities.
 const actionWidth = (count: number, compact: boolean) =>
@@ -41,16 +43,14 @@ export function DownloadsToolbar({
   selection,
   onHideInspector,
   ...searchProps
-}: Omit<
-  FilterSearchCommandProps,
-  'expanded' | 'onExpandedChange' | 'width' | 'glassEnabled'
-> & {
+}: Omit<FilterSearchCommandProps, 'expanded' | 'onExpandedChange' | 'width'> & {
   tasks: readonly DownloadTask[]
   selection: SelectionStore<DownloadTask>
   onHideInspector: () => void
 }) {
   const compact = useCompactHeader()
-  const glassEnabled = useLiquidGlass()
+  const { t } = useTranslation()
+  const inspector = useTaskInspectorState(selection, tasks)
   const rootRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLButtonElement>(null)
   const viewRef = useRef<HTMLButtonElement>(null)
@@ -94,18 +94,15 @@ export function DownloadsToolbar({
   }, [width, expanded, count, compact, viewMenuOpen])
 
   return (
-    <div
+    <Toolbar
+      label={t('nav.downloads')}
       ref={rootRef}
       data-slot="downloads-toolbar"
       data-density={compact ? 'compact' : 'standard'}
       data-visible-actions={count}
       className="flex min-w-0 flex-1 items-center justify-end gap-2"
     >
-      <div
-        data-slot="downloads-action-group"
-        className="toolbar-glass-surface flex h-9 shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background/70 p-0.5 compact-header:h-[30px]"
-      >
-        <ToolbarGlass enabled={glassEnabled} />
+      <ToolbarGroup data-slot="downloads-action-group">
         <TaskActionsMenu
           tasks={tasks}
           selection={selection}
@@ -116,12 +113,16 @@ export function DownloadsToolbar({
           <ListViewMenu triggerRef={viewRef} onOpenChange={setViewMenuOpen} />
         )}
         {count >= 2 && (
-          <InspectorToggle triggerRef={inspectorRef} onHide={onHideInspector} />
+          <InspectorToggle
+            triggerRef={inspectorRef}
+            onHide={onHideInspector}
+            visible={inspector.open}
+            disabled={inspector.selected.length === 0}
+          />
         )}
-      </div>
+      </ToolbarGroup>
       <FilterSearchCommand
         {...searchProps}
-        glassEnabled={glassEnabled}
         expanded={expanded}
         onExpandedChange={setSearchRequested}
         width={Math.max(
@@ -132,6 +133,6 @@ export function DownloadsToolbar({
           )
         )}
       />
-    </div>
+    </Toolbar>
   )
 }

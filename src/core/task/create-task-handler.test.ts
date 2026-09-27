@@ -1,3 +1,6 @@
+import path from 'node:path'
+import { DirectPipeline } from '@core/bridge-receiver/pipelines/direct-pipeline'
+import { SubmitDownloadAdapter } from '@core/bridge-receiver/submit-download-adapter'
 import { initLogger } from '@core/logger'
 import {
   AppliedDownloadProxyPolicy,
@@ -24,13 +27,16 @@ import { Aria2Adapter } from '../engine/aria2/aria2-adapter'
 import { DIRECT_RESOURCE_METADATA_PROFILE } from '../engine/engine-adapter'
 import { parseBtFileLayout } from './bt-storage-layout'
 import { handleCreateTask } from './create-task-handler'
-import { sanitizeRemoteFilename } from './direct-resource-validator'
+import {
+  DirectResourceValidatorService,
+  sanitizeRemoteFilename,
+} from './direct-resource-validator'
 import { FinalNamePickerImpl } from './final-name-picker'
 
-// Stub `mkdir` (and the other `fs.*` calls inadvertently dragged
+// Stub directory preparation (and the other `fs.*` calls inadvertently dragged
 // in via TorrentMetaStore) so unit tests don't touch the real
 // filesystem. The production code calls
-//   `mkdir(<saveDir-or-diskPath>, { recursive: true })`
+//   `ensureDirectory(<saveDir-or-diskPath>)`
 // with paths like '/d/foo.bin.motrix' which would either fail with
 // EACCES or — worse — actually mutate the runner's filesystem. The
 // mock also lets us assert WHICH path the production code chose,
@@ -41,12 +47,15 @@ import { FinalNamePickerImpl } from './final-name-picker'
 // module scope would be `undefined` when the mock factory runs.
 //
 // Both `default` and named exports are provided so that TorrentMetaStore's
-// `import fs from 'node:fs/promises'` (default) and createTaskHandler's
-// `import { mkdir } from 'node:fs/promises'` (named) both resolve.
+// `import fs from 'node:fs/promises'` (default) and the directory helper's
+// named imports both resolve.
 const { mkdirMock, fsStub } = vi.hoisted(() => {
   const mkdirMock = vi.fn(async () => undefined)
   const fsStub = {
     mkdir: mkdirMock,
+    stat: vi.fn(async (): Promise<{ isDirectory(): boolean }> => {
+      throw Object.assign(new Error('missing directory'), { code: 'ENOENT' })
+    }),
     writeFile: vi.fn(async () => undefined),
     readFile: vi.fn(async () => Buffer.alloc(0)),
     unlink: vi.fn(async () => undefined),
@@ -64,7 +73,8 @@ const logError = vi.fn()
 const logDebug = vi.fn()
 
 beforeEach(() => {
-  mkdirMock.mockClear()
+  mkdirMock.mockReset()
+  fsStub.stat.mockReset()
   logInfo.mockClear()
   logWarn.mockClear()
   logError.mockClear()
@@ -129,6 +139,85 @@ function httpRequest() {
     headers: [],
   }
 }
+
+describe('source admission before side effects', () => {
+  it.each([
+    'https:example.test/a',
+    'https://example.test/a\\b',
+    'https://example.test/a%ZZ',
+    'https://user:secret@example.test/a',
+    'https://example.test/a\tb',
+    'sftp://example.test/a',
+    'ftps://example.test/a',
+  ])(
+    'rejects %s without plugin, directory, probe or engine work',
+    async (uri) => {
+      const wait = vi.fn(async () => {})
+      const prepare = vi.fn(async (dir: string) => dir)
+      const deps = makeDeps({
+        waitForEngineReady: wait,
+        prepareSaveDir: prepare,
+      })
+      const { addUri, pick, add } = deps
+      const plugin = vi.fn()
+      const probe = vi.fn()
+      deps.orchestrator = { runBeforeCreateHttp: plugin } as never
+      deps.directResourceValidator = { capture: probe, probe }
+      await expect(
+        handleCreateTask({ ...httpRequest(), uris: [uri] }, deps)
+      ).rejects.toMatchObject({
+        code: ErrorCode.TaskSourceInvalid,
+        details: { stage: 'input', index: 0 },
+      })
+      for (const fn of [
+        wait,
+        prepare,
+        pick,
+        plugin,
+        probe,
+        mkdirMock,
+        addUri,
+        add,
+      ])
+        expect(fn).not.toHaveBeenCalled()
+    }
+  )
+
+  it('routes FTP to the FTP task type and skips HTTP plugins and probes', async () => {
+    const deps = makeDeps()
+    const { addUri, add } = deps
+    const plugin = vi.fn()
+    const probe = vi.fn()
+    const resolve = vi.fn()
+    deps.orchestrator = { runBeforeCreateHttp: plugin } as never
+    deps.directResourceValidator = { capture: probe, probe }
+    deps.resolveToMux = resolve
+    await handleCreateTask(
+      { ...httpRequest(), uris: ['ftp://example.test/archive.zip'] },
+      deps
+    )
+    expect(addUri).toHaveBeenCalledWith(
+      ['ftp://example.test/archive.zip'],
+      expect.objectContaining({ dir: '/d' })
+    )
+    expect(addUri.mock.calls[0][1]).not.toHaveProperty('header')
+    expect(add.mock.calls[0][0]).toMatchObject({ type: TaskType.Ftp })
+    for (const fn of [plugin, probe, resolve]) expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('reuses a persisted receipt even when the prepared directory differs from the request', async () => {
+    const deps = makeDeps({ prepareSaveDir: async () => '/resolved-dir' })
+    const { addUri, add } = deps
+    const tasks: DownloadTask[] = []
+    vi.mocked(deps.taskManager.getAll).mockImplementation(() => tasks)
+    add.mockImplementation((task) => tasks.push(task))
+    const request = { ...httpRequest(), requestId: crypto.randomUUID() }
+    const first = await handleCreateTask(request, deps)
+    const second = await handleCreateTask(request, deps)
+    expect(second).toMatchObject({ outcome: 'reused', taskId: first.taskId })
+    expect(addUri).toHaveBeenCalledOnce()
+  })
+})
 
 function makeDeps(overrides: DepOverrides = {}): Deps & {
   addUri: ReturnType<typeof vi.fn>
@@ -287,6 +376,123 @@ function lastAddedTask(deps: { add: ReturnType<typeof vi.fn> }): DownloadTask {
   const call = deps.add.mock.calls[0]
   return call[0] as DownloadTask
 }
+
+describe('browser direct download filenames', () => {
+  const url =
+    'https://cdn.example/c-m9021?filename=BCUninstaller_6.3.0_portable.7z'
+  const filename = 'BCUninstaller_6.3.0_portable.7z'
+
+  async function submit(suggestedFilename: string, response: Response | Error) {
+    const deps = makeDeps()
+    const fetchMetadata = vi.fn(
+      async (_url: string | URL, _init?: RequestInit) => {
+        if (response instanceof Error) throw response
+        return response
+      }
+    )
+    deps.directResourceValidator = new DirectResourceValidatorService(
+      fetchMetadata
+    )
+    const adapter = new SubmitDownloadAdapter({
+      getDefaultSaveDir: () => '/d',
+      pickName: (dir, name) => deps.finalNamePicker.pick(dir, name),
+      mintTaskId: () => 'bridge-filename',
+    })
+    const adapted = await adapter.adapt(
+      {
+        source: {
+          pageUrl: 'https://origin.example/page',
+          pageTitle: 'Download',
+          detectedAt: 1,
+        },
+        selection: {
+          kind: 'direct',
+          primary: {
+            url,
+            headers: {},
+            cookies: [],
+            refererPolicy: 'strict-origin-when-cross-origin',
+          },
+        },
+        meta: { suggestedFilename, qualityLabel: 'file' },
+      },
+      { extensionId: 'extension', browser: 'chromium' }
+    )
+    if (adapted.kind !== 'direct') throw new Error('expected direct')
+    const pipeline = new DirectPipeline({
+      createTask: (request, _deps, options) =>
+        handleCreateTask(request, deps, options),
+      removeTask: vi.fn(),
+    })
+    await pipeline.dispatch(adapted)
+    return { deps, fetchMetadata }
+  }
+
+  it.each([
+    ['automatic', filename],
+    [
+      'legacy Windows automatic',
+      String.raw`E:\Downloads\BCUninstaller_6.3.0_portable.7z`,
+    ],
+    ['right click', ''],
+  ])(
+    'uses the same final filename for %s and manual paste',
+    async (_origin, hint) => {
+      const response = () =>
+        new Response(null, {
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${filename}`,
+          },
+        })
+      const { deps, fetchMetadata } = await submit(hint, response())
+      expect(lastAddedTask(deps).finalName).toBe(filename)
+      expect(deps.addUriWithCookies).toHaveBeenCalledWith(
+        [url],
+        [],
+        expect.objectContaining({
+          out: `${filename}.motrix`,
+          header: expect.arrayContaining([
+            'Referer: https://origin.example/page',
+          ]),
+        })
+      )
+      if (!hint) {
+        expect(fetchMetadata).toHaveBeenCalledOnce()
+        const init = fetchMetadata.mock.calls[0]?.[1]
+        expect(init?.method).toBe('GET')
+        expect(new Headers(init?.headers).get('referer')).toBe(
+          'https://origin.example/page'
+        )
+      }
+      const manualDeps = makeDeps()
+      manualDeps.directResourceValidator = new DirectResourceValidatorService(
+        async () => response()
+      )
+      await handleCreateTask(
+        { type: 'http', uris: [url], saveDir: '/d', headers: [] },
+        manualDeps
+      )
+      expect(lastAddedTask(manualDeps).finalName).toBe(filename)
+    }
+  )
+
+  it('retains the URL fallback when optional filename discovery fails', async () => {
+    const { deps, fetchMetadata } = await submit('', new Error('offline'))
+    expect(fetchMetadata).toHaveBeenCalledOnce()
+    expect(lastAddedTask(deps).finalName).toBe('c-m9021')
+    expect(deps.addUriWithCookies).toHaveBeenCalledOnce()
+  })
+
+  it('preserves a browser-selected name instead of replacing it with a header', async () => {
+    const { deps, fetchMetadata } = await submit(
+      'chosen.7z',
+      new Error('must not probe')
+    )
+    expect(lastAddedTask(deps).finalName).toBe('chosen.7z')
+    expect(fetchMetadata).not.toHaveBeenCalled()
+  })
+})
 
 describe('handleCreateTask', () => {
   it('reserves different final outputs for concurrent torrents with the same chosen name', async () => {
@@ -537,7 +743,7 @@ describe('handleCreateTask', () => {
     }
   })
 
-  it('redacts plugin-rewritten URIs without reducing the result to a count', async () => {
+  it('logs plugin attribution and URI counts without exposing rewritten targets', async () => {
     const rewrittenSecret = 'REWRITTEN_URI_SECRET_753'
     const orchestrator = {
       runBeforeCreateHttp: vi.fn().mockResolvedValue({
@@ -578,7 +784,7 @@ describe('handleCreateTask', () => {
       (call) => call[1] === 'beforeCreate hook chain result'
     )
     expect(resultLog?.[0]).toMatchObject({
-      rewrittenUris: ['https://cdn.example/file.zip'],
+      rewrittenUriCount: 1,
       contributors: { uris: 'plugin-rewriter' },
     })
     const task = lastAddedTask(deps)
@@ -955,8 +1161,8 @@ describe('handleCreateTask', () => {
     })
     const [, , options] = deps.addTorrent.mock.calls[0]
     expect(options).toMatchObject({
-      dir: '/d',
-      'index-out': ['1=ubuntu-25.10-desktop-amd64.iso'],
+      dir: `${task.torrentMetaPath}.state`,
+      'index-out': ['1=/d/ubuntu-25.10-desktop-amd64.iso'],
     })
     expect(options).not.toHaveProperty('bt-prioritize-piece')
   })
@@ -1026,7 +1232,10 @@ describe('handleCreateTask', () => {
     const result = await handleCreateTask(
       {
         type: 'bt',
-        payload: { kind: 'magnet', uri: 'magnet:?xt=urn:btih:x' },
+        payload: {
+          kind: 'magnet',
+          uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc',
+        },
         dlLimit: 1_000_000,
         ulLimit: 512_000,
         selectedFiles: [0],
@@ -1038,7 +1247,7 @@ describe('handleCreateTask', () => {
     expect(result.gid).toMatch(/^[0-9a-f]{16}$/)
     expect(typeof result.taskId).toBe('string')
     expect(deps.addUri).toHaveBeenCalledWith(
-      ['magnet:?xt=urn:btih:x'],
+      ['magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc'],
       expect.any(Object)
     )
     const [, options] = deps.addUri.mock.calls[0]
@@ -1147,7 +1356,7 @@ describe('handleCreateTask download paths', () => {
         type: 'bt',
         payload: {
           kind: 'magnet',
-          uri: 'magnet:?xt=urn:btih:deadbeef&dn=Ubuntu%2024.04',
+          uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc&dn=Ubuntu%2024.04',
         },
         selectedFiles: [0],
         saveDir: '/d',
@@ -1752,6 +1961,27 @@ describe('handleCreateTask download paths', () => {
 })
 
 describe('handleCreateTask mkdir target by task type', () => {
+  it('dispatches a download in an existing volume root without trying to create it', async () => {
+    const saveDir = path.parse(path.resolve('/')).root
+    fsStub.stat.mockResolvedValue({ isDirectory: () => true })
+    // Model Windows mkdir on a drive root, even on a POSIX test host.
+    mkdirMock.mockRejectedValueOnce(
+      Object.assign(new Error(`EPERM: mkdir '${saveDir}'`), { code: 'EPERM' })
+    )
+    const deps = makeDeps()
+    await handleCreateTask(
+      { ...httpRequest(), saveDir, filename: 'archive.zip' },
+      deps
+    )
+    expect(deps.addUri).toHaveBeenCalledWith(
+      ['https://a/b'],
+      expect.objectContaining({ dir: saveDir, out: 'archive.zip.motrix' })
+    )
+    expect(deps.add).toHaveBeenCalledOnce()
+    expect(logWarn).not.toHaveBeenCalled()
+    expect(mkdirMock).not.toHaveBeenCalled()
+  })
+
   // BT/Magnet: `diskPath` is the container directory aria2 populates,
   // and aria2.addTorrent writes `<sha1>.torrent` inside it at add time
   // — pre-creating the dir is required to keep that write from
@@ -1782,7 +2012,7 @@ describe('handleCreateTask mkdir target by task type', () => {
         type: 'bt',
         payload: {
           kind: 'magnet',
-          uri: 'magnet:?xt=urn:btih:deadbeef&dn=Ubuntu',
+          uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc&dn=Ubuntu',
         },
         selectedFiles: [0],
         saveDir: '/d',
@@ -2319,7 +2549,10 @@ describe('handleCreateTask plugin-hook chain (Plan C / T15)', () => {
           makeChainCommit({ uris: [uri], uriContributor: 'plugin-a' })
         ),
       })
-    ).rejects.toMatchObject({ code: ErrorCode.TaskCreateFailed })
+    ).rejects.toMatchObject({
+      code: ErrorCode.TaskSourceInvalid,
+      details: { stage: 'plugin' },
+    })
     expect(deps.addUri).not.toHaveBeenCalled()
     expect(deps.reserveEngineTaskId).not.toHaveBeenCalled()
   })
@@ -2846,7 +3079,10 @@ describe('handleCreateTask mux pre-resolve seam', () => {
     await handleCreateTask(
       {
         type: 'bt',
-        payload: { kind: 'magnet', uri: 'magnet:?xt=urn:btih:abc&dn=Test' },
+        payload: {
+          kind: 'magnet',
+          uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc&dn=Test',
+        },
         selectedFiles: [],
         saveDir: '/d',
       },

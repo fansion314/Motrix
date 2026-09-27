@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=Motrix 2
+Name=Motrix
 GenericName=Download Manager
 Comment=Download HTTP, FTP, BitTorrent and Magnet links
 Exec=motrix %U

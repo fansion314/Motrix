@@ -1,3 +1,4 @@
+import { ChevronRightIcon, HelpIcon } from '@renderer/components/icons'
 import { Button } from '@renderer/components/ui/button'
 import {
   Collapsible,
@@ -16,7 +17,6 @@ import { useByteFormat } from '@renderer/hooks/use-byte-format'
 import { cn } from '@renderer/lib/utils'
 import { EXTERNAL_URLS } from '@shared/external-urls'
 import type { AddTaskFormValues } from '@shared/schemas/add-task'
-import { ChevronRight, CircleQuestionMark } from 'lucide-react'
 import { type ReactNode, useLayoutEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -40,11 +40,11 @@ export function AdvancedPanel() {
             type="button"
             variant="ghost"
             size="sm"
-            className="-ml-2 h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-transparent dark:hover:bg-transparent"
+            className="-ms-2 h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-transparent dark:hover:bg-transparent"
           />
         }
       >
-        <ChevronRight
+        <ChevronRightIcon
           className={cn(
             'h-3.5 w-3.5 transition-transform duration-150',
             open && 'rotate-90'
@@ -53,7 +53,7 @@ export function AdvancedPanel() {
         />
         {t('task.add.advanced')}
       </CollapsibleTrigger>
-      <CollapsibleContent className="mt-2 ml-1.5 space-y-2 border-l-2 border-border pl-3">
+      <CollapsibleContent className="mt-2 ms-1.5 space-y-2 border-s-2 border-border ps-3">
         {tab === 'links' ? <LinksAdvancedFields /> : <TorrentAdvancedFields />}
       </CollapsibleContent>
     </Collapsible>
@@ -112,7 +112,7 @@ function LinksAdvancedFields() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <CircleQuestionMark className="size-4 hover:text-foreground" />
+              <HelpIcon className="size-4 hover:text-foreground" />
             </a>
           </>
         }

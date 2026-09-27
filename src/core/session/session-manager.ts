@@ -9,6 +9,10 @@ import {
   safeObserve,
 } from '@core/plugin/post/delivery-observability'
 import type { PostDeliveryAdmissionSummary } from '@core/plugin/post/delivery-retention'
+import {
+  admitDownloadSources,
+  DownloadSourceError,
+} from '@core/task/source-admission'
 import { parseDirectReplayRecipe } from '@shared/schemas/direct-replay-recipe'
 import type { DownloadTask } from '@shared/types/task'
 import {
@@ -26,11 +30,11 @@ import {
 import type { TaskOccurrence } from '@shared/types/task-occurrence'
 import type { Aria2RpcClient } from '../engine/aria2/aria2-rpc-client'
 import {
+  classifyTerminalError,
   computeEta,
   derivePathsFromRaw,
   extractUris,
   translateBtExtension,
-  translateErrorCode,
   translateRawToTask,
   translateStatus,
 } from '../engine/aria2/translate'
@@ -63,6 +67,7 @@ import {
   type DirectResourceProxyOptionsProvider,
   DirectResourceValidatorService,
 } from '../task/direct-resource-validator'
+import { restoreMediaProgress } from '../task/media-task-progress'
 import { isTempPath } from '../task/paths'
 import { setTaskTransitionPhase } from '../task/task-instance'
 import type { TaskManager } from '../task/task-manager'
@@ -70,7 +75,10 @@ import { taskRowToDownloadTask } from '../task/task-row-to-download-task'
 import { restoreTaskSaveDirectory } from '../task/task-save-directory'
 import { isMagnetCleanupTombstoneHidden } from '../torrent/magnet-cleanup-quarantine'
 import { computeUriHash, deriveInfoHash } from './content-key'
-import { DirectRecoveryPlanner } from './direct-recovery-planner'
+import {
+  createEngineCheckpointProbe,
+  DirectRecoveryPlanner,
+} from './direct-recovery-planner'
 import type {
   MotrixDatabase,
   TaskInstanceRow,
@@ -264,10 +272,14 @@ export class SessionManager {
      * and non-media callers can omit it.
      */
     private mediaTmpRoot?: string,
+    // Checkpoints are probed through the engine, which alone knows whether it
+    // keeps them in control files or in aria2.db (issue #2187).
     private directRecoveryPlanner: Pick<
       DirectRecoveryPlanner,
       'plan'
-    > = new DirectRecoveryPlanner(),
+    > = new DirectRecoveryPlanner(undefined, undefined, () =>
+      createEngineCheckpointProbe(adapter)
+    ),
     private directResourceValidator: Pick<
       DirectResourceValidatorService,
       'verify'
@@ -1270,7 +1282,7 @@ export class SessionManager {
       {
         finishedAt: aria2.status === 'complete' ? now : null,
         errorMessage: aria2.errorMessage ?? null,
-        errorCode: translateErrorCode(aria2.errorCode),
+        ...classifyTerminalError(aria2.errorCode, aria2.errorMessage),
       },
       now
     )
@@ -1381,7 +1393,7 @@ export class SessionManager {
     )
     const retainedIdentity = newGid === primary?.gid
 
-    return {
+    return restoreMediaProgress({
       id: taskPart.motrixId,
       engineTaskId: newGid,
       name: taskPart.name,
@@ -1441,7 +1453,7 @@ export class SessionManager {
             }
           : inst
       ),
-    }
+    })
   }
 
   private async reAddOrMarkErrorFromPair(
@@ -1534,6 +1546,17 @@ export class SessionManager {
     }
 
     if (primary && primary.uris.length > 0) {
+      let admittedUris: string[]
+      try {
+        admittedUris = admitDownloadSources(primary.uris, 'recovery', [
+          'http',
+          'https',
+          'ftp',
+        ]).map((source) => source.requestUrl)
+      } catch (error) {
+        if (!(error instanceof DownloadSourceError)) throw error
+        return this.markRecoverErrorFromPair(pair, error.message)
+      }
       const recipe = parseDirectReplayRecipe(primary.payload)
       if (recipe?.replayability === 'requires-credentials') {
         return this.markRecoverErrorFromPair(
@@ -1605,7 +1628,7 @@ export class SessionManager {
           requestOptions &&
           canMirrorAria2MetadataHeaders(this.adapter.getFeatureReport?.())
             ? await this.directResourceValidator.verify(
-                primary.uris[0] as string,
+                admittedUris[0],
                 recipe.resourceValidator,
                 requestOptions
               )
@@ -1625,7 +1648,7 @@ export class SessionManager {
       return this.dispatchRecoveryCandidate(pair, (gid) => {
         assertProxyCurrent?.()
         return this.adapter.createDownload({
-          uris: primary.uris,
+          uris: admittedUris,
           gid,
           saveDir: plan.saveDir as string,
           filename: plan.filename as string,
@@ -1839,7 +1862,10 @@ export class SessionManager {
     }
 
     try {
-      const newGid = await this.rpc.addUri([magnetUri], {
+      const uris = admitDownloadSources([magnetUri], 'recovery', [
+        'magnet',
+      ]).map((source) => source.requestUrl)
+      const newGid = await this.rpc.addUri(uris, {
         'max-file-not-found': '0',
         'bt-load-saved-metadata': 'false',
         'bt-metadata-only': 'true',

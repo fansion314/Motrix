@@ -6,14 +6,9 @@ import {
 } from './app-settings'
 
 describe('appSettingsSchema', () => {
-  it('defaults appearance controls for existing settings and preserves valid choices', () => {
-    expect(appSettingsSchema.parse({})).toMatchObject({
-      uiScale: 100,
-      trayIconTheme: 'auto',
-    })
-    expect(
-      appSettingsSchema.parse({ uiScale: 137, trayIconTheme: 'light' })
-    ).toMatchObject({ uiScale: 137, trayIconTheme: 'light' })
+  it('defaults and preserves a valid desktop interface scale', () => {
+    expect(appSettingsSchema.parse({}).uiScale).toBe(100)
+    expect(appSettingsSchema.parse({ uiScale: 137 }).uiScale).toBe(137)
   })
 
   it.each([0, 74, 201, 125.5, '125', null])(
@@ -25,6 +20,89 @@ describe('appSettingsSchema', () => {
       ).toBe(false)
     }
   )
+
+  it('preserves system and explicit language preferences on load and write', () => {
+    for (const language of ['system', 'fr', 'en-US', 'zh-CN', 'zh-TW']) {
+      expect(appSettingsSchema.parse({ language }).language).toBe(language)
+      expect(
+        appSettingsInputSchema.partial().safeParse({ language }).success
+      ).toBe(true)
+    }
+    expect(
+      appSettingsInputSchema.partial().safeParse({ language: 'unknown' })
+        .success
+    ).toBe(false)
+    expect(DEFAULT_APP_SETTINGS.language).toBe('en-US')
+  })
+  it('preserves existing notification defaults, loads desktop choices, and rejects malformed writes', () => {
+    const defaults = {
+      notifyInAppOnComplete: true,
+      notifyInAppOnError: true,
+      notificationBadgeStyle: 'count',
+    }
+    expect(appSettingsSchema.parse({})).toMatchObject(defaults)
+    expect(
+      appSettingsSchema.parse({
+        notifyInAppOnComplete: 'false',
+        notifyInAppOnError: null,
+        notificationBadgeStyle: 'off',
+      })
+    ).toMatchObject(defaults)
+    for (const notificationBadgeStyle of ['count', 'dot', 'hidden']) {
+      const choices = {
+        notifyInAppOnComplete: false,
+        notifyInAppOnError: false,
+        notificationBadgeStyle,
+      }
+      expect(appSettingsSchema.parse(choices)).toMatchObject(choices)
+      expect(appSettingsInputSchema.partial().safeParse(choices).success).toBe(
+        true
+      )
+    }
+    for (const invalid of [
+      { notifyInAppOnComplete: 'false' },
+      { notifyInAppOnError: null },
+      { notificationBadgeStyle: 'off' },
+    ]) {
+      expect(appSettingsInputSchema.partial().safeParse(invalid).success).toBe(
+        false
+      )
+    }
+  })
+  it('defaults existing and invalid file deletion preferences to trash', () => {
+    expect(DEFAULT_APP_SETTINGS.fileDeletionMode).toBe('trash')
+    for (const fileDeletionMode of [undefined, null, 'delete', false]) {
+      expect(
+        appSettingsSchema.parse({ fileDeletionMode }).fileDeletionMode
+      ).toBe('trash')
+    }
+    for (const fileDeletionMode of ['trash', 'permanent']) {
+      expect(
+        appSettingsSchema.parse({ fileDeletionMode }).fileDeletionMode
+      ).toBe(fileDeletionMode)
+    }
+    expect(
+      appSettingsInputSchema.partial().safeParse({ fileDeletionMode: 'delete' })
+        .success
+    ).toBe(false)
+  })
+  it('defaults old or invalid tray colors to auto without resetting valid preferences', () => {
+    expect(DEFAULT_APP_SETTINGS.trayIconColor).toBe('auto')
+    for (const trayIconColor of [undefined, null, 'white', true]) {
+      expect(appSettingsSchema.parse({ trayIconColor }).trayIconColor).toBe(
+        'auto'
+      )
+    }
+    for (const trayIconColor of ['auto', 'light', 'dark']) {
+      expect(appSettingsSchema.parse({ trayIconColor }).trayIconColor).toBe(
+        trayIconColor
+      )
+    }
+    expect(
+      appSettingsInputSchema.partial().safeParse({ trayIconColor: 'white' })
+        .success
+    ).toBe(false)
+  })
   it('keeps selection timeout downloads opt-in with a 60 second default', () => {
     expect(DEFAULT_APP_SETTINGS.magnetFileSelectionAutoDownload).toBe(false)
     expect(DEFAULT_APP_SETTINGS.magnetFileSelectionTimeoutSeconds).toBe(60)

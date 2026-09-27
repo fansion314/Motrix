@@ -1,4 +1,5 @@
 import type { SelectionStore } from '@renderer/components/desktop-kit/selection/types'
+import { MoreIcon } from '@renderer/components/icons'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -17,14 +18,22 @@ import {
   DropdownMenuTrigger,
 } from '@renderer/components/ui/dropdown-menu'
 import { toast } from '@renderer/components/ui/toast'
+import {
+  menuActionEnabled,
+  subscribeMenuContext,
+} from '@renderer/features/application-menu/task-context'
 import { openAddTaskDialog } from '@renderer/lib/open-add-task-dialog'
 import { openMagnetFileSelection } from '@renderer/lib/open-magnet-file-selection'
 import { transport } from '@renderer/lib/transport'
+import { CommandIds } from '@shared/commands-catalog'
 import { Commands } from '@shared/protocol/commands'
 import type { DownloadTask } from '@shared/types/task'
 import { TaskStatus } from '@shared/types/task'
-import { canOpenTaskFile, canSelectTaskFiles } from '@shared/types/task-actions'
-import { Ellipsis } from 'lucide-react'
+import {
+  type BulkTaskCommandResult,
+  canOpenTaskFile,
+  canSelectTaskFiles,
+} from '@shared/types/task-actions'
 import {
   type ClipboardEvent,
   Fragment,
@@ -34,6 +43,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DownloadsToolbarButton } from './downloads-toolbar-button'
@@ -46,7 +56,40 @@ import {
   matchesTaskMenuShortcut,
   taskMenuShortcuts,
 } from './task-menu-shortcuts'
+import { useTaskInspectorState } from './use-task-inspector-state'
 import { useDownloadsView } from './view-preferences'
+
+function GlobalTransferMenuItems({
+  pending,
+  onAction,
+}: {
+  pending: boolean
+  onAction: (action: 'pause' | 'resume') => void
+}) {
+  const { t } = useTranslation()
+  const canPauseAll = useSyncExternalStore(subscribeMenuContext, () =>
+    menuActionEnabled(CommandIds.TaskPauseAll)
+  )
+  const canResumeAll = useSyncExternalStore(subscribeMenuContext, () =>
+    menuActionEnabled(CommandIds.TaskResumeAll)
+  )
+  return (
+    <>
+      <DropdownMenuItem
+        disabled={pending || !canPauseAll}
+        onClick={() => onAction('pause')}
+      >
+        {t('menu.task.pauseAllTask')}
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        disabled={pending || !canResumeAll}
+        onClick={() => onAction('resume')}
+      >
+        {t('menu.task.resumeAllTask')}
+      </DropdownMenuItem>
+    </>
+  )
+}
 
 export function TaskActionsMenu({
   tasks,
@@ -85,7 +128,7 @@ export function TaskActionsMenu({
     single?.status === TaskStatus.MetadataReady ||
     canChooseFiles ||
     actions.moveCount > 0
-  const inspectorVisible = useDownloadsView((state) => state.inspectorVisible)
+  const { open: inspectorVisible } = useTaskInspectorState(selection, tasks)
   const macOS =
     transport.platform === 'darwin' ||
     (transport.platform === 'web' && /Mac|iPhone|iPad/.test(navigator.platform))
@@ -119,6 +162,24 @@ export function TaskActionsMenu({
       await action()
       toast.add({ title: t('panel.downloads.action.copied'), type: 'success' })
     }, t('panel.downloads.action.copyFailed'))
+  }
+  const runAll = (action: 'pause' | 'resume') => {
+    const commandId =
+      action === 'pause' ? CommandIds.TaskPauseAll : CommandIds.TaskResumeAll
+    if (!menuActionEnabled(commandId)) return
+    void runAction(async () => {
+      const result = (await transport.invoke(
+        action === 'pause' ? Commands.PauseAllTasks : Commands.ResumeAllTasks
+      )) as BulkTaskCommandResult
+      if (result.failed.length)
+        toast.add({
+          title: t('panel.downloads.action.batchPartial', {
+            ok: result.succeeded.length,
+            failed: result.failed.length,
+          }),
+          type: 'warning',
+        })
+    }, t('applicationMenu.actionFailed'))
   }
   const prepare = () =>
     setTargetIds(new Set(selection.getState().committedSelectedIds))
@@ -155,17 +216,12 @@ export function TaskActionsMenu({
       ? 'inspector'
       : matchesTaskMenuShortcut(event, shortcuts.copyUrl)
         ? 'copy'
-        : matchesTaskMenuShortcut(event, shortcuts.remove)
+        : matchesTaskMenuShortcut(event, shortcuts.remove) ||
+            matchesTaskMenuShortcut(event, shortcuts.removeWithFiles)
           ? 'remove'
           : null
     if (!action || (action !== 'inspector' && selected.length === 0)) return
-    if (
-      action === 'inspector' &&
-      children &&
-      !selected.length &&
-      !inspectorVisible
-    )
-      return
+    if (action === 'inspector' && !selected.length && !inspectorVisible) return
     event.preventDefault()
     event.stopPropagation()
     if (event.repeat) return
@@ -176,7 +232,7 @@ export function TaskActionsMenu({
     } else if (action === 'copy') {
       copy(() => copyTaskUrls(selected))
     } else if (actions.removeCount > 0 && !actions.removeDialog.open) {
-      actions.onRemove()
+      actions.onRemove({ shift: event.shiftKey })
     }
     closeMenu()
   }
@@ -239,6 +295,8 @@ export function TaskActionsMenu({
               </DropdownMenuItem>
             )}
           <InspectorMenuItem
+            visible={inspectorVisible}
+            disabled={!inspectorVisible && selected.length === 0}
             onHide={onHideInspector}
             onShow={restoreSelection}
             shortcut={shortcuts.inspector}
@@ -335,6 +393,11 @@ export function TaskActionsMenu({
       ),
     },
     {
+      id: 'all-transfers',
+      visible: !children,
+      content: <GlobalTransferMenuItems pending={pending} onAction={runAll} />,
+    },
+    {
       id: 'copy',
       visible: selected.length > 0,
       content: (
@@ -410,7 +473,7 @@ export function TaskActionsMenu({
         <DropdownMenuItem
           variant="destructive"
           aria-keyshortcuts={shortcuts.remove.aria}
-          onClick={() => actions.onRemove()}
+          onClick={(event) => actions.onRemove({ shift: event.shiftKey })}
         >
           {t('panel.downloads.action.remove')}
           <DropdownMenuShortcut aria-hidden="true">
@@ -481,7 +544,7 @@ export function TaskActionsMenu({
           />
         }
       >
-        <Ellipsis className="size-4" />
+        <MoreIcon className="size-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         onKeyDownCapture={handleShortcut}

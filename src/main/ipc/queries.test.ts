@@ -291,6 +291,25 @@ describe('buildQueryHandlers', () => {
     expect(getSyncStatus).toHaveBeenCalledOnce()
   })
 
+  it('returns the committed locale separately from a saved system preference', async () => {
+    const settings = { app: { language: 'system' } }
+    let resolved = 'fr'
+    const handlers = buildQueryHandlers({
+      settingsManager: { get: () => settings },
+      getResolvedLanguage: () => resolved,
+    } as unknown as QueryContext)
+    await expect(handlers[Queries.GetSettings]?.()).resolves.toEqual({
+      ...settings,
+      resolvedLanguage: 'fr',
+    })
+    resolved = 'zh-CN'
+    await expect(handlers[Queries.GetSettings]?.()).resolves.toEqual({
+      ...settings,
+      resolvedLanguage: 'zh-CN',
+    })
+    expect(settings).toEqual({ app: { language: 'system' } })
+  })
+
   it('returns a map with all query channels', () => {
     const ctx = {
       taskManager: { getAll: vi.fn(), getById: vi.fn() },
@@ -705,7 +724,12 @@ describe('GetEngineDiagnostics handler', () => {
       managedPid: null,
       featureReport: null,
       binary: { name: 'aria2c', available: true, version: '1.37.0' },
-      rpc: { port: 16800, available: false, expectedListener: false },
+      rpc: {
+        port: 16800,
+        available: false,
+        expectedListener: false,
+        connection: { transport: 'websocket', connected: false },
+      },
       process: null,
       defaultRpc: {
         port: 16800,

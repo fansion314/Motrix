@@ -1,11 +1,12 @@
 import { ResizeHandle } from '@renderer/components/desktop-kit/resize-handle'
+import { ChevronDownIcon, ChevronUpIcon } from '@renderer/components/icons'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuTrigger,
 } from '@renderer/components/ui/context-menu'
+import { useDirection } from '@renderer/components/ui/direction'
 import { cn } from '@renderer/lib/utils'
-import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -15,7 +16,12 @@ import {
   taskGridStyle,
 } from './columns'
 import { ColumnVisibilityItems } from './list-view-menu'
-import { nextTaskSort, type TaskSort, type TaskSortColumn } from './sort'
+import {
+  DEFAULT_TASK_SORT,
+  nextTaskSort,
+  type TaskSort,
+  type TaskSortColumn,
+} from './sort'
 import { useDownloadsView } from './view-preferences'
 
 export interface TaskColumnHeaderProps {
@@ -30,9 +36,11 @@ export function TaskColumnHeader({
   columns = defaultTaskColumns(),
 }: TaskColumnHeaderProps) {
   const { t } = useTranslation()
+  const direction = useDirection()
   const setWidth = useDownloadsView((state) => state.setColumnWidth)
   const moveColumn = useDownloadsView((state) => state.moveColumn)
   const dragging = useRef<TaskSortColumn | null>(null)
+  const effectiveSort = sort ?? DEFAULT_TASK_SORT
   return (
     <ContextMenu>
       <ContextMenuTrigger
@@ -49,14 +57,19 @@ export function TaskColumnHeader({
       >
         {columns.map((column, index) => {
           const id = column.id
-          const active = sort?.column === id
-          const label = t(`panel.downloads.column.${id}`)
-          const accessibleLabel =
-            id === 'down' || id === 'up'
-              ? t(`panel.downloads.sort.${id}`)
-              : label
-          const next = nextTaskSort(sort, id)
-          const SortIcon = sort?.direction === 'asc' ? ChevronUp : ChevronDown
+          const active = effectiveSort.column === id
+          const speedColumn = id === 'down' || id === 'up'
+          const label = t(
+            speedColumn
+              ? `panel.downloads.columnHeader.${id}`
+              : `panel.downloads.column.${id}`
+          )
+          const accessibleLabel = speedColumn
+            ? t(`panel.downloads.sort.${id}`)
+            : label
+          const next = nextTaskSort(effectiveSort, id)
+          const SortIcon =
+            effectiveSort.direction === 'asc' ? ChevronUpIcon : ChevronDownIcon
           return (
             // biome-ignore lint/a11y/useSemanticElements: Column headers belong to the virtual ARIA grid.
             <div
@@ -66,7 +79,7 @@ export function TaskColumnHeader({
               aria-colindex={index + 1}
               aria-sort={
                 active
-                  ? sort.direction === 'asc'
+                  ? effectiveSort.direction === 'asc'
                     ? 'ascending'
                     : 'descending'
                   : undefined
@@ -87,7 +100,7 @@ export function TaskColumnHeader({
                 aria-pressed={active}
                 aria-label={
                   active
-                    ? t(`panel.downloads.sort.${sort.direction}`, {
+                    ? t(`panel.downloads.sort.${effectiveSort.direction}`, {
                         column: accessibleLabel,
                       })
                     : accessibleLabel
@@ -97,8 +110,8 @@ export function TaskColumnHeader({
                   { column: accessibleLabel }
                 )}
                 className={cn(
-                  'flex h-7 w-full min-w-0 cursor-default items-center gap-1 rounded-sm px-2 text-left outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
-                  active && 'text-foreground'
+                  'flex h-7 w-full min-w-0 cursor-default items-center gap-1 rounded-sm px-2 text-start outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
+                  active && 'font-semibold text-foreground'
                 )}
                 onClick={() => onSort(id)}
                 onDragStart={(event) => {
@@ -118,10 +131,12 @@ export function TaskColumnHeader({
                   )
                     return
                   event.preventDefault()
-                  const neighbor =
-                    columns[index + (event.key === 'ArrowLeft' ? -1 : 1)]
+                  const towardStart =
+                    event.key ===
+                    (direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft')
+                  const neighbor = columns[index + (towardStart ? -1 : 1)]
                   if (!neighbor) return
-                  if (event.key === 'ArrowLeft') moveColumn(id, neighbor.id)
+                  if (towardStart) moveColumn(id, neighbor.id)
                   else moveColumn(neighbor.id, id)
                 }}
                 onMouseDownCapture={(event) => event.stopPropagation()}
@@ -130,7 +145,7 @@ export function TaskColumnHeader({
                 {active && (
                   <SortIcon
                     aria-hidden="true"
-                    className="ml-auto size-3 shrink-0"
+                    className="ms-auto size-3 shrink-0"
                   />
                 )}
               </button>
@@ -139,10 +154,11 @@ export function TaskColumnHeader({
                   column: accessibleLabel,
                 })}
                 orientation="vertical"
+                reverse={direction === 'rtl'}
                 value={column.width}
                 min={TASK_COLUMNS[id].min}
                 max={TASK_COLUMNS[id].max}
-                className="absolute -right-1 top-0 z-10 h-7 w-2 cursor-col-resize touch-none border-r border-border/50 outline-none focus-visible:bg-ring/30"
+                className="absolute -end-1 top-1 z-10 h-5 w-2 cursor-col-resize touch-none border-e border-border/50 outline-none focus-visible:bg-ring/30"
                 onChange={(width) => setWidth(id, width, false)}
                 onCommit={(width) => setWidth(id, width)}
               />

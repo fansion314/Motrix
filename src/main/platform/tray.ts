@@ -89,13 +89,13 @@ export function setupTray(deps: TrayDeps): TrayHandle {
     const nextIconProvider = createIconProvider(
       svgPath,
       trayAssetDir,
-      () => settingsManager.getApp().trayIconTheme
+      () => settingsManager.getApp().trayIconColor
     )
     await nextIconProvider.init()
     if (isDisposed) return
     iconProvider = nextIconProvider
 
-    const icon = iconProvider.getIcon(false)
+    const icon = iconProvider.getIcon(isActive)
     tray =
       process.platform === 'darwin'
         ? new Tray(icon, MACOS_TRAY_GUID)
@@ -213,7 +213,7 @@ export function setupTray(deps: TrayDeps): TrayHandle {
 
   // ─── EventBus Listeners ─────────────────────────────────
 
-  async function onNativeThemeUpdated() {
+  async function refreshTrayIcon() {
     const currentTray = tray
     const currentProvider = iconProvider
     if (!currentTray || !currentProvider) return
@@ -224,8 +224,13 @@ export function setupTray(deps: TrayDeps): TrayHandle {
       if (tray !== currentTray || iconProvider !== currentProvider) return
       currentTray.setImage(currentProvider.getIcon(isActive))
     } catch (err) {
-      log.error({ err }, 'tray theme refresh failed')
+      log.error({ err }, 'tray icon refresh failed')
     }
+  }
+
+  async function onNativeThemeUpdated() {
+    if (settingsManager.getApp().trayIconColor !== 'auto') return
+    await refreshTrayIcon()
   }
 
   function onSettingsChanged(payload: unknown) {
@@ -271,16 +276,18 @@ export function setupTray(deps: TrayDeps): TrayHandle {
       )
     }
 
-    // Refresh a manual Linux icon preference without recreating the tray.
     if (
       process.platform === 'linux' &&
-      oldSettings.app.trayIconTheme !== updated.app.trayIconTheme
+      oldSettings.app.trayIconColor !== updated.app.trayIconColor
     ) {
-      void onNativeThemeUpdated()
+      void refreshTrayIcon()
     }
 
-    // Speedometer toggled
-    if (oldSettings.app.traySpeedometer !== updated.app.traySpeedometer) {
+    // Only macOS renders a speedometer in place of the static icon.
+    if (
+      process.platform === 'darwin' &&
+      oldSettings.app.traySpeedometer !== updated.app.traySpeedometer
+    ) {
       speedometer?.setEnabled(updated.app.traySpeedometer)
       if (!updated.app.traySpeedometer && tray && iconProvider) {
         // Revert to static icon
@@ -291,7 +298,9 @@ export function setupTray(deps: TrayDeps): TrayHandle {
 
   function onEngineActiveChanged(active: unknown) {
     isActive = active as boolean
-    if (tray && iconProvider && !settingsManager.getApp().traySpeedometer) {
+    const usesSpeedometer =
+      process.platform === 'darwin' && settingsManager.getApp().traySpeedometer
+    if (tray && iconProvider && !usesSpeedometer) {
       tray.setImage(iconProvider.getIcon(isActive))
     }
   }

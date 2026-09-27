@@ -27,6 +27,7 @@ Release 包含完整的 PKGBUILD 和 `.SRCINFO`，二进制包配方固定 ASAR 
 两种包均安装 `/usr/bin/motrix`、`/usr/bin/motrix2`、桌面入口及 `/usr/lib/motrix2/`，
 互相冲突，也与其他原生 Motrix 包冲突，并沿用现有 Motrix 用户数据。
 更新由 pacman/AUR 管理，应用不会使用捆绑运行时的自动更新流程。
+包名仍为 `motrix2` 和 `motrix2-bin`，桌面入口显示为 **Motrix**。
 
 ## 外观设置
 

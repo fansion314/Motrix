@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import '@renderer/lib/i18n'
+import { DirectionProvider } from '@renderer/components/ui/direction'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
@@ -18,19 +19,34 @@ describe('TaskColumnHeader', () => {
       <TaskColumnHeader sort={null} onSort={() => {}} />
     )
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
-    expect(container.querySelector('button svg')).toBeNull()
+    expect(container.querySelectorAll('button svg')).toHaveLength(1)
+    const created = screen.getByRole('button', {
+      name: 'Date created: descending',
+    })
+    expect(created).toHaveAttribute('aria-pressed', 'true')
+    expect(created).toHaveAttribute('title', 'Sort Date created ascending')
+    expect(
+      screen.getByRole('columnheader', { name: /Date created/ })
+    ).toHaveAttribute('aria-sort', 'descending')
+    const download = screen.getByRole('button', { name: 'Download speed' })
+    expect(download).toHaveTextContent(/^Download$/)
+    expect(download).toHaveAttribute('title', 'Sort Download speed descending')
     await user.hover(screen.getByRole('button', { name: 'Name' }))
-    expect(container.querySelector('button svg')).toBeNull()
+    expect(container.querySelectorAll('button svg')).toHaveLength(1)
     rerender(
       <TaskColumnHeader
-        sort={{ column: 'createdAt', direction: 'desc' }}
+        sort={{ column: 'name', direction: 'asc' }}
         onSort={() => {}}
       />
     )
     expect(container.querySelectorAll('button svg')).toHaveLength(1)
+    expect(screen.getByRole('columnheader', { name: /Name/ })).toHaveAttribute(
+      'aria-sort',
+      'ascending'
+    )
     expect(
       screen.getByRole('columnheader', { name: /Date created/ })
-    ).toHaveAttribute('aria-sort', 'descending')
+    ).not.toHaveAttribute('aria-sort')
   })
 
   it('reverses sorting repeatedly by keyboard without reaching the list handler', async () => {
@@ -68,7 +84,7 @@ describe('TaskColumnHeader', () => {
       screen.getByRole('separator', { name: 'Resize Name column' }),
       { key: 'ArrowRight' }
     )
-    expect(useDownloadsView.getState().columns[0].width).toBe(256)
+    expect(useDownloadsView.getState().columns[0].width).toBe(216)
     fireEvent.keyDown(screen.getByRole('button', { name: 'Name' }), {
       key: 'ArrowRight',
       shiftKey: true,
@@ -83,6 +99,30 @@ describe('TaskColumnHeader', () => {
     expect(onSort).not.toHaveBeenCalled()
   })
 
+  it('resizes and reorders RTL columns toward their visual neighbor', () => {
+    render(
+      <DirectionProvider direction="rtl">
+        <TaskColumnHeader sort={null} onSort={() => {}} />
+      </DirectionProvider>
+    )
+    fireEvent.keyDown(
+      screen.getByRole('separator', { name: 'Resize Name column' }),
+      { key: 'ArrowLeft' }
+    )
+    expect(useDownloadsView.getState().columns[0].width).toBe(216)
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Name' }), {
+      key: 'ArrowLeft',
+      shiftKey: true,
+      altKey: true,
+    })
+    expect(
+      useDownloadsView
+        .getState()
+        .columns.slice(0, 2)
+        .map((column) => column.id)
+    ).toEqual(['size', 'name'])
+  })
+
   it('opens the shadcn context menu to choose columns', async () => {
     render(<TaskColumnHeader sort={null} onSort={() => {}} />)
     fireEvent.contextMenu(screen.getByRole('button', { name: 'Name' }))
@@ -90,10 +130,11 @@ describe('TaskColumnHeader', () => {
       await screen.findByRole('menuitemcheckbox', { name: 'Name' })
     ).toHaveAttribute('aria-disabled', 'true')
     const eta = screen.getByRole('menuitemcheckbox', { name: 'ETA' })
+    expect(eta).toHaveAttribute('aria-checked', 'true')
     fireEvent.click(eta)
     expect(
       useDownloadsView.getState().columns.find((column) => column.id === 'eta')
         ?.visible
-    ).toBe(true)
+    ).toBe(false)
   })
 })

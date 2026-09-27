@@ -32,6 +32,8 @@ Both packages install `/usr/bin/motrix` and `/usr/bin/motrix2`, a desktop entry,
 and `/usr/lib/motrix2/`. They conflict with each other and other native Motrix
 packages, and retain Motrix's existing user data. Updates are managed through
 pacman/AUR, not the application's bundled-runtime updater.
+The package names stay `motrix2` and `motrix2-bin`; the desktop entry displays
+**Motrix**.
 
 ## Appearance
 

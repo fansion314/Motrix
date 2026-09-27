@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { newEngineTaskId } from '@core/lib/ids'
 import type { AppliedDownloadProxyPolicyReader } from '@core/proxy/applied-download-proxy-policy'
+import { admitDownloadSources } from '@core/task/source-admission'
 import { AppError, ErrorCode } from '@shared/errors'
 import { parseDirectReplayRecipe } from '@shared/schemas/direct-replay-recipe'
 import type { DownloadTask } from '@shared/types/task'
@@ -21,7 +22,10 @@ import type {
   EngineAdapter,
 } from '../../engine/engine-adapter'
 import type { Logger } from '../../logger'
-import { DirectRecoveryPlanner } from '../../session/direct-recovery-planner'
+import {
+  createEngineCheckpointProbe,
+  DirectRecoveryPlanner,
+} from '../../session/direct-recovery-planner'
 import { applyTerminalTransition } from '../apply-terminal-transition'
 import {
   buildBtDirectOutputPaths,
@@ -198,7 +202,6 @@ async function reAddBt(
   })
 }
 
-const directRecoveryPlanner = new DirectRecoveryPlanner()
 const directResourceValidator = new DirectResourceValidatorService()
 
 async function buildDirectReAddParams(
@@ -219,9 +222,18 @@ async function buildDirectReAddParams(
       `Task ${task.id} cannot be retried: its direct replay recipe is unavailable`
     )
   }
+  const sources = admitDownloadSources(primary.uris, 'recovery', [
+    'http',
+    'https',
+    'ftp',
+  ])
   const requestOptions = getProxyOptions()
 
-  const plan = await directRecoveryPlanner.plan({
+  // Ask the engine: only it knows whether the checkpoint lives in a control
+  // file or in aria2.db (issue #2187).
+  const plan = await new DirectRecoveryPlanner(undefined, undefined, () =>
+    createEngineCheckpointProbe(adapter)
+  ).plan({
     primary,
     finalPath: task.finalPath,
   })
@@ -274,7 +286,7 @@ async function buildDirectReAddParams(
       )
     }
     const validation = await resourceValidator.verify(
-      primary.uris[0] as string,
+      sources[0].requestUrl,
       recipe.resourceValidator,
       requestOptions
     )
@@ -289,7 +301,7 @@ async function buildDirectReAddParams(
   }
 
   return {
-    uris: primary.uris,
+    uris: sources.map((source) => source.requestUrl),
     saveDir: plan.saveDir,
     filename: plan.filename,
     connections: recipe.connections,

@@ -2,8 +2,8 @@ import { PanelShell } from '@renderer/components/desktop-kit/panel/panel-shell'
 import { Button } from '@renderer/components/ui/button'
 import { Skeleton } from '@renderer/components/ui/skeleton'
 import { useTaskList } from '@renderer/hooks/use-task-list'
+import { isTaskAvailable, resolveTaskRoute } from '@shared/lib/task-navigation'
 import type { TaskType } from '@shared/types/task'
-import { TaskStatus } from '@shared/types/task'
 import {
   useCallback,
   useEffect,
@@ -57,14 +57,14 @@ function TaskListSkeleton() {
     >
       <div className="flex h-9 shrink-0 items-center gap-6 border-b border-border px-3">
         <Skeleton className="h-3 w-1/3" />
-        <Skeleton className="ml-auto h-3 w-16" />
+        <Skeleton className="ms-auto h-3 w-16" />
       </div>
       <div className="flex flex-col gap-4 px-3 py-4">
         {SKELETON_ROW_IDS.map((id) => (
           <div key={id} className="flex h-8 items-center gap-3">
             <Skeleton className="size-4 rounded" />
             <Skeleton className="h-3 w-2/5" />
-            <Skeleton className="ml-auto h-3 w-20" />
+            <Skeleton className="ms-auto h-3 w-20" />
           </div>
         ))}
       </div>
@@ -236,10 +236,12 @@ export function DownloadsPage() {
     }
 
     const target = tasks.find(
-      (task) => task.id === taskParam && task.status !== TaskStatus.Removed
+      (task) => task.id === taskParam && isTaskAvailable(task.status)
     )
     if (!target) {
       consumedDeepLinks.current.add(deepLinkSignature)
+      useDownloadsView.getState().setInspectorVisible(false)
+      navigate(resolveTaskRoute(taskParam, undefined), { replace: true })
       return
     }
 
@@ -284,7 +286,7 @@ export function DownloadsPage() {
 
   const [container, setContainer] = useState<HTMLElement | null>(null)
   const taskList =
-    status === 'loading' ? (
+    status === 'loading' && !hasReadySnapshot ? (
       <TaskListSkeleton />
     ) : status === 'error' && !hasReadySnapshot ? (
       <TaskListUnavailable onRetry={() => void retry()} />
@@ -328,6 +330,7 @@ export function DownloadsPage() {
             />
           }
           actionsPosition="end"
+          actionsDraggable
           headerClassName="compact-header:py-1"
           actionsClassName="min-w-0 flex-1"
           footer={<GlobalStatsBar />}

@@ -1,4 +1,5 @@
 import { CopyButton } from '@renderer/components/desktop-kit/copy-button'
+import { ResetIcon, StatusErrorIcon } from '@renderer/components/icons'
 import {
   Alert,
   AlertAction,
@@ -18,8 +19,16 @@ import { formatDurationHMS, formatProgressPercent } from '@renderer/lib/format'
 import type { DownloadTask } from '@shared/types/task'
 import { TaskStatus, TaskType } from '@shared/types/task'
 import { canAttemptRetry } from '@shared/types/task-actions'
-import { AlertCircleIcon, RotateCcw } from 'lucide-react'
+import {
+  getDownloadProgress,
+  getOutputSize,
+  getTransferMetrics,
+  isMediaTask,
+  mediaProgressPercent,
+} from '@shared/utils/media-progress'
 import { useTranslation } from 'react-i18next'
+import { StatusPill } from '../status-pill'
+import { getTaskEta, getTaskSpeed } from '../task-column-values'
 import { TaskTimestamp } from '../task-timestamp'
 import { SeedingDuration } from './seeding-duration'
 import { useTaskActions } from './use-task-actions'
@@ -54,7 +63,7 @@ function Row({
     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
       <span className="text-muted-foreground">{label}</span>
       {typeof value === 'string' || typeof value === 'number' ? (
-        <span className="tabular-nums">{value}</span>
+        <bdi className="tabular-nums">{value}</bdi>
       ) : (
         value
       )}
@@ -79,7 +88,7 @@ function ErrorPanel({ task }: { task: DownloadTask }) {
   return (
     <div className="flex flex-col gap-2">
       <Alert variant="destructive" className="items-start">
-        <AlertCircleIcon />
+        <StatusErrorIcon />
         <AlertTitle>{failure.reason}</AlertTitle>
         {(failure.hint || failure.technicalDetail) && (
           <AlertDescription className="min-w-0">
@@ -99,7 +108,7 @@ function ErrorPanel({ task }: { task: DownloadTask }) {
               className="self-start"
               onClick={() => void onRetry()}
             >
-              <RotateCcw data-icon="inline-start" />
+              <ResetIcon data-icon="inline-start" />
               {t('panel.downloads.action.retry')}
             </Button>
           </AlertAction>
@@ -119,6 +128,13 @@ export function OverviewTab({
   const { formatSpeed, formatBytes } = useByteFormat()
 
   const { t, i18n } = useTranslation()
+  const media = isMediaTask(task)
+  const progress = getDownloadProgress(task)
+  const outputSize = getOutputSize(task)
+  const transfer = getTransferMetrics(task)
+  const eta = getTaskEta(task)
+  const muxProgress = task.mediaProgress?.muxProgress ?? null
+  const downSpeed = getTaskSpeed(task, 'downloadSpeed')
   const isBt = task.type === TaskType.Bt || task.type === TaskType.Magnet
   return (
     <div className="flex flex-col gap-3">
@@ -126,22 +142,16 @@ export function OverviewTab({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card title={t('panel.downloads.inspector.overview.transfer')}>
           <Row
-            label={t('panel.downloads.inspector.overview.downSpeed')}
-            value={formatSpeed(task.downloadSpeed)}
-          />
-          <Row
             label={t('panel.downloads.inspector.overview.upSpeed')}
-            value={formatSpeed(task.uploadSpeed)}
+            value={media ? '—' : formatSpeed(task.uploadSpeed)}
           />
           <Row
-            label={t('panel.downloads.inspector.overview.eta')}
-            value={formatDurationHMS(task.etaSeconds)}
-          />
-        </Card>
-        <Card title={t('panel.downloads.inspector.overview.progress')}>
-          <Row
-            label={t('panel.downloads.inspector.overview.downloaded')}
-            value={formatBytes(task.downloadedBytes)}
+            label={t('panel.downloads.inspector.overview.downSpeed')}
+            value={
+              media && downSpeed === null
+                ? '—'
+                : formatSpeed(task.downloadSpeed)
+            }
           />
           {isBt && (
             <Row
@@ -149,6 +159,77 @@ export function OverviewTab({
               value={formatBytes(task.uploadedBytes)}
             />
           )}
+          <Row
+            label={t('panel.downloads.inspector.overview.downloaded')}
+            value={formatBytes(task.downloadedBytes)}
+          />
+        </Card>
+        <Card title={t('panel.downloads.inspector.overview.progress')}>
+          {media && (
+            <>
+              <Row
+                label={t('panel.downloads.media.stage')}
+                value={<StatusPill status={task.status} task={task} />}
+              />
+              {task.mediaProgress?.phase === 'muxing' && (
+                <Row
+                  label={t('panel.downloads.media.muxProgress')}
+                  value={
+                    muxProgress === null
+                      ? '—'
+                      : `${mediaProgressPercent(muxProgress)}%`
+                  }
+                />
+              )}
+              <Row
+                label={t('panel.downloads.media.parts')}
+                value={
+                  task.mediaProgress
+                    ? t('panel.downloads.media.partsFormat', {
+                        completed: task.mediaProgress.download.completedParts,
+                        total: task.mediaProgress.download.totalParts,
+                      })
+                    : '—'
+                }
+              />
+              <Row
+                label={t('panel.downloads.media.downloadSize')}
+                value={
+                  transfer.bytesTotal === null
+                    ? '—'
+                    : formatBytes(transfer.bytesTotal)
+                }
+              />
+            </>
+          )}
+          <Row
+            label={t(
+              media
+                ? 'panel.downloads.media.outputSize'
+                : 'panel.downloads.inspector.overview.totalSize'
+            )}
+            value={outputSize === null ? '—' : formatBytes(outputSize)}
+          />
+          <Row
+            label={t(
+              media
+                ? 'panel.downloads.media.downloadProgress'
+                : 'panel.downloads.inspector.overview.percent'
+            )}
+            value={
+              progress === null
+                ? '—'
+                : `${media ? mediaProgressPercent(progress) : formatProgressPercent(progress)}%`
+            }
+          />
+          <Row
+            label={t(
+              media
+                ? 'panel.downloads.media.downloadEta'
+                : 'panel.downloads.inspector.overview.eta'
+            )}
+            value={eta === null ? '—' : formatDurationHMS(eta)}
+          />
           {isBt && (
             <Row
               label={t('panel.downloads.inspector.overview.seedingTime')}
@@ -160,14 +241,6 @@ export function OverviewTab({
               }
             />
           )}
-          <Row
-            label={t('panel.downloads.inspector.overview.totalSize')}
-            value={formatBytes(task.sizeWhenDone)}
-          />
-          <Row
-            label={t('panel.downloads.inspector.overview.percent')}
-            value={`${formatProgressPercent(task.progress)}%`}
-          />
         </Card>
         <Card title={t('panel.downloads.inspector.overview.network')}>
           {isBt && task.bt ? (
@@ -186,6 +259,10 @@ export function OverviewTab({
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 }).format(task.bt.ratio)}
+              />
+              <Row
+                label={t('panel.downloads.inspector.overview.private')}
+                value={task.bt.isPrivate ? '✓' : '—'}
               />
             </>
           ) : (
@@ -207,7 +284,7 @@ export function OverviewTab({
                 <div className="flex items-center gap-2">
                   <Tooltip>
                     <TooltipTrigger render={<span className="tabular-nums" />}>
-                      {`${task.infoHash.slice(0, 4)}…${task.infoHash.slice(-4)}`}
+                      {`${task.infoHash.slice(0, 6)}...${task.infoHash.slice(-6)}`}
                     </TooltipTrigger>
                     <TooltipContent side="left">{task.infoHash}</TooltipContent>
                   </Tooltip>
@@ -219,12 +296,6 @@ export function OverviewTab({
                   />
                 </div>
               }
-            />
-          )}
-          {isBt && task.bt && (
-            <Row
-              label={t('panel.downloads.inspector.overview.private')}
-              value={task.bt.isPrivate ? '✓' : '—'}
             />
           )}
           <Row

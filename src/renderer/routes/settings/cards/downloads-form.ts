@@ -1,40 +1,21 @@
 import { settingsValidationError } from '@renderer/lib/settings-validation'
 import { DEFAULT_ENGINE_SETTINGS } from '@shared/schemas'
-import { engineSettingsInputSchema } from '@shared/schemas/engine-settings'
-import {
-  DEFAULT_SPEED_LIMIT_SETTINGS,
-  speedLimitSettingsInputSchema,
-} from '@shared/schemas/speed-limit'
+import { DEFAULT_APP_SETTINGS } from '@shared/schemas/app-settings'
+import { downloadsSettingsSchema } from '@shared/schemas/downloads-settings'
+import { DEFAULT_SPEED_LIMIT_SETTINGS } from '@shared/schemas/speed-limit'
 import type { TFunction } from 'i18next'
 import { z } from 'zod'
 
 // ─── Form shape ────────────────────────────────────────────────────────────────
-// The form combines the engine settings subset with the full speedLimit
-// namespace. On submit, pickDirty recurses the dirty-fields tree and returns
-// only changed keys at every level, so { engine: {...}, speedLimit: {...} } is
-// built correctly. UpdateSettings deep-merges each top-level namespace, so a
-// partial speedLimit patch (only the changed sub-fields) is safe.
+// On submit, pickDirty returns only changed keys across app, engine, and
+// speedLimit. SaveDownloadsSettings commits these with directory edits.
 
-export const downloadsFormSchema = z.object({
-  engine: engineSettingsInputSchema.pick({
-    performanceProfile: true,
-    maxConcurrentDownloads: true,
-    maxConnectionPerServer: true,
-    split: true,
-    minSplitSize: true,
-    userAgent: true,
-    connectTimeout: true,
-    socketTimeout: true,
-    maxTries: true,
-    retryWait: true,
-    lowestSpeedLimit: true,
-    fileAllocation: true,
-    remoteTime: true,
-    diskCache: true,
-    sessionSaveInterval: true,
-    magnetResolveTimeout: true,
+export const downloadsFormSchema = downloadsSettingsSchema.extend({
+  app: downloadsSettingsSchema.shape.app.extend({
+    defaultSaveDir: z.string().refine((value) => value.trim().length > 0, {
+      message: 'settings.validation.directory',
+    }),
   }),
-  speedLimit: speedLimitSettingsInputSchema,
 })
 
 export type DownloadsFields = z.infer<typeof downloadsFormSchema>
@@ -67,11 +48,14 @@ export const ENGINE_DEFAULTS: EngineFields = {
   fileAllocation: DEFAULT_ENGINE_SETTINGS.fileAllocation,
   remoteTime: DEFAULT_ENGINE_SETTINGS.remoteTime,
   diskCache: DEFAULT_ENGINE_SETTINGS.diskCache,
-  sessionSaveInterval: DEFAULT_ENGINE_SETTINGS.sessionSaveInterval,
-  magnetResolveTimeout: DEFAULT_ENGINE_SETTINGS.magnetResolveTimeout,
 }
 
 export const DOWNLOADS_DEFAULTS: DownloadsFields = {
+  app: {
+    defaultSaveDir: DEFAULT_APP_SETTINGS.defaultSaveDir,
+    autofillClipboardLinks: DEFAULT_APP_SETTINGS.autofillClipboardLinks,
+    fileDeletionMode: DEFAULT_APP_SETTINGS.fileDeletionMode,
+  },
   engine: ENGINE_DEFAULTS,
   // Source of truth: src/shared/schemas/speed-limit.ts (DEFAULT_SPEED_LIMIT_SETTINGS).
   speedLimit: DEFAULT_SPEED_LIMIT_SETTINGS,

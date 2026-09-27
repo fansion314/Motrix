@@ -92,11 +92,13 @@ const nativeMessagingLog = getLogger('native-messaging')
  * `${manifest.id}.resolve` — the resolve-command marker.
  *
  * Keying off this marker (not the `site-resolver` category alone) is the
- * load-bearing distinction learned in A1: motrix.scraper-hook is also a
- * `site-resolver` whose hostPermissions match all URLs, yet it has NO resolve
- * command (it works via the `beforeCreate` hook, not the mux command seam).
- * Deriving seam membership from the category alone would let it collapse
- * routing to match-everything and send every download through a resolver VM.
+ * load-bearing distinction learned in A1: a plugin can be a `site-resolver`
+ * whose hostPermissions match all URLs and still have NO resolve command —
+ * motrix.scraper-hook (since retired from the built-in set) was exactly that,
+ * working through the `beforeCreate` hook rather than the mux command seam.
+ * Deriving seam membership from the category alone would let such a plugin
+ * collapse routing to match-everything and send every download through a
+ * resolver VM.
  */
 function contributesResolveCommand(manifest: PluginManifest): boolean {
   const commands = manifest.contributes?.commands ?? []
@@ -240,7 +242,7 @@ export interface BridgeRuntime {
    * The shared MuxPipeline used by BridgeReceiver. Exposed read-only so the
    * desktop Add-Task path can reuse the SAME coordinator instance — never
    * construct a second one (that would reintroduce the SP-1 phantom-task bug).
-   * Undefined when ffmpeg is unavailable.
+   * Undefined when this runtime has no media pipeline.
    */
   muxPipeline:
     | import('@core/bridge-receiver/pipelines/mux-pipeline').MuxPipeline
@@ -401,7 +403,7 @@ export async function syncNativeMessagingManifests(args: {
 export async function bootstrapBridge(args: {
   getMainWindow: () => Electron.BrowserWindow | null
   motrixVersion: string
-  ffmpegAvailable: boolean
+  ffmpegAvailable: boolean | (() => Promise<boolean>)
   enabled: boolean
   // new — required for ③. `off` is needed so the SSE stream source can
   // unsubscribe on shutdown (else listeners leak dead server instances across
@@ -430,8 +432,8 @@ export async function bootstrapBridge(args: {
   readHandlerDeps: ReadHandlerDeps
   // Spec 4 — v1 WRITE methods (pause/resume/remove/add).
   writeHandlerDeps: WriteHandlerDeps
-  // T14/T15 media pipeline deps. Threaded here so T15 can inject real values.
-  // Until T15 wires them, ffmpegBinaryPath=null disables the media pipeline.
+  // A live resolver keeps the media pipeline available when FFmpeg is
+  // configured after startup. Shells without media support omit it.
   ffmpegBinaryPath: string | null
   /** Re-resolves the current executable immediately before each mux. */
   resolveFfmpegBinaryPath?: BridgeReceiverDeps['resolveFfmpegBinaryPath']
@@ -439,6 +441,7 @@ export async function bootstrapBridge(args: {
    *  threaded through BridgeReceiver into the MediaTaskCoordinator. */
   publishTaskUpdate: () => void
   publishTaskUpdateNow: () => void
+  mediaMetaStore: BridgeReceiverDeps['mediaMetaStore']
   taskManager: BridgeReceiverDeps['taskManager']
   segmentAria2: BridgeReceiverDeps['segmentAria2']
   tmpRoot: string
@@ -592,6 +595,7 @@ export async function bootstrapBridge(args: {
       args.pluginHost
     )
     const receiver = new BridgeReceiver({
+      mediaMetaStore: args.mediaMetaStore,
       getDefaultSaveDir: args.getDefaultSaveDir,
       pickName: (saveDir, desired) =>
         args.finalNamePicker.pick(saveDir, desired),

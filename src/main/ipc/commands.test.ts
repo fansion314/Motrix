@@ -16,6 +16,7 @@ import {
   TaskType,
   TransitionPhase,
 } from '@shared/types/task'
+import { makeMediaMetaStoreStub } from '@test-utils/media-meta-store'
 import { makeDownloadTask } from '@test-utils/task'
 import { directTaskUpdatePublication } from '@test-utils/task-update'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -141,6 +142,10 @@ function fakeCtx() {
       ),
     },
     settingsManager: {
+      mutateDirectoryPreferences: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { favorites: [], recent: [] },
+      }),
       getApp: () => ({ defaultSaveDir: '/tmp', magnetFileSelection: true }),
       getEngine: () => ({ maxConnectionPerServer: 5 }),
       removePluginConfig: vi.fn().mockResolvedValue(undefined),
@@ -206,6 +211,7 @@ function fakeCtx() {
     finalNamePicker: {
       pick: vi.fn(async (_dir: string, name: string) => name),
     },
+    mediaMetaStore: makeMediaMetaStoreStub(),
     torrentMetaStore: {
       persist: vi.fn(async () => '/tmp/x.torrent'),
       read: vi.fn(),
@@ -550,7 +556,7 @@ describe('buildCommandHandlers', () => {
     // @ts-expect-error — partial ctx
     const handlers = buildCommandHandlers(ctx)
     const result = (await handlers[Commands.AddMagnetTask]?.({
-      uri: 'magnet:?xt=x',
+      uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc',
       selectedFiles: [0],
       saveDir: '',
     })) as { gid: string; taskId?: string } | undefined
@@ -563,7 +569,7 @@ describe('buildCommandHandlers', () => {
     // Unresolved BT writes directly inside its final container under the
     // fallback save root.
     expect(ctx.rpcClient.addUri).toHaveBeenCalledWith(
-      ['magnet:?xt=x'],
+      ['magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc'],
       expect.objectContaining({
         dir: expect.stringMatching(
           /^\/tmp\/(?!.*\.motrix$).+$/
@@ -604,14 +610,17 @@ describe('buildCommandHandlers', () => {
 
     const result = await handlers[Commands.CreateTask]?.({
       type: 'bt',
-      payload: { kind: 'magnet', uri: 'magnet:?xt=urn:btih:abc' },
+      payload: {
+        kind: 'magnet',
+        uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc',
+      },
       selectedFiles: [],
       saveDir: '/downloads',
     })
 
     expect(result).toEqual({ ok: true })
     expect(ctx.magnetTracker.submit).toHaveBeenCalledWith(
-      'magnet:?xt=urn:btih:abc',
+      'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc',
       '/downloads'
     )
     expect(ctx.rpcClient.addUri).not.toHaveBeenCalled()
@@ -899,70 +908,93 @@ describe('buildCommandHandlers', () => {
     })
   })
 
-  it('applies the current form options when creating an App torrent batch', async () => {
-    const ctx = fakeCtx()
-    ctx.protocolManager.downloadAllTorrents.mockResolvedValueOnce([
-      {
-        payload: { name: 'first.torrent', dataBase64: 'Zmlyc3Q=' },
-        meta: {
-          name: 'first.bin',
-          files: [
-            { index: 0, path: 'skip.bin' },
-            { index: 1, path: 'keep.bin' },
-          ],
+  it.each([0, 1, 2])(
+    'applies App batch options and records history only for accepted tasks (%s failures)',
+    async (failures) => {
+      const ctx = fakeCtx()
+      for (let index = 0; index < failures; index++) {
+        ctx.rpcClient.addTorrent.mockRejectedValueOnce(
+          new Error('engine rejected torrent')
+        )
+      }
+      ctx.protocolManager.downloadAllTorrents.mockResolvedValueOnce([
+        {
+          payload: { name: 'first.torrent', dataBase64: 'Zmlyc3Q=' },
+          meta: {
+            name: 'first.bin',
+            files: [
+              { index: 0, path: 'skip.bin' },
+              { index: 1, path: 'keep.bin' },
+            ],
+          },
         },
-      },
-      {
-        payload: { name: 'second.torrent', dataBase64: 'c2Vjb25k' },
-        meta: {
-          name: 'second.bin',
-          files: [
-            { index: 0, path: 'one.bin' },
-            { index: 1, path: 'two.bin' },
-          ],
+        {
+          payload: { name: 'second.torrent', dataBase64: 'c2Vjb25k' },
+          meta: {
+            name: 'second.bin',
+            files: [
+              { index: 0, path: 'one.bin' },
+              { index: 1, path: 'two.bin' },
+            ],
+          },
         },
-      },
-    ] as never)
-    // @ts-expect-error partial ctx
-    const handlers = buildCommandHandlers(ctx)
+      ] as never)
+      // @ts-expect-error partial ctx
+      const handlers = buildCommandHandlers(ctx)
 
-    await expect(
-      handlers[Commands.DownloadAllTorrents]?.({
-        selectedFiles: [1],
-        saveDir: '/tmp/batch',
-        dlLimit: 2048,
-        ulLimit: 1024,
-        seedRatio: 1.5,
+      await expect(
+        handlers[Commands.DownloadAllTorrents]?.({
+          selectedFiles: [1],
+          saveDir: '/tmp',
+          dlLimit: 2048,
+          ulLimit: 1024,
+          seedRatio: 1.5,
+        })
+      ).resolves.toEqual({
+        total: 2,
+        succeeded: 2 - failures,
+        failed: failures,
+        firstTaskId: failures === 2 ? null : expect.any(String),
       })
-    ).resolves.toEqual({
-      total: 2,
-      succeeded: 2,
-      failed: 0,
-      firstTaskId: expect.any(String),
-    })
-    expect(ctx.rpcClient.addTorrent).toHaveBeenNthCalledWith(
-      1,
-      'Zmlyc3Q=',
-      [],
-      expect.objectContaining({
-        'select-file': '2',
-        'max-download-limit': '2048',
-        'max-upload-limit': '1024',
-        'seed-ratio': '1.5',
-      })
-    )
-    expect(ctx.rpcClient.addTorrent).toHaveBeenNthCalledWith(
-      2,
-      'c2Vjb25k',
-      [],
-      expect.objectContaining({
-        'select-file': '1,2',
-        'max-download-limit': '2048',
-        'max-upload-limit': '1024',
-        'seed-ratio': '1.5',
-      })
-    )
-  })
+      expect(ctx.rpcClient.addTorrent).toHaveBeenNthCalledWith(
+        1,
+        'Zmlyc3Q=',
+        [],
+        expect.objectContaining({
+          'select-file': '2',
+          'max-download-limit': '2048',
+          'max-upload-limit': '1024',
+          'seed-ratio': '1.5',
+        })
+      )
+      expect(ctx.rpcClient.addTorrent).toHaveBeenNthCalledWith(
+        2,
+        'c2Vjb25k',
+        [],
+        expect.objectContaining({
+          'select-file': '1,2',
+          'max-download-limit': '2048',
+          'max-upload-limit': '1024',
+          'seed-ratio': '1.5',
+        })
+      )
+      if (failures < 2) {
+        const canonical = await realpath('/tmp')
+        await vi.waitFor(() =>
+          expect(
+            ctx.settingsManager.mutateDirectoryPreferences
+          ).toHaveBeenCalledExactlyOnceWith({
+            action: 'recordRecent',
+            path: canonical,
+          })
+        )
+      } else {
+        expect(
+          ctx.settingsManager.mutateDirectoryPreferences
+        ).not.toHaveBeenCalled()
+      }
+    }
+  )
 
   it('rejects menu-context updates from auxiliary windows', async () => {
     const ctx = fakeCtx()
@@ -1304,6 +1336,102 @@ describe('SetTaskBtTracker handler', () => {
 })
 
 describe('Commands.UpdateSettings', () => {
+  it.each([
+    { app: { theme: 'dark' } },
+    { nat: { diagnosticIntervalSec: 600 } },
+  ])(
+    'does not re-enable external checks from a stale patch: %j',
+    async (patch) => {
+      const root = await mkdtemp(path.join(tmpdir(), 'motrix-settings-race-'))
+      try {
+        const manager = new SettingsManager(path.join(root, 'settings.json'))
+        await manager.load()
+        await manager.update({
+          nat: {
+            natTypeDetectionEnabled: true,
+            portReachabilityCheckEnabled: true,
+            autoDiagnostic: true,
+          },
+        })
+        const update = buildCommandHandlers({
+          ...fakeCtx(),
+          settingsManager: manager,
+        } as unknown as CommandContext)[Commands.UpdateSettings]!
+
+        // Both requests read the enabled baseline before either queued write
+        // commits. Unrelated fields must not carry those old NAT flags.
+        await Promise.all([
+          update({
+            nat: {
+              natTypeDetectionEnabled: false,
+              portReachabilityCheckEnabled: false,
+            },
+          }),
+          update(patch),
+        ])
+
+        expect(manager.get().nat).toMatchObject({
+          natTypeDetectionEnabled: false,
+          portReachabilityCheckEnabled: false,
+        })
+        expect(manager.get()).toMatchObject(patch)
+      } finally {
+        await rm(root, { recursive: true, force: true })
+      }
+    }
+  )
+
+  it.each(['zh-CN', 'system'])(
+    'awaits locale application and permits retrying saved %s',
+    async (language) => {
+      const base = makeSettingsLike(PROXY_OFF)
+      const current = { ...base, app: { ...base.app, language } }
+      let rejectLocale!: (error: Error) => void
+      const applyLocale = vi
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise<void>((_, reject) => {
+              rejectLocale = reject
+            })
+        )
+        .mockResolvedValue(undefined)
+      const baseCtx = fakeCtx()
+      const ctx = {
+        ...baseCtx,
+        applyLocale,
+        settingsManager: { ...baseCtx.settingsManager, get: vi.fn() },
+      }
+      vi.mocked(ctx.settingsManager.get).mockReturnValue(current as never)
+      vi.mocked(ctx.settingsManager.update).mockResolvedValue({
+        saved: true,
+        requiresRestart: false,
+        changedRestartKeys: [],
+        requiresAppRestart: false,
+        changedAppRestartKeys: [],
+      })
+      const update = buildCommandHandlers(ctx as unknown as CommandContext)[
+        Commands.UpdateSettings
+      ]!
+      let settled = false
+      const pending = update({ app: { language } }).then((value) => {
+        settled = true
+        return value
+      })
+      await vi.waitFor(() => expect(applyLocale).toHaveBeenCalledWith(language))
+      expect(settled).toBe(false)
+      rejectLocale(new Error('locale apply failed'))
+      await expect(pending).resolves.toMatchObject({
+        saved: true,
+        applicationFailed: true,
+      })
+      await expect(update({ app: { language } })).resolves.toMatchObject({
+        saved: true,
+      })
+      expect(applyLocale).toHaveBeenCalledTimes(2)
+    }
+  )
+
   it('returns the canonical native directory identity for General favorite drafts', async () => {
     const root = await mkdtemp(path.join(tmpdir(), 'motrix-native-directory-'))
     try {
@@ -1747,7 +1875,7 @@ describe('Commands.UpdateSettings', () => {
 
     await expect(
       handlers[Commands.UpdateSettings]?.({ proxy: PROXY_ON })
-    ).rejects.toThrow('RPC failed')
+    ).resolves.toMatchObject({ applicationFailed: true })
     expect(policy.snapshot()).toBeNull()
 
     await expect(
@@ -1869,7 +1997,7 @@ describe('Commands.UpdateSettings', () => {
         proxy,
         app: { browserBridgeEnabled: true },
       })
-    ).rejects.toThrow('bridge failed')
+    ).resolves.toMatchObject({ applicationFailed: true })
 
     expect(ctx.proxyApplier.applyAll).toHaveBeenCalledWith(proxy)
     expect(policy.snapshot()).toEqual({
@@ -2615,4 +2743,41 @@ describe('main finalize retry wiring', () => {
       expect(recoverFinalization).toHaveBeenCalledExactlyOnceWith(task.id)
     }
   )
+})
+
+describe('host-owned task directory history', () => {
+  it('returns an accepted magnet while the directory write is pending', async () => {
+    const ctx = fakeCtx()
+    let finish!: (value: unknown) => void
+    const record = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        })
+    )
+    ctx.settingsManager.mutateDirectoryPreferences = record as never
+    const handlers = buildCommandHandlers(
+      ctx as unknown as Parameters<typeof buildCommandHandlers>[0]
+    )
+    const request = {
+      type: 'bt',
+      payload: {
+        kind: 'magnet',
+        uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc',
+      },
+      selectedFiles: [],
+      saveDir: '/tmp',
+    }
+    await expect(handlers[Commands.CreateTask]?.(request)).resolves.toEqual({
+      ok: true,
+    })
+    const canonical = await realpath('/tmp')
+    await vi.waitFor(() =>
+      expect(record).toHaveBeenCalledExactlyOnceWith({
+        action: 'recordRecent',
+        path: canonical,
+      })
+    )
+    finish({ ok: true, value: { favorites: [], recent: [] } })
+  })
 })

@@ -51,6 +51,14 @@ export async function verifyArchPackage(archive, { smoke = false } = {}) {
   const temporary = await mkdtemp(path.join(os.tmpdir(), 'motrix-arch-'))
   try {
     extractAll(archive, temporary)
+    assert.match(
+      await readFile(
+        path.join(temporary, 'usr/share/applications/motrix.desktop'),
+        'utf8'
+      ),
+      /^Name=Motrix$/m,
+      'Packaged desktop entry must display Motrix'
+    )
     const resources = path.join(temporary, 'usr/lib/motrix2')
     const appArchive = path.join(resources, 'app.asar')
     const metadata = JSON.parse(extractFile(appArchive, 'arch-build.json'))

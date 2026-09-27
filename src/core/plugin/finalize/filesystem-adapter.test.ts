@@ -2,7 +2,39 @@ import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NativeFinalizeFilesystemAdapter } from './filesystem-adapter'
+import {
+  NativeFinalizeFilesystemAdapter,
+  normalizeSidecarRootPath,
+} from './filesystem-adapter'
+
+describe('normalizeSidecarRootPath', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  it('strips verbatim namespace prefixes on Windows only', () => {
+    const original = Object.getOwnPropertyDescriptor(process, 'platform')
+    try {
+      Object.defineProperty(process, 'platform', { value: 'win32' })
+      expect(normalizeSidecarRootPath('\\\\?\\C:\\Downloads')).toBe(
+        'C:\\Downloads'
+      )
+      expect(normalizeSidecarRootPath('\\\\?\\UNC\\server\\share')).toBe(
+        '\\\\server\\share'
+      )
+      expect(normalizeSidecarRootPath('C:\\Downloads')).toBe('C:\\Downloads')
+      expect(normalizeSidecarRootPath('\\\\server\\share')).toBe(
+        '\\\\server\\share'
+      )
+    } finally {
+      if (original) Object.defineProperty(process, 'platform', original)
+    }
+    expect(normalizeSidecarRootPath('\\\\?\\C:\\Downloads')).toBe(
+      process.platform === 'win32' ? 'C:\\Downloads' : '\\\\?\\C:\\Downloads'
+    )
+  })
+})
 
 describe.runIf(process.platform !== 'win32')(
   'NativeFinalizeFilesystemAdapter process failures',
@@ -47,6 +79,10 @@ describe.runIf(process.platform !== 'win32')(
             const send = () => {
               const payload = Buffer.from(JSON.stringify({
                 request_id: request.request_id, status: 'ok',
+                ...(request.op === 'remove_opened_preserving' ? {
+                  request_id: null, status: 'error', code: 'invalid_request',
+                  message: 'unknown variant remove_opened_preserving',
+                } : {}),
                 handle: request.op === 'open_root' ? 1 : 2,
                 platform: 'test', rename_no_replace: true, held_roots: true,
                 directory_sync: true, held_artifacts: true,
@@ -116,6 +152,33 @@ describe.runIf(process.platform !== 'win32')(
         await adapter.dispose()
       }
       await expect(adapter.capabilities()).rejects.toThrow('disposed')
+    })
+
+    it('rejects an old sidecar response with a null request id instead of hanging cleanup', async () => {
+      const adapter = new NativeFinalizeFilesystemAdapter(await framedSidecar())
+      let timeout: ReturnType<typeof setTimeout> | undefined
+      try {
+        const root = await adapter.openRoot(os.tmpdir())
+        const artifact = await adapter.openArtifact(root, 'payload')
+        const survivor = await adapter.openArtifact(root, 'survivor', 'rename')
+        const result = adapter
+          .removeOpened(artifact, 'payload', true, survivor)
+          .then(
+            () => 'unexpected success',
+            (error: { code: string }) => error.code
+          )
+        await expect(
+          Promise.race([
+            result,
+            new Promise<string>((resolve) => {
+              timeout = setTimeout(() => resolve('request hung'), 1000)
+            }),
+          ])
+        ).resolves.toBe('invalid_request')
+      } finally {
+        clearTimeout(timeout)
+        await adapter.dispose()
+      }
     })
 
     it('preserves the native operation and status across the sidecar protocol', async () => {

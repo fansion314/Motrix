@@ -1,8 +1,8 @@
+import { FolderIcon } from '@renderer/components/icons'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { recordRecentDirectory } from '@renderer/lib/directory-preferences'
 import { usePlatformServices } from '@renderer/platform/services'
-import { Folder } from 'lucide-react'
 import { type ComponentProps, useEffect, useRef, useState } from 'react'
 import {
   type FieldPath,
@@ -104,7 +104,7 @@ export function DirectoryPicker<TFields extends FieldValues>({
           aria-label={t('settings.common.changeDirectory')}
           title={current || undefined}
           disabled={pickerDisabled}
-          className="group flex min-w-0 flex-1 items-center gap-2.5 rounded-md border border-border bg-background px-3 py-2 text-left text-sm transition-colors hover:border-ring hover:bg-accent/30 disabled:opacity-50"
+          className="group flex min-w-0 flex-1 items-center gap-2.5 rounded-md border border-border bg-background px-3 py-2 text-start text-sm transition-colors hover:border-ring hover:bg-accent/30 disabled:opacity-50"
         >
           {prefixLabel && (
             <span className="shrink-0 text-xs text-muted-foreground">
@@ -114,7 +114,7 @@ export function DirectoryPicker<TFields extends FieldValues>({
           {current ? (
             <span
               dir="ltr"
-              className="min-w-0 flex-1 truncate text-left text-xs text-foreground"
+              className="min-w-0 flex-1 truncate text-start text-xs text-foreground"
             >
               {current}
             </span>
@@ -123,7 +123,7 @@ export function DirectoryPicker<TFields extends FieldValues>({
               {placeholder ?? t('settings.common.directoryEmpty')}
             </span>
           )}
-          <Folder
+          <FolderIcon
             className="h-4 w-4 shrink-0 text-muted-foreground"
             aria-hidden="true"
           />
@@ -144,7 +144,7 @@ export function DirectoryPicker<TFields extends FieldValues>({
         placeholder={placeholder}
         readOnly
         disabled={pickerDisabled}
-        className="h-8 min-w-0 flex-1 text-left text-xs"
+        className="h-8 min-w-0 flex-1 text-start text-xs"
       />
       <Button
         type="button"
@@ -153,7 +153,7 @@ export function DirectoryPicker<TFields extends FieldValues>({
         onClick={handlePick}
         disabled={pickerDisabled}
       >
-        <Folder className="mr-1 h-3 w-3" />
+        <FolderIcon className="me-1 h-3 w-3" />
         {t('settings.common.browse')}
       </Button>
       {history}

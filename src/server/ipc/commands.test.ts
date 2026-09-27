@@ -34,6 +34,7 @@ import {
   TaskType,
   TransitionPhase,
 } from '@shared/types/task'
+import { makeMediaMetaStoreStub } from '@test-utils/media-meta-store'
 import { makeDownloadTask } from '@test-utils/task'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createServerDownloadPathPolicy } from '../download-path-policy'
@@ -70,6 +71,10 @@ function makeFakeCtx() {
     } as unknown as EngineSupervisor,
     dnsFallback: { reset: vi.fn() },
     settingsManager: {
+      mutateDirectoryPreferences: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { favorites: [], recent: [] },
+      }),
       get: vi.fn(),
       update: vi.fn(),
       acceptDisclaimer: vi.fn().mockResolvedValue({ saved: true }),
@@ -96,6 +101,7 @@ function makeFakeCtx() {
     },
     aria2BinaryPath: '/usr/bin/aria2c',
     finalNamePicker: {} as FinalNamePicker,
+    mediaMetaStore: makeMediaMetaStoreStub(),
     torrentMetaStore: {} as TorrentMetaStore,
     taskManager: {
       getById: vi.fn(() => undefined),
@@ -227,7 +233,88 @@ function makeSettings(
   }
 }
 
+describe('server disclaimer language', () => {
+  it('persists system and waits for locale application before reporting success', async () => {
+    let finish!: () => void
+    const applyLocale = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        })
+    )
+    const ctx = makeFakeCtx()
+    const setDisclaimerLanguage = vi.fn().mockResolvedValue({ saved: true })
+    const handlers = buildServerCommandHandlers({
+      ...ctx,
+      settingsManager: { ...ctx.settingsManager, setDisclaimerLanguage },
+      applyLocale,
+    } as unknown as ServerCommandContext)
+    let settled = false
+    const pending = handlers[Commands.SetDisclaimerLanguage]?.('system').then(
+      (value) => {
+        settled = true
+        return value
+      }
+    )
+    await vi.waitFor(() => expect(applyLocale).toHaveBeenCalledWith('system'))
+    expect(setDisclaimerLanguage).toHaveBeenCalledWith('system')
+    expect(settled).toBe(false)
+    finish()
+    await expect(pending).resolves.toEqual({ ok: true })
+    await expect(
+      handlers[Commands.SetDisclaimerLanguage]?.('unknown')
+    ).rejects.toThrow()
+    expect(setDisclaimerLanguage).toHaveBeenCalledOnce()
+  })
+})
+
 describe('server Commands.UpdateSettings', () => {
+  it.each(['zh-CN', 'system'])(
+    'awaits locale application and permits retrying saved %s',
+    async (language) => {
+      const base = makeSettings(PROXY_OFF)
+      const current = { ...base, app: { ...base.app, language } }
+      let rejectLocale!: (error: Error) => void
+      const applyLocale = vi
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise<void>((_, reject) => {
+              rejectLocale = reject
+            })
+        )
+        .mockResolvedValue(undefined)
+      const ctx = { ...makeFakeCtx(), applyLocale }
+      vi.mocked(ctx.settingsManager.get).mockReturnValue(current as never)
+      vi.mocked(ctx.settingsManager.update).mockResolvedValue({
+        saved: true,
+        requiresRestart: false,
+        changedRestartKeys: [],
+        requiresAppRestart: false,
+        changedAppRestartKeys: [],
+      })
+      const update = buildServerCommandHandlers(
+        ctx as unknown as ServerCommandContext
+      )[Commands.UpdateSettings]!
+      let settled = false
+      const pending = update({ app: { language } }).then((value) => {
+        settled = true
+        return value
+      })
+      await vi.waitFor(() => expect(applyLocale).toHaveBeenCalledWith(language))
+      expect(settled).toBe(false)
+      rejectLocale(new Error('locale apply failed'))
+      await expect(pending).resolves.toMatchObject({
+        saved: true,
+        applicationFailed: true,
+      })
+      await expect(update({ app: { language } })).resolves.toMatchObject({
+        saved: true,
+      })
+      expect(applyLocale).toHaveBeenCalledTimes(2)
+    }
+  )
+
   it('uses Server path policy before one General commit and does not apply partial fields on an outside-root destination', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'motrix-server-general-'))
     try {
@@ -605,7 +692,7 @@ describe('server Commands.UpdateSettings', () => {
 
     await expect(
       handlers[Commands.UpdateSettings]?.({ proxy: PROXY_ON })
-    ).rejects.toThrow('RPC failed')
+    ).resolves.toMatchObject({ applicationFailed: true })
     expect(policy.snapshot()).toBeNull()
   })
 
@@ -640,7 +727,7 @@ describe('server Commands.UpdateSettings', () => {
 
     await expect(
       handlers[Commands.UpdateSettings]?.({ proxy: PROXY_ON })
-    ).rejects.toThrow('RPC failed')
+    ).resolves.toMatchObject({ applicationFailed: true })
     expect(policy.snapshot()).toBeNull()
 
     await expect(
@@ -1109,14 +1196,17 @@ describe('server Commands.CreateTask magnet metadata selection', () => {
 
     const result = await handlers[Commands.CreateTask]?.({
       type: 'bt',
-      payload: { kind: 'magnet', uri: 'magnet:?xt=urn:btih:abc' },
+      payload: {
+        kind: 'magnet',
+        uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc',
+      },
       selectedFiles: [],
       saveDir: '/downloads',
     })
 
     expect(result).toEqual({ ok: true })
     expect(ctx.magnetTracker.submit).toHaveBeenCalledWith(
-      'magnet:?xt=urn:btih:abc',
+      'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc',
       '/downloads'
     )
     expect(ctx.downloadPathPolicy.prepareSaveDir).toHaveBeenCalledWith(
@@ -1825,5 +1915,41 @@ describe('server disclaimer acceptance', () => {
       'disk full'
     )
     expect(ctx.trackerManager.applySyncScheduleChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('host-owned task directory history', () => {
+  it('returns an accepted magnet while the directory write is pending', async () => {
+    const ctx = makeFakeCtx()
+    let finish!: (value: unknown) => void
+    const record = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        })
+    )
+    ctx.settingsManager.mutateDirectoryPreferences = record as never
+    const handlers = buildServerCommandHandlers(
+      ctx as unknown as Parameters<typeof buildServerCommandHandlers>[0]
+    )
+    const request = {
+      type: 'bt',
+      payload: {
+        kind: 'magnet',
+        uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc',
+      },
+      selectedFiles: [],
+      saveDir: '/tmp',
+    }
+    await expect(handlers[Commands.CreateTask]?.(request)).resolves.toEqual({
+      ok: true,
+    })
+    await vi.waitFor(() =>
+      expect(record).toHaveBeenCalledExactlyOnceWith({
+        action: 'recordRecent',
+        path: '/tmp',
+      })
+    )
+    finish({ ok: true, value: { favorites: [], recent: [] } })
   })
 })

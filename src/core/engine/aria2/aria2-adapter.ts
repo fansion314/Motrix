@@ -7,6 +7,7 @@ import {
   normalizeAria2TaskProxyUrl,
   stripAria2ProxyCredentials,
 } from '@core/proxy/aria2-proxy-routing'
+import { admitDownloadSources } from '@core/task/source-admission'
 import { AppError, ErrorCode } from '@shared/errors'
 import type {
   EngineCapability,
@@ -369,6 +370,12 @@ export class Aria2Adapter implements EngineAdapter {
   }
 
   async createDownload(params: CreateDownloadParams): Promise<string> {
+    params = {
+      ...params,
+      uris: admitDownloadSources(params.uris, 'engine').map(
+        (source) => source.requestUrl
+      ),
+    }
     const extraGid = params.extraEngineOptions?.gid
     if (extraGid !== undefined && typeof extraGid !== 'string') {
       throw new TypeError(
@@ -385,7 +392,7 @@ export class Aria2Adapter implements EngineAdapter {
     const metadataProfile = params.directResourceMetadataProfile
     if (
       metadataProfile !== undefined &&
-      (params.cookies !== undefined ||
+      ((params.cookies?.length ?? 0) > 0 ||
         this.getDirectResourceMetadataProfile() !== metadataProfile)
     ) {
       throw new Error(
@@ -822,6 +829,29 @@ export class Aria2Adapter implements EngineAdapter {
       !this.featureReport.hasSqlitePersistence ||
       hasDurableRemoveSemantics(this.featureReport.version)
     )
+  }
+
+  async getCheckpointStatus(
+    outputPath: string
+  ): Promise<'present' | 'absent' | null> {
+    try {
+      const status = await this.rpc.getCheckpointStatus(outputPath)
+      return status.exists === 'true' ? 'present' : 'absent'
+    } catch (error) {
+      // Official aria2 and fork builds before 1.37.0-motrix.15 lack the
+      // method. The caller's control-file probe then matches what they can
+      // resume: official aria2 only writes control files, and older fork
+      // sqlite checkpoints are keyed by gid, which a retry never matches.
+      if (
+        error instanceof Error &&
+        /(?:no such method|method not found).*getCheckpointStatus/i.test(
+          error.message
+        )
+      ) {
+        return null
+      }
+      throw error
+    }
   }
 
   async removeDownloadResult(engineTaskId: string): Promise<void> {

@@ -1,7 +1,9 @@
+import type { EngineConnectionSnapshot } from '@shared/schemas/engine-connection'
 import type { DownloadCookie } from '../engine-adapter'
 import { Aria2PauseState } from './aria2-pause-state'
 import type { JsonRpcProtocol } from './json-rpc-protocol'
 import type {
+  Aria2CheckpointStatus,
   Aria2HistoryCount,
   Aria2HistoryFilter,
   Aria2MethodCall,
@@ -67,6 +69,10 @@ export class Aria2RpcClient {
 
   isConnected(): boolean {
     return this.transport.isConnected()
+  }
+
+  getConnectionStatus(): EngineConnectionSnapshot {
+    return { transport: 'websocket', connected: this.transport.isConnected() }
   }
 
   // ─── Secret injection ────────────────────────────────────────
@@ -153,8 +159,29 @@ export class Aria2RpcClient {
     return this.call<string>('aria2.forcePause', [gid])
   }
 
-  unpause(gid: string): Promise<string> {
-    return this.call<string>('aria2.unpause', [gid])
+  async unpause(gid: string): Promise<string> {
+    const pause = this.pauseState.getPendingPause(gid)
+    const wasUnconfirmed = pause?.confirmedBy === undefined
+    for (;;) {
+      try {
+        return await this.call<string>('aria2.unpause', [gid])
+      } catch (error) {
+        // A graceful BT pause is acknowledged before tracker requests drain.
+        // Retry only that accepted pause, within its existing settle deadline.
+        if (
+          !pause ||
+          !wasUnconfirmed ||
+          pause !== this.pauseState.getPendingPause(gid) ||
+          !(error instanceof Error) ||
+          error.message !== `GID#${gid} cannot be unpaused now`
+        ) {
+          throw error
+        }
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        // Disconnect, expiry, or a newer pause invalidates this resume intent.
+        if (pause !== this.pauseState.getPendingPause(gid)) throw error
+      }
+    }
   }
 
   pauseAll(): Promise<'OK'> {
@@ -358,6 +385,12 @@ export class Aria2RpcClient {
     const params: unknown[] = [query, offset, num]
     if (keys !== undefined) params.push(keys)
     return this.call<Aria2RawStatus[]>('aria2.searchDownloadResult', params)
+  }
+
+  getCheckpointStatus(outputPath: string): Promise<Aria2CheckpointStatus> {
+    return this.call<Aria2CheckpointStatus>('aria2.getCheckpointStatus', [
+      outputPath,
+    ])
   }
 
   exportSession(filePath: string): Promise<'OK'> {

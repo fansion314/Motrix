@@ -1,4 +1,7 @@
 import { PanelShell } from '@renderer/components/desktop-kit/panel/panel-shell'
+import { Toolbar } from '@renderer/components/desktop-kit/toolbar/toolbar'
+import { ToolbarSearch } from '@renderer/components/desktop-kit/toolbar/toolbar-search'
+import { LoadingIcon } from '@renderer/components/icons'
 import { Button } from '@renderer/components/ui/button'
 import {
   Tabs,
@@ -8,7 +11,6 @@ import {
 } from '@renderer/components/ui/tabs'
 import { useSyncTrackers } from '@renderer/hooks/use-sync-trackers'
 import { cn } from '@renderer/lib/utils'
-import { LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BlacklistTrackerPanel } from './components/blacklist-tracker-panel'
@@ -30,11 +32,18 @@ export function TrackersPage() {
   return (
     <PanelShell
       title={t('panel.trackers.title')}
-      search={{
-        value: search,
-        onChange: setSearch,
-        placeholder: t('panel.trackers.searchPlaceholder'),
-      }}
+      actions={
+        <Toolbar label={t('panel.trackers.title')}>
+          <ToolbarSearch
+            value={search}
+            onValueChange={setSearch}
+            label={t('panel.trackers.searchPlaceholder')}
+            clearLabel={t('common.clearSearch')}
+          />
+        </Toolbar>
+      }
+      actionsDraggable
+      actionsClassName="min-w-0 flex-1"
       footer={
         <>
           <div
@@ -59,7 +68,7 @@ export function TrackersPage() {
             className="shrink-0"
           >
             {isSyncing && (
-              <LoaderCircle
+              <LoadingIcon
                 className="size-3.5 animate-spin motion-reduce:animate-none"
                 aria-hidden="true"
               />

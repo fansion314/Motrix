@@ -1,8 +1,16 @@
 import type { DownloadCookie } from '@core/engine/engine-adapter'
+import type { CreateRequestReceipt } from '@core/task/create-request-id'
+import {
+  filenameFromResourceUrl,
+  sanitizeRemoteFilename,
+} from '@core/task/direct-resource-validator'
+import {
+  admitDownloadSources,
+  admitHttpSource,
+} from '@core/task/source-admission'
 import type { DownloadSubmitParams } from '@motrix/mdxp'
 import { type Browser, makeSessionKey } from '@shared/protocol/bridge'
 import type { BridgeSourceMeta, SourceMeta } from '@shared/types/task'
-import { BridgeReceiverError } from './errors'
 import { stripHopByHopHeaders } from './header-replay'
 import { ensureMediaExtension } from './pipelines/media-final-name'
 
@@ -19,6 +27,8 @@ export interface AdaptedDirect {
   taskId: string
   saveDir: string
   finalName: string
+  /** The client supplied no usable filename; discover it during creation. */
+  discoverFilename?: true
   kind: 'direct'
   primaryUrl: string
   sanitizedHeaders: Record<string, string>
@@ -52,6 +62,7 @@ export interface AdaptedDash extends Omit<AdaptedHls, 'kind' | 'container'> {
 }
 
 export interface AdaptedMux {
+  receipt?: CreateRequestReceipt
   kind: 'mux'
   taskId: string
   saveDir: string
@@ -83,32 +94,32 @@ export class SubmitDownloadAdapter {
   ): Promise<
     AdaptedDirect | AdaptedMagnet | AdaptedHls | AdaptedDash | AdaptedMux
   > {
-    // Bootstrap already ran DownloadSubmitParamsSchema.safeParse() and threw
-    // InvalidParams on failure. We have typed data here, but MDXP's
-    // Resource.url is plain z.string() (not http-only), so we still need to
-    // reject non-http(s) schemes as a business rule.
-    if (
-      params.selection.kind === 'direct' ||
-      params.selection.kind === 'hls' ||
-      params.selection.kind === 'dash'
-    ) {
-      const url = params.selection.primary.url
-      if (!/^https?:\/\//i.test(url)) {
-        throw new BridgeReceiverError(
-          'invalid-url-scheme',
-          'URL must be http: or https:'
-        )
-      }
-    }
+    params = structuredClone(params)
     if (params.selection.kind === 'mux') {
-      for (const r of [params.selection.video, params.selection.audio]) {
-        if (!/^https?:\/\//i.test(r.url)) {
-          throw new BridgeReceiverError(
-            'invalid-url-scheme',
-            'URL must be http: or https:'
-          )
-        }
-      }
+      params.selection.video.url = admitHttpSource(
+        params.selection.video.url,
+        'input'
+      )
+      params.selection.audio.url = admitHttpSource(
+        params.selection.audio.url,
+        'input'
+      )
+    } else if (params.selection.kind === 'magnet') {
+      params.selection.uri = admitDownloadSources(
+        [params.selection.uri],
+        'input',
+        ['magnet']
+      )[0].sourceUrl
+    } else {
+      const source = admitDownloadSources(
+        [params.selection.primary.url],
+        'input',
+        ['http', 'https']
+      )[0]
+      params.selection.primary.url =
+        params.selection.kind === 'direct'
+          ? source.sourceUrl
+          : source.requestUrl
     }
 
     const { selection, source, meta } = params
@@ -186,9 +197,12 @@ export class SubmitDownloadAdapter {
 
     // selection.kind === 'direct'
     const primaryUrl = selection.primary.url
-    const sanitized = sanitizeFilename(meta.suggestedFilename)
+    const sanitized = sanitizeRemoteFilename(meta.suggestedFilename)
     const taskId = this.deps.mintTaskId()
-    const finalName = await this.deps.pickName(saveDir, sanitized)
+    const finalName = await this.deps.pickName(
+      saveDir,
+      sanitized ?? filenameFromResourceUrl(primaryUrl) ?? 'download'
+    )
     const sanitizedHeaders = stripHopByHopHeaders(selection.primary.headers)
 
     return {
@@ -196,6 +210,7 @@ export class SubmitDownloadAdapter {
       saveDir,
       finalName,
       kind: 'direct',
+      ...(sanitized ? {} : { discoverFilename: true as const }),
       primaryUrl,
       sanitizedHeaders,
       // Export only the engine-neutral fields. SameSite describes browser

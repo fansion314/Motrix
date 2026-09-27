@@ -1,4 +1,13 @@
 import { CopyButton } from '@renderer/components/desktop-kit/copy-button'
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  EditIcon,
+  InstallIcon,
+  RefreshIcon,
+  SecurityWarningIcon,
+  VerifiedToolIcon,
+} from '@renderer/components/icons'
 import { SettingsFormRow } from '@renderer/components/settings-kit/settings-form-row'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
@@ -20,15 +29,6 @@ import { transport } from '@renderer/lib/transport'
 import { cn } from '@renderer/lib/utils'
 import { EXTERNAL_URLS } from '@shared/external-urls'
 import { Queries } from '@shared/protocol/queries'
-import {
-  BadgeCheck,
-  Check,
-  ChevronRight,
-  Download,
-  Pencil,
-  RefreshCw,
-  ShieldAlert,
-} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -138,9 +138,9 @@ export function MediaToolsSection() {
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <div className="text-sm font-medium">{activeLabel}</div>
-              {detection?.active && <BadgeCheck className="size-4" />}
+              {detection?.active && <VerifiedToolIcon className="size-4" />}
               {hasUntrustedCandidate && (
-                <ShieldAlert className="size-4 text-destructive" />
+                <SecurityWarningIcon className="size-4 text-destructive" />
               )}
             </div>
             <div className="text-xs text-muted-foreground">
@@ -164,7 +164,10 @@ export function MediaToolsSection() {
               size="icon-sm"
               variant="ghost"
             >
-              <Download className="size-4 text-muted-foreground" aria-hidden />
+              <InstallIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden
+              />
             </Button>
             <Button
               type="button"
@@ -173,10 +176,16 @@ export function MediaToolsSection() {
               aria-label={t('settings.integration.media.refresh')}
               onClick={refresh}
             >
-              <RefreshCw className="size-4 text-muted-foreground" />
+              <RefreshIcon className="size-4 text-muted-foreground" />
             </Button>
           </div>
         </div>
+
+        {transport.platform !== 'web' && (
+          <p className="text-xs text-muted-foreground">
+            {t('settings.integration.media.applyHint')}
+          </p>
+        )}
 
         <Collapsible
           open={detailsOpen || Boolean(pathError)}
@@ -194,11 +203,11 @@ export function MediaToolsSection() {
                       ? 'settings.integration.media.detection.hideDetails'
                       : 'settings.integration.media.detection.showDetails'
                   )}
-                  className="flex items-center justify-between flex-1 -ml-2 h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:bg-transparent dark:hover:bg-transparent hover:text-foreground"
+                  className="flex items-center justify-between flex-1 -ms-2 h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:bg-transparent dark:hover:bg-transparent hover:text-foreground"
                 />
               }
             >
-              <ChevronRight
+              <ChevronRightIcon
                 className={cn(
                   'size-3.5 transition-transform duration-150',
                   detailsOpen && 'rotate-90'
@@ -219,7 +228,7 @@ export function MediaToolsSection() {
                 <span>
                   {t('settings.integration.media.detection.location')}
                 </span>
-                <span className="text-right">
+                <span className="text-end">
                   {t('settings.integration.media.detection.result')}
                 </span>
               </div>
@@ -301,9 +310,9 @@ export function MediaToolsSection() {
                             }}
                           >
                             {editingPath ? (
-                              <Check aria-hidden />
+                              <CheckIcon aria-hidden />
                             ) : (
-                              <Pencil aria-hidden />
+                              <EditIcon aria-hidden />
                             )}
                           </Button>
                           <FormMessage className="col-span-full text-xs" />

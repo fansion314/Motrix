@@ -95,6 +95,7 @@ import { handleCreateTask } from '@core/task/create-task-handler'
 import { DirectResourceValidatorService } from '@core/task/direct-resource-validator'
 import { FileCleanupServiceImpl } from '@core/task/file-cleanup-service'
 import { FinalNamePickerImpl } from '@core/task/final-name-picker'
+import { MediaMetaStoreImpl } from '@core/task/media-meta-store'
 import {
   hasEngineTaskDelta,
   mergeEngineTask,
@@ -320,6 +321,11 @@ async function main() {
       defaultSaveDir: configuredDefaultSaveDir,
       onChange: (old, updated) => {
         eventBus.emit(Events.SettingsChanged, { old, updated })
+        if (old.app.sidebarColor !== updated.app.sidebarColor) {
+          eventBus.emit(Events.SidebarColorChanged, {
+            sidebarColor: updated.app.sidebarColor,
+          })
+        }
         if (old.app.liquidGlassEffect !== updated.app.liquidGlassEffect) {
           eventBus.emit(Events.LiquidGlassChanged, {
             liquidGlassEffect: updated.app.liquidGlassEffect,
@@ -1018,6 +1024,12 @@ async function main() {
   const torrentMetaStore = new TorrentMetaStoreImpl(
     runtimeDirectories.torrentsDir
   )
+  const mediaMetaStore = new MediaMetaStoreImpl(
+    path.join(platform.userDataDir, 'media')
+  )
+  await mediaMetaStore
+    .pruneOrphans(db.getAllTasks().map(({ task }) => task.motrixId))
+    .catch((err) => log.warn({ err }, 'Media metadata recovery failed'))
   const fileCleanupService = new FileCleanupServiceImpl({
     async removePathRecursive(absPath: string): Promise<void> {
       await fs.rm(absPath, { recursive: true, force: true })
@@ -1111,9 +1123,11 @@ async function main() {
   // ─── HTTP App ─────────────────────────────────────────────────
   const serverDirectoryService = new ServerDirectoryService(downloadPathPolicy)
   const commandHandlers = buildServerCommandHandlers({
+    mediaMetaStore,
     serverDirectoryService,
     supervisor,
     settingsManager,
+    applyLocale: enqueueLocaleUpdate,
     geoipManager: activeGeoipManager,
     dnsFallback: dnsFallbackConsumer,
     bindTaskRetry: (fn) => {
@@ -1193,6 +1207,8 @@ async function main() {
     ])
   }
   const queryHandlers = buildServerQueryHandlers({
+    getResolvedLanguage: () => hostLanguage,
+    mediaMetaStore,
     serverDirectoryService,
     taskManager,
     statsAggregator,
@@ -1249,6 +1265,8 @@ async function main() {
     operatorAuth: {
       operatorToken: operator.token,
       publicUrl: process.env.MOTRIX_PUBLIC_URL,
+      onEventSocketRejected: (detail) =>
+        log.warn(detail, 'operator event connection rejected'),
     },
     healthCheck: () =>
       serverHealthSnapshot({
@@ -1479,6 +1497,7 @@ async function main() {
         operation: () => Promise<T>
       ) => taskInspectorActivityRuntime.runTaskMutation(taskIds, operation),
       log,
+      finalNamePicker,
       commitFinalizedArtifact: async (input: FinalizeArtifactCommitRequest) => {
         const post =
           input.occurrence?.type === 'terminal'
@@ -1771,6 +1790,7 @@ async function main() {
         adapter,
         log,
         fileCleanupService,
+        mediaMetaStore,
         torrentMetaStore,
         eventBus,
         db,
@@ -1912,6 +1932,7 @@ async function main() {
         trustedExtensionRegistry,
         createExtensionReceiver: ({ bridgeBus }) =>
           new BridgeReceiver({
+            mediaMetaStore,
             getDefaultSaveDir: () => settingsManager.getApp().defaultSaveDir,
             pickName: (saveDir, desired) =>
               finalNamePicker.pick(saveDir, desired),

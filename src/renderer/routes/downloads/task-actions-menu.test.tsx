@@ -1,3 +1,4 @@
+import { Toolbar as ToolbarPrimitive } from '@base-ui/react/toolbar'
 import { RemoveTasksDialogHost } from '@renderer/routes/downloads/inspector/remove-tasks-dialog-host'
 import { useRemoveTasksStore } from '@renderer/routes/downloads/inspector/remove-tasks-store'
 import { render as renderBase } from '@testing-library/react'
@@ -6,9 +7,11 @@ import '@testing-library/jest-dom/vitest'
 import '@renderer/lib/i18n'
 import { createSelectionStore } from '@renderer/components/desktop-kit/selection/create-selection-store'
 import { toast } from '@renderer/components/ui/toast'
+import { menuActionEnabled } from '@renderer/features/application-menu/task-context'
 import { openAddTaskDialog } from '@renderer/lib/open-add-task-dialog'
 import { openMagnetFileSelection } from '@renderer/lib/open-magnet-file-selection'
 import { transport } from '@renderer/lib/transport'
+import { CommandIds } from '@shared/commands-catalog'
 import { DownloadErrorCode } from '@shared/errors'
 import { Commands } from '@shared/protocol/commands'
 import type { DownloadTask } from '@shared/types/task'
@@ -39,6 +42,20 @@ vi.mock('@renderer/lib/transport', () => ({
   },
 }))
 vi.mock('@renderer/components/ui/toast', () => ({ toast: { add: vi.fn() } }))
+const menuContext = vi.hoisted(() => ({ listeners: new Set<() => void>() }))
+vi.mock(
+  '@renderer/features/application-menu/task-context',
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import('@renderer/features/application-menu/task-context')
+    >()),
+    menuActionEnabled: vi.fn(() => false),
+    subscribeMenuContext: (listener: () => void) => {
+      menuContext.listeners.add(listener)
+      return () => menuContext.listeners.delete(listener)
+    },
+  })
+)
 vi.mock('@renderer/lib/open-add-task-dialog', () => ({
   openAddTaskDialog: vi.fn().mockResolvedValue(undefined),
 }))
@@ -50,6 +67,7 @@ const tasks = ['a', 'b', 'c'].map((id) =>
 )
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(menuActionEnabled).mockReturnValue(false)
   vi.mocked(transport).platform = 'darwin'
   useDownloadsView.setState({
     inspectorVisible: false,
@@ -66,7 +84,7 @@ function setup(context = true, items = tasks) {
   selection.getState().setItems(items)
   if (items[0]) selection.getState().select(items[0].id)
   if (items[1]) selection.getState().toggle(items[1].id)
-  render(
+  const menu = (
     <TaskActionsMenu tasks={items} selection={selection}>
       {context ? (
         <div data-testid="context-list">
@@ -79,10 +97,88 @@ function setup(context = true, items = tasks) {
       ) : undefined}
     </TaskActionsMenu>
   )
+  render(context ? menu : <ToolbarPrimitive.Root>{menu}</ToolbarPrimitive.Root>)
   return selection
 }
 
 describe('TaskActionsMenu', () => {
+  it('disables the inspector menu and shortcut without changing the saved intent when selection is empty', async () => {
+    const selection = setup(false)
+    act(() => {
+      useDownloadsView.getState().setInspectorVisible(true)
+      selection.getState().clearSelection()
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'More' }))
+    const item = await screen.findByRole('menuitem', { name: 'Show Inspector' })
+    expect(item).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'i', metaKey: true })
+    expect(useDownloadsView.getState().inspectorVisible).toBe(true)
+  })
+
+  it.each([
+    ['Pause All', CommandIds.TaskPauseAll, Commands.PauseAllTasks],
+    ['Resume All', CommandIds.TaskResumeAll, Commands.ResumeAllTasks],
+  ] as const)(
+    'runs %s for the whole instance even when the current list has no selection',
+    async (label, commandId, command) => {
+      vi.mocked(menuActionEnabled).mockImplementation((id) => id === commandId)
+      setup(false, [])
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: 'More' }))
+      await user.click(await screen.findByRole('menuitem', { name: label }))
+      await waitFor(() =>
+        expect(transport.invoke).toHaveBeenCalledExactlyOnceWith(command)
+      )
+    }
+  )
+
+  it('updates global action availability while the menu is open', async () => {
+    setup(false, [])
+    await userEvent.click(screen.getByRole('button', { name: 'More' }))
+    const pause = await screen.findByRole('menuitem', { name: 'Pause All' })
+    const resume = screen.getByRole('menuitem', { name: 'Resume All' })
+    expect(pause).toHaveAttribute('aria-disabled', 'true')
+    expect(resume).toHaveAttribute('aria-disabled', 'true')
+    for (const command of [CommandIds.TaskPauseAll, CommandIds.TaskResumeAll]) {
+      act(() => {
+        vi.mocked(menuActionEnabled).mockImplementation((id) => id === command)
+        for (const listener of menuContext.listeners) listener()
+      })
+      const enabled = command === CommandIds.TaskPauseAll ? pause : resume
+      const disabled = command === CommandIds.TaskPauseAll ? resume : pause
+      expect(enabled).not.toHaveAttribute('aria-disabled', 'true')
+      expect(disabled).toHaveAttribute('aria-disabled', 'true')
+    }
+    expect(transport.invoke).not.toHaveBeenCalled()
+  })
+
+  it('reports partial and whole-command failures from global actions', async () => {
+    vi.mocked(menuActionEnabled).mockReturnValue(true)
+    setup(false, [])
+    const user = userEvent.setup()
+    vi.mocked(transport.invoke).mockResolvedValueOnce({
+      succeeded: ['a'],
+      failed: [{ taskId: 'b', reason: 'Unavailable' }],
+    })
+    await user.click(screen.getByRole('button', { name: 'More' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Pause All' }))
+    await waitFor(() =>
+      expect(toast.add).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'warning' })
+      )
+    )
+    vi.mocked(transport.invoke).mockRejectedValueOnce(new Error('Disconnected'))
+    await user.click(screen.getByRole('button', { name: 'More' }))
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Resume All' })
+    )
+    await waitFor(() =>
+      expect(toast.add).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'error', description: 'Disconnected' })
+      )
+    )
+  })
+
   it('opens a new task from an empty list without empty task groups', async () => {
     setup(true, [])
     fireEvent.contextMenu(screen.getByTestId('context-list'))
@@ -429,6 +525,65 @@ describe('TaskActionsMenu', () => {
 })
 
 describe('organized task menu and keyboard actions', () => {
+  it.each([
+    [true, false],
+    [true, true],
+    [false, false],
+    [false, true],
+  ])(
+    'preserves Shift on Remove (context menu: %s, shift: %s)',
+    async (context, shift) => {
+      setup(context)
+      if (context) fireEvent.contextMenu(screen.getByText('b'))
+      else await userEvent.click(screen.getByRole('button', { name: 'More' }))
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Remove' }), {
+        shiftKey: shift,
+      })
+      const checkbox = await screen.findByRole('checkbox')
+      expect(checkbox).toHaveAttribute('aria-checked', String(shift))
+      expect(transport.invoke).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+      await waitFor(() =>
+        expect(transport.invoke).toHaveBeenCalledExactlyOnceWith(
+          Commands.RemoveTasks,
+          {
+            taskIds: ['a', 'b'],
+            deleteWithFiles: shift,
+          }
+        )
+      )
+    }
+  )
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'prechecks files for the shifted removal shortcut on %s without deleting immediately',
+    async (platform) => {
+      vi.mocked(transport).platform = platform
+      setup()
+      const list = screen.getByTestId('context-list')
+      const shortcut = {
+        key: platform === 'darwin' ? 'Backspace' : 'Delete',
+        metaKey: platform === 'darwin',
+      }
+      fireEvent.keyDown(list, { ...shortcut, shiftKey: true })
+      expect(await screen.findByRole('checkbox')).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+      expect(transport.invoke).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      )
+      fireEvent.keyDown(list, shortcut)
+      expect(await screen.findByRole('checkbox')).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+      expect(transport.invoke).not.toHaveBeenCalled()
+    }
+  )
+
   it('groups completed-task access, clipboard, creation and removal in that order', async () => {
     setup(true, [
       makeDownloadTask({
@@ -556,6 +711,12 @@ describe('organized task menu and keyboard actions', () => {
     fireEvent.keyDown(list, { key: 'i', metaKey: true, shiftKey: true })
     fireEvent.keyDown(list, { key: 'i', metaKey: true, repeat: true })
     fireEvent.keyDown(list, { key: 'Backspace' })
+    fireEvent.keyDown(list, {
+      key: 'Backspace',
+      metaKey: true,
+      shiftKey: true,
+      altKey: true,
+    })
     expect(useDownloadsView.getState().inspectorVisible).toBe(false)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled()

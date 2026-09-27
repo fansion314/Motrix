@@ -1,3 +1,4 @@
+import { ChevronDownIcon } from '@renderer/components/icons'
 import { Button } from '@renderer/components/ui/button'
 import {
   DropdownMenu,
@@ -9,10 +10,9 @@ import {
 import { Skeleton } from '@renderer/components/ui/skeleton'
 import { useByteFormat } from '@renderer/hooks/use-byte-format'
 import type { TransferStatsState } from '@renderer/hooks/use-transfer-stats'
-
 import { cn } from '@renderer/lib/utils'
 import type { TransferRangeStats } from '@shared/types/stats'
-import { ChevronDown } from 'lucide-react'
+import { formatBytes as formatByteCount } from '@shared/utils/format-bytes'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { KpiNumber } from '../components/kpi-number'
@@ -55,7 +55,7 @@ function RangeDropdown({ scope, disabled, onScopeChange }: RangeControlProps) {
         }
       >
         <span>{selectedLabel}</span>
-        <ChevronDown aria-hidden className="size-3" />
+        <ChevronDownIcon aria-hidden className="size-3" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-32">
         <DropdownMenuRadioGroup
@@ -139,7 +139,7 @@ function DirectionMetric({
     <div
       className={cn(
         'min-w-0',
-        align === 'right' && 'text-right',
+        align === 'right' && 'text-end',
         inline && 'flex items-baseline justify-between gap-2'
       )}
     >
@@ -203,10 +203,10 @@ function DirectionBreakdown({
         data-testid="transfer-direction-values"
         className="flex w-full justify-between"
       >
-        <div className="text-left font-medium tabular-nums text-foreground text-sm">
+        <div className="text-start font-medium text-foreground text-sm">
           <KpiNumber value={formatBytes(range.uploadBytes)} variant="compact" />
         </div>
-        <div className="text-right font-medium tabular-nums text-foreground text-sm">
+        <div className="text-end font-medium text-foreground text-sm">
           <KpiNumber
             value={formatBytes(range.downloadBytes)}
             variant="compact"
@@ -282,7 +282,7 @@ export function TransferTile({
   viewport,
   className,
 }: TransferTileProps) {
-  const { formatBytes } = useByteFormat()
+  const { unitSystem } = useByteFormat()
 
   const { t, i18n } = useTranslation()
   const [scope, setScope] = useState<TransferScope>('today')
@@ -293,7 +293,12 @@ export function TransferTile({
   const snapshot = 'snapshot' in state ? state.snapshot : null
   const range = snapshot?.[scope]
   const totalIsZero = range ? parseByteCount(range.totalBytes) === 0n : false
-  const formattedTotal = range ? formatBytes(range.totalBytes) : null
+  const formattedTotal = range
+    ? formatByteCount(range.totalBytes, {
+        unitSystem,
+        decimals: compact ? 1 : 2,
+      })
+    : null
   const scopeLabel = t(`panel.dashboard.transfer.scope.${scope}`)
 
   let statusCaption: string | null = null

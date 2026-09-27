@@ -402,6 +402,25 @@ describe('SettingsManager', () => {
   })
 
   describe('load', () => {
+    it('migrates the previous Linux tray icon preference to trayIconColor', async () => {
+      mockedFs.readFile.mockResolvedValue(
+        JSON.stringify({
+          version: CURRENT_SETTINGS_VERSION,
+          app: { trayIconTheme: 'light' },
+        })
+      )
+      mockedFs.writeFile.mockResolvedValue(undefined)
+
+      await manager.load()
+
+      expect(manager.getApp().trayIconColor).toBe('light')
+      const saved = JSON.parse(
+        mockedFs.writeFile.mock.calls.at(-1)![1] as string
+      )
+      expect(saved.app.trayIconColor).toBe('light')
+      expect(saved.app).not.toHaveProperty('trayIconTheme')
+    })
+
     it.each([
       ['darwin', 64_000, 512_000],
       ['win32', 65_536, 524_288],
@@ -1005,6 +1024,13 @@ describe('SettingsManager', () => {
       })
     })
 
+    it('persists the system preference without freezing it to a resolved locale', async () => {
+      await manager.setDisclaimerLanguage('system')
+      expect(manager.getApp().language).toBe('system')
+      const writtenJson = mockedFs.writeFile.mock.calls.at(-1)?.[1] as string
+      expect(JSON.parse(writtenJson).app.language).toBe('system')
+    })
+
     it('serializes acceptance with a concurrent disclaimer language save', async () => {
       mockedFs.writeFile.mockClear()
 
@@ -1532,7 +1558,25 @@ describe('SettingsManager', () => {
       const app = manager.getApp()
       expect(app.runMode).toBe(1) // RunMode.Standard
       expect(app.traySpeedometer).toBe(true)
+      expect(app.trayIconColor).toBe('auto')
     })
+
+    it.each(['light', 'dark', 'auto'] as const)(
+      'persists tray color %s without changing the app theme or requiring restart',
+      async (trayIconColor) => {
+        const theme = manager.getApp().theme
+        const result = await manager.update({ app: { trayIconColor } })
+        expect(result.requiresRestart).toBe(false)
+        expect(manager.getApp().theme).toBe(theme)
+        const saved = mockedFs.writeFile.mock.calls.at(-1)?.[1] as string
+        expect(JSON.parse(saved).app.trayIconColor).toBe(trayIconColor)
+        mockedFs.readFile.mockResolvedValue(saved)
+        const reloaded = new SettingsManager(TEST_PATH)
+        await reloaded.load()
+        expect(reloaded.getApp().trayIconColor).toBe(trayIconColor)
+        expect(reloaded.getApp().theme).toBe(theme)
+      }
+    )
   })
 
   describe('rpcSecret seeding', () => {

@@ -91,6 +91,7 @@ import { handleCreateTask } from '@core/task/create-task-handler'
 import { DirectResourceValidatorService } from '@core/task/direct-resource-validator'
 import { FileCleanupServiceImpl } from '@core/task/file-cleanup-service'
 import { FinalNamePickerImpl } from '@core/task/final-name-picker'
+import { MediaMetaStoreImpl } from '@core/task/media-meta-store'
 import {
   hasEngineTaskDelta,
   mergeEngineTask,
@@ -120,6 +121,10 @@ import {
 import type { NatManager } from '@motrix/nat'
 import { APP_ID } from '@shared/constants'
 import { DEFAULT_LOCALE, type SupportedLocale } from '@shared/constants/locales'
+import {
+  ALL_DOWNLOADS_ROUTE,
+  resolveTaskRoute,
+} from '@shared/lib/task-navigation'
 import { Events } from '@shared/protocol/events'
 import {
   DEFAULT_BYTE_UNIT_PREFERENCE,
@@ -128,6 +133,7 @@ import {
 import { REGISTRY_CACHE_FILENAME } from '@shared/schemas/registry'
 import { EngineState } from '@shared/types/engine'
 import type { AppNotification } from '@shared/types/notification'
+import { getHiddenNotificationKinds } from '@shared/types/notification'
 import type { AppSettings } from '@shared/types/settings'
 import type { DownloadTask } from '@shared/types/task'
 import { TaskType } from '@shared/types/task'
@@ -190,6 +196,8 @@ import { setupNativeThemeSync } from './platform/native-theme-sync'
 import { setupPowerManager } from './platform/power-manager'
 import { createProtocolManager } from './platform/protocol-manager'
 import { createElectronPlatformServices } from './platform/services'
+import { setupSystemAccentColorSync } from './platform/system-accent-color'
+import { removeTaskPath } from './platform/task-file-remover'
 import { setupTray } from './platform/tray'
 import { createElectronCapabilityHost } from './plugin/capability-host'
 import { startDevWatcher } from './plugin/dev-watcher'
@@ -341,6 +349,18 @@ const settingsManager = new SettingsManager(settingsPath, {
     if (old.app.uiScale !== updated.app.uiScale) {
       windowManager?.applyUiScale()
     }
+    if (
+      old.app.notifyInAppOnComplete !== updated.app.notifyInAppOnComplete ||
+      old.app.notifyInAppOnError !== updated.app.notifyInAppOnError ||
+      old.app.notificationBadgeStyle !== updated.app.notificationBadgeStyle
+    ) {
+      eventBus.emit(Events.NotificationsChanged)
+    }
+    if (old.app.sidebarColor !== updated.app.sidebarColor) {
+      eventBus.emit(Events.SidebarColorChanged, {
+        sidebarColor: updated.app.sidebarColor,
+      })
+    }
     if (old.app.liquidGlassEffect !== updated.app.liquidGlassEffect) {
       eventBus.emit(Events.LiquidGlassChanged, {
         liquidGlassEffect: updated.app.liquidGlassEffect,
@@ -445,8 +465,12 @@ const finalNamePicker = new FinalNamePickerImpl({
 const torrentMetaStore = new TorrentMetaStoreImpl(
   path.join(platform.userDataDir, 'torrents')
 )
+const mediaMetaStore = new MediaMetaStoreImpl(
+  path.join(platform.userDataDir, 'media')
+)
 const fileCleanupService = new FileCleanupServiceImpl({
-  removePathRecursive,
+  removePathRecursive: (absPath) =>
+    removeTaskPath(absPath, settingsManager.getApp().fileDeletionMode),
 })
 
 // ─── Late-Initialized (assigned in app.on('ready')) ─────
@@ -469,6 +493,7 @@ let recoveryService: TaskRecoveryServiceImpl | undefined
 let dnsFallbackRetry: ((taskId: string) => Promise<unknown>) | undefined
 let trayHandle: ReturnType<typeof setupTray> | null = null
 let natManager: NatManager | null = null
+let stopNatDiagnostics: (() => Promise<void>) | null = null
 let trackerManager: TrackerManager | null = null
 let menuManager: MenuManager | null = null
 let osNotificationBridge: { dispose(): void } | null = null
@@ -578,7 +603,10 @@ function performCleanup(): Promise<void> {
       safely('magnet', () => magnetTracker?.stopAndDrain()),
       safely('speed-limit', () => speedLimitController?.stop()),
       safely('geoip', () => geoipManager?.stop()),
-      safely('nat', () => natManager?.stop()),
+      safely('nat', async () => {
+        await stopNatDiagnostics?.()
+        await natManager?.stop()
+      }),
     ])
     // Tracker edits pause active tasks while changing bt-tracker. Drain their
     // unconditional resume compensation while both Session persistence and
@@ -636,14 +664,18 @@ function loadWindowUrl(win: BrowserWindow, route: string) {
 function dispatchWhenReady(
   win: BrowserWindow,
   channel: string,
-  payload: unknown
+  payload: unknown,
+  resolvePayload?: () => unknown
 ) {
   const dispatchLog = getLogger('dispatch')
   const send = (reason: string) => {
     setTimeout(() => {
       if (!win.isDestroyed()) {
         dispatchLog.info({ channel, reason }, 'webContents.send firing')
-        win.webContents.send(channel, payload)
+        win.webContents.send(
+          channel,
+          resolvePayload ? resolvePayload() : payload
+        )
       } else {
         dispatchLog.warn({ channel, reason }, 'window destroyed before send')
       }
@@ -656,6 +688,21 @@ function dispatchWhenReady(
   } else {
     send('already-loaded')
   }
+}
+
+// Notifications and protocol links share the same last-moment availability
+// check, including the wait for a released main window to finish loading.
+function navigateToTask(taskId: string) {
+  runShellAsyncWork('task navigation', async () => {
+    // A cold-start link can arrive before the persisted tasks are restored.
+    await mainProcessWork.waitForStartup()
+    if (!mainProcessWork.isAccepting()) return
+    const win = windowManager?.get('main')
+    if (!win || win.isDestroyed()) return
+    dispatchWhenReady(win, Events.NavigateTo, ALL_DOWNLOADS_ROUTE, () =>
+      resolveTaskRoute(taskId, taskManager.getById(taskId)?.status)
+    )
+  })
 }
 
 // Each new add-task BrowserWindow gets a `closed` listener that resets
@@ -719,6 +766,11 @@ const protocolManager = createProtocolManager({
     const win = windowManager.get('main')
     if (!win || win.isDestroyed()) return
     dispatchWhenReady(win, Events.NavigateTo, `/plugins/${pluginId}`)
+  },
+  onOpenTaskDetail: (taskId) => {
+    if (!windowManager) return
+    windowManager.show('main')
+    navigateToTask(taskId)
   },
 })
 
@@ -1135,6 +1187,7 @@ function buildFinalizeDeps(adapter: Aria2Adapter) {
         ? taskInspectorActivityRuntime.runTaskMutation(taskIds, operation)
         : operation(),
     log,
+    finalNamePicker,
     commitFinalizedArtifact: async (input: FinalizeArtifactCommitRequest) => {
       if (!durableFinalizeRuntime) {
         throw new Error('durable finalize runtime is unavailable')
@@ -1618,13 +1671,17 @@ async function initializeMainProcess(): Promise<void> {
   // Apply the persisted theme before opening windows. Renderer-drawn Windows
   // controls inherit the same theme through CSS without native overlay sync.
   setupNativeThemeSync(eventBus, settingsManager)
+  const systemAccentSync = setupSystemAccentColorSync(eventBus)
+  app.once('will-quit', () => systemAccentSync.destroy())
   // Install forwarding before the onboarding window becomes interactive.
   // SetDisclaimerLanguage persists before its asynchronous locale transaction
   // completes; an immediate AcceptDisclaimer can open the main window in that
   // interval. Early forwarding guarantees the eventual LocaleChanged reaches
   // either the onboarding window or the newly-opened main window (whose
   // preload buffers it until React subscribes).
-  setupEventForwarding(eventBus, windowManager)
+  setupEventForwarding(eventBus, windowManager, () =>
+    getHiddenNotificationKinds(settingsManager.getApp())
+  )
 
   // Subscribe before notification-center replay. Resolve task paths on click
   // so notifications follow any output moves made after download completion.
@@ -1641,14 +1698,12 @@ async function initializeMainProcess(): Promise<void> {
     showMainWindow: () => windowManager?.show('main'),
     getAppSettings: () => settingsManager.getApp(),
     translate: i18n.t.bind(i18n),
-    navigateToTask: (taskId) => {
+    getTaskStatus: (taskId) => taskManager.getById(taskId)?.status ?? null,
+    navigateToTask,
+    navigateToDownloads: () => {
       const win = windowManager?.get('main')
       if (!win || win.isDestroyed()) return
-      dispatchWhenReady(
-        win,
-        Events.NavigateTo,
-        `/downloads/all?task=${encodeURIComponent(taskId)}`
-      )
+      dispatchWhenReady(win, Events.NavigateTo, ALL_DOWNLOADS_ROUTE)
     },
     revealTaskInFolder: (taskId) => revealNotificationTask({ taskId }),
     log,
@@ -1676,6 +1731,8 @@ async function initializeMainProcess(): Promise<void> {
   } else {
     const disposeDisclaimerIpc = registerDisclaimerIpc({
       gate,
+      getResolvedLanguage: () => resolvedApplicationLocale,
+      applyLocale: (language) => enqueueLocaleUpdate(language, true),
       settings: settingsManager,
       windowManager,
       canContinue: () => mainProcessWork.isAccepting(),
@@ -1762,6 +1819,10 @@ async function initializeMainProcess(): Promise<void> {
   )
 
   motrixDb.init()
+  await mediaMetaStore
+    .pruneOrphans(motrixDb.getAllTasks().map(({ task }) => task.motrixId))
+    .catch((err) => log.warn({ err }, 'Media metadata recovery failed'))
+
   const activityEnvironment = taskInspectorActivityEnvironment(process.env)
   const activeTaskInspectorActivityRuntime = new TaskInspectorActivityRuntime(
     new TaskInspectorActivityStore(motrixDb.database),
@@ -2040,6 +2101,8 @@ async function initializeMainProcess(): Promise<void> {
     isEngineReady: () => supervisor.getState() === EngineState.Ready,
   })
   natManager = natStack.manager
+  stopNatDiagnostics = natStack.stopDiagnostics
+  natStack.startDiagnostics()
   log.info('NatManager constructed')
 
   const startupGeoipManager = new GeoIPManager({
@@ -2360,6 +2423,7 @@ async function initializeMainProcess(): Promise<void> {
       adapter,
       log,
       fileCleanupService,
+      mediaMetaStore,
       torrentMetaStore,
       eventBus,
       db: motrixDb,
@@ -2423,7 +2487,6 @@ async function initializeMainProcess(): Promise<void> {
         },
         (candidate) => resolveExecutable(candidate, process.env)
       )
-    const ff = await resolveFfmpegLocation()
     const segmentAria2Client = new Aria2SegmentClient(rpcClient, adapter)
     segmentClient = segmentAria2Client
     const revealInFolder = createRevealInFolderHandler({
@@ -2438,9 +2501,10 @@ async function initializeMainProcess(): Promise<void> {
     // mediaTmpDir / mediaTmpRoot were computed once at bootstrap (above) so
     // SessionManager.restore() and the poll loop share the exact same root.
     return bootstrapBridge({
+      mediaMetaStore,
       getMainWindow: () => windowManager?.get('main') ?? null,
       motrixVersion: app.getVersion(),
-      ffmpegAvailable: ff.available,
+      ffmpegAvailable: async () => (await resolveFfmpegLocation()).available,
       enabled: true,
       // Read fresh on every factory invocation (including a hot restart from
       // BridgeManager.restart()), so a `bridge.fixedPort`/`instanceId` change
@@ -2487,7 +2551,7 @@ async function initializeMainProcess(): Promise<void> {
           (await torrentParser.parse(base64)).files.length,
         revealTask: (taskId) => revealInFolder({ taskId }),
       },
-      ffmpegBinaryPath: ff.binaryPath,
+      ffmpegBinaryPath: null,
       resolveFfmpegBinaryPath: async () =>
         (await resolveFfmpegLocation()).binaryPath,
       publishTaskUpdate,
@@ -2576,6 +2640,7 @@ async function initializeMainProcess(): Promise<void> {
   notificationCenter = new NotificationCenter({
     store: motrixDb,
     emit: eventBus.emit.bind(eventBus),
+    getHiddenKinds: () => getHiddenNotificationKinds(settingsManager.getApp()),
     log,
   })
   const disposeNotificationIpc = registerNotificationIpc({
@@ -2593,6 +2658,7 @@ async function initializeMainProcess(): Promise<void> {
   })
 
   const disposeCommandHandlers = registerCommandHandlers({
+    mediaMetaStore,
     cliToolService,
     supervisor,
     dnsFallback: { reset: () => dnsFallbackConsumer?.reset() },
@@ -2610,6 +2676,7 @@ async function initializeMainProcess(): Promise<void> {
     },
     sessionManager,
     settingsManager,
+    applyLocale: (language) => enqueueLocaleUpdate(language, true),
     protocolManager,
     windowManager,
     natManager,
@@ -2670,6 +2737,8 @@ async function initializeMainProcess(): Promise<void> {
     overlayDir,
   })
   const disposeQueryHandlers = registerQueryHandlers({
+    getResolvedLanguage: () => resolvedApplicationLocale,
+    mediaMetaStore,
     cliToolService,
     taskManager,
     statsAggregator,

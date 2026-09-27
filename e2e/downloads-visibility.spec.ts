@@ -3,7 +3,13 @@ import { DownloadErrorCode } from '@shared/errors'
 import { Commands } from '@shared/protocol/commands'
 import { Events } from '@shared/protocol/events'
 import { Queries } from '@shared/protocol/queries'
-import { type DownloadTask, TaskStatus, TaskType } from '@shared/types/task'
+import {
+  type DownloadTask,
+  TaskKind,
+  TaskStatus,
+  TaskType,
+} from '@shared/types/task'
+import { makeMediaProgress } from '../src/test-utils/media-progress'
 import { makeDownloadTask } from '../src/test-utils/task'
 import {
   expect,
@@ -93,6 +99,255 @@ async function expectDrawerSettled(drawer: Locator) {
     .toBe(true)
 }
 
+test('media task progress follows segments, then the processing stage, until the output is saved', async ({
+  electronApp,
+  mainWindow,
+}, testInfo) => {
+  await mainWindow.emulateMedia({ reducedMotion: 'reduce' })
+  await waitForEngineReady(mainWindow)
+  await setTaskInspectorContentSize(electronApp, mainWindow, 1280, 900)
+  await mainWindow.getByRole('link', { name: 'Downloads', exact: true }).click()
+  await expect(mainWindow.getByTestId('downloads-loading')).toHaveCount(0)
+  const task = makeDownloadTask({
+    id: 'media-progress',
+    name: 'Progress.mp4',
+    kind: TaskKind.Hls,
+    status: TaskStatus.Downloading,
+    progress: 1,
+    totalBytes: 100,
+    downloadedBytes: 100,
+    mediaProgress: makeMediaProgress(),
+  })
+  await publish(electronApp, [task])
+  const row = mainWindow.locator('[data-task-id="media-progress"]')
+  await expect(row.getByText('Downloading 0.1%', { exact: true })).toBeVisible()
+  await expect(row.getByRole('progressbar')).toHaveAttribute(
+    'aria-valuenow',
+    '0.1'
+  )
+  await mainWindow
+    .getByRole('button', { name: 'List View', exact: true })
+    .click()
+  await mainWindow
+    .getByRole('menuitemcheckbox', { name: 'Status', exact: true })
+    .click()
+  await mainWindow.keyboard.press('Escape')
+  await expect(row.getByText('Downloading 0.1%', { exact: true })).toBeVisible()
+  const completeDownload = {
+    progress: 1,
+    completedParts: 1000,
+    totalParts: 1000,
+    totalBytes: null,
+  }
+  task.mediaProgress = makeMediaProgress({
+    phase: 'muxing',
+    download: completeDownload,
+  })
+  await publish(electronApp, [task])
+  await expect(row.getByText('Merging —', { exact: true })).toBeVisible()
+  await expect(row.getByRole('progressbar')).not.toHaveAttribute(
+    'aria-valuenow'
+  )
+  task.mediaProgress = { ...task.mediaProgress, muxProgress: 0.42 }
+  await publish(electronApp, [task])
+  await expect(row.getByText('Merging 42%', { exact: true })).toBeVisible()
+  await row.dblclick()
+  const inspector = mainWindow.getByRole('dialog', { name: 'Task Inspector' })
+  await expect(
+    inspector.getByText('Download progress', { exact: true })
+  ).toBeVisible()
+  await expect(inspector.getByText('100%', { exact: true })).toBeVisible()
+  await expect(inspector.getByText('42%', { exact: true })).toBeVisible()
+  await expect(
+    inspector.getByText('1000 / 1000 segments', { exact: true })
+  ).toBeVisible()
+  await expect(
+    inspector.getByRole('button', { name: 'Pause', exact: true })
+  ).toHaveCount(0)
+  await inspector
+    .getByRole('separator', { name: 'Resize Inspector' })
+    .press('End')
+  await expectDrawerSettled(inspector)
+  await mainWindow.screenshot({
+    path: testInfo.outputPath('media-mux-progress.png'),
+    animations: 'disabled',
+  })
+  await setTaskInspectorContentSize(electronApp, mainWindow, 914, 640)
+  await expectDrawerSettled(inspector)
+  await inspector
+    .getByText('Download progress', { exact: true })
+    .scrollIntoViewIfNeeded()
+  expect(
+    await mainWindow.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth
+    )
+  ).toBe(true)
+  await mainWindow.screenshot({
+    path: testInfo.outputPath('media-mux-progress-compact.png'),
+    animations: 'disabled',
+  })
+
+  task.status = TaskStatus.Finalizing
+  task.mediaProgress = {
+    ...task.mediaProgress,
+    phase: 'renaming',
+    muxProgress: 1,
+  }
+  await publish(electronApp, [task])
+  await expect(
+    inspector.getByText('Saving', { exact: true }).first()
+  ).toBeVisible()
+  await expect(inspector.getByText('Completed', { exact: true })).toHaveCount(0)
+  task.status = TaskStatus.Completed
+  task.mediaProgress = { ...task.mediaProgress, outputBytes: 2_000_000 }
+  task.sizeWhenDone = 2_000_000
+  await publish(electronApp, [task])
+  await expect(
+    inspector.getByText('Completed', { exact: true }).first()
+  ).toBeVisible()
+  await expect(inspector.getByText('2.00 MB', { exact: true })).toBeVisible()
+})
+
+test('media file list shows every segment through virtual scrolling and stays read-only', async ({
+  electronApp,
+  mainWindow,
+}, testInfo) => {
+  await waitForEngineReady(mainWindow)
+  await setTaskInspectorContentSize(electronApp, mainWindow, 1280, 900)
+  await mainWindow.getByRole('link', { name: 'Downloads', exact: true }).click()
+  await expect(mainWindow.getByTestId('downloads-loading')).toHaveCount(0)
+  await electronApp.evaluate(({ ipcMain }, channel) => {
+    ipcMain.removeHandler(channel)
+    ipcMain.handle(channel, () =>
+      Array.from({ length: 2000 }, (_, index) => ({
+        index,
+        path:
+          index === 0
+            ? 'video/init.mp4'
+            : index === 1999
+              ? 'audio/001000.aac'
+              : `video/${String(index).padStart(6, '0')}.ts`,
+        size: index < 2 ? 1000 : 0,
+        selected: true,
+        completedBytes: index === 0 ? 1000 : index === 1 ? 500 : 0,
+        progress: index === 0 ? 1 : index === 1 ? 0.5 : 0,
+      }))
+    )
+  }, Queries.GetTaskFiles)
+  const task = makeDownloadTask({
+    id: 'hls-segments',
+    name: 'Playlist.mp4',
+    kind: TaskKind.Hls,
+    status: TaskStatus.Downloading,
+    progress: 0.25,
+    fileCount: 1,
+  })
+  await publish(electronApp, [task])
+  await mainWindow.locator('[data-task-id="hls-segments"]').dblclick()
+  const inspector = mainWindow.getByRole('dialog', { name: 'Task Inspector' })
+  await inspector.getByRole('tab', { name: 'Files', exact: true }).click()
+  const list = inspector.getByTestId('virtual-list-container')
+  await expect(list.getByText('video/init.mp4', { exact: true })).toBeVisible()
+  await expect(list.getByText('100%', { exact: true })).toBeVisible()
+  await expect(list.getByText('50%', { exact: true })).toBeVisible()
+  expect(await list.getByRole('checkbox').count()).toBeLessThan(50)
+  await expect(list.getByRole('checkbox').first()).toHaveAttribute(
+    'aria-disabled',
+    'true'
+  )
+  await expect(
+    inspector.getByRole('button', { name: 'Save', exact: true })
+  ).toHaveCount(0)
+  await mainWindow.screenshot({
+    path: testInfo.outputPath('media-segments.png'),
+  })
+
+  await list.evaluate((element) => {
+    element.scrollTop = element.scrollHeight
+  })
+  await expect(
+    list.getByText('audio/001000.aac', { exact: true })
+  ).toBeVisible()
+  expect(await list.getByRole('checkbox').count()).toBeLessThan(50)
+  expect(
+    await mainWindow.evaluate(
+      () => document.documentElement.scrollHeight <= window.innerHeight
+    )
+  ).toBe(true)
+  await mainWindow.screenshot({
+    path: testInfo.outputPath('media-segments-last.png'),
+  })
+})
+
+test('default columns keep the download speed fully visible at minimum window size', async ({
+  electronApp,
+  mainWindow,
+}) => {
+  await waitForEngineReady(mainWindow)
+  await setTaskInspectorContentSize(electronApp, mainWindow, 914, 672)
+  await mainWindow.getByRole('link', { name: 'Downloads', exact: true }).click()
+  await expect(mainWindow.getByTestId('downloads-loading')).toHaveCount(0)
+  await publish(electronApp, [
+    makeDownloadTask({
+      id: 'minimum-window-speed',
+      name: 'A reasonably descriptive download filename.zip',
+      status: TaskStatus.Downloading,
+      downloadSpeed: 999_900_000,
+      progress: 0.425,
+    }),
+  ])
+  const list = mainWindow.getByTestId('virtual-list-container')
+  const header = list.getByRole('columnheader').nth(4)
+  const speed = list.locator('[data-task-id]').getByRole('gridcell').nth(4)
+  await expect(speed).toHaveText('999.9 MB/s')
+  await header.getByRole('button').click()
+  await expect(header).toHaveAttribute('aria-sort', 'descending')
+
+  const expectSpeedFits = async () => {
+    await expect
+      .poll(() =>
+        speed.evaluate((cell) => {
+          const viewport = cell.closest(
+            '[data-testid="virtual-list-container"]'
+          )!
+          const bounds = viewport.getBoundingClientRect()
+          const rect = cell.getBoundingClientRect()
+          const range = document.createRange()
+          range.selectNodeContents(cell)
+          const text = range.getBoundingClientRect()
+          return (
+            rect.left >= bounds.left &&
+            rect.right <= bounds.right - 8 &&
+            text.left >= rect.left + 8 &&
+            text.right <= rect.right - 8 &&
+            viewport.scrollLeft === 0
+          )
+        })
+      )
+      .toBe(true)
+    const label = header.locator('button span')
+    expect(
+      await label.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth
+      )
+    ).toBe(true)
+    expect(
+      await mainWindow.evaluate(
+        () => document.documentElement.scrollWidth === window.innerWidth
+      )
+    ).toBe(true)
+  }
+  await expectSpeedFits()
+  const toggleSidebar = mainWindow.getByRole('button', {
+    name: 'Toggle sidebar',
+    exact: true,
+  })
+  await toggleSidebar.click()
+  await expectSpeedFits()
+  await toggleSidebar.click()
+  await expectSpeedFits()
+})
+
 test('download columns sort live tasks without losing selection or filter state', async ({
   electronApp,
   mainWindow,
@@ -124,9 +379,12 @@ test('download columns sort live tasks without losing selection or filter state'
     )
   }
   await expectOrder([10, 2, 1])
-  await expect(list.locator('button[aria-pressed] svg')).toHaveCount(0)
+  await expect(list.locator('button[aria-pressed] svg')).toHaveCount(1)
+  await expect(
+    list.getByRole('columnheader', { name: /Date created/ })
+  ).toHaveAttribute('aria-sort', 'descending')
   await list.getByRole('button', { name: 'Name', exact: true }).hover()
-  await expect(list.locator('button[aria-pressed] svg')).toHaveCount(0)
+  await expect(list.locator('button[aria-pressed] svg')).toHaveCount(1)
   await list.getByRole('row', { name: /File 2\.bin/ }).click()
   await list.getByRole('button', { name: 'Name', exact: true }).click()
   await expectOrder([1, 2, 10])
@@ -165,11 +423,11 @@ test('download columns sort live tasks without losing selection or filter state'
   await mainWindow
     .getByRole('menuitem', { name: 'Restore default order', exact: true })
     .click()
-  await expect(list.locator('button[aria-pressed] svg')).toHaveCount(0)
-
-  await list.getByRole('button', { name: 'Date created', exact: true }).click()
   await expectOrder([10, 2, 1])
   await expect(list.locator('button[aria-pressed] svg')).toHaveCount(1)
+  await expect(
+    list.getByRole('columnheader', { name: /Date created/ })
+  ).toHaveAttribute('aria-sort', 'descending')
   await list
     .getByRole('button', { name: 'Date created: descending', exact: true })
     .click()
@@ -219,9 +477,12 @@ test('download columns sort live tasks without losing selection or filter state'
   await mainWindow
     .getByRole('button', { name: 'List View', exact: true })
     .click()
-  await mainWindow
-    .getByRole('menuitemcheckbox', { name: 'ETA', exact: true })
-    .click()
+  const etaColumn = mainWindow.getByRole('menuitemcheckbox', {
+    name: 'ETA',
+    exact: true,
+  })
+  if ((await etaColumn.getAttribute('aria-checked')) !== 'true')
+    await etaColumn.click()
   await mainWindow.keyboard.press('Escape')
   await list.getByRole('button', { name: 'ETA', exact: true }).click()
   await expectOrder([1, 2, 10])
@@ -304,6 +565,7 @@ test('remembers a manual sort across app restarts and clears it when restoring t
     await page.getByRole('button', { name: 'List View', exact: true }).click()
     await page.getByRole('menuitemcheckbox', { name: 'Date completed' }).click()
     await page.keyboard.press('Escape')
+    await list.locator('[data-task-id]').first().click()
     await page
       .getByRole('button', { name: 'Show Inspector', exact: true })
       .click()
@@ -317,10 +579,24 @@ test('remembers a manual sort across app restarts and clears it when restoring t
     await expect(list.getByRole('columnheader').first()).toContainText('Size')
     await expect(
       list.getByRole('separator', { name: 'Resize Name column' })
-    ).toHaveAttribute('aria-valuenow', '256')
+    ).toHaveAttribute('aria-valuenow', '216')
     await expect(
       list.getByRole('button', { name: 'Date completed', exact: true })
     ).toHaveCount(0)
+    await expect(
+      list.page().getByRole('dialog', { name: 'Task Inspector' })
+    ).toBeHidden()
+    await expect(
+      list.page().getByRole('button', { name: 'Show Inspector', exact: true })
+    ).toBeDisabled()
+    await list.locator('[data-task-id]').first().click()
+    await expect(
+      list.page().getByRole('dialog', { name: 'Task Inspector' })
+    ).toBeHidden()
+    await list
+      .page()
+      .getByRole('button', { name: 'Show Inspector', exact: true })
+      .click()
     await expect(
       list.page().getByRole('dialog', { name: 'Task Inspector' })
     ).toBeVisible()
@@ -357,7 +633,10 @@ test('remembers a manual sort across app restarts and clears it when restoring t
       .page()
       .getByRole('menuitem', { name: 'Restore default order', exact: true })
       .click()
-    await expect(list.locator('button[aria-pressed] svg')).toHaveCount(0)
+    await expect(list.locator('button[aria-pressed] svg')).toHaveCount(1)
+    await expect(
+      list.getByRole('columnheader', { name: /Date created/ })
+    ).toHaveAttribute('aria-sort', 'descending')
     await expect(list.locator('[data-task-id]')).toHaveText([
       /Gamma.bin/,
       /Beta.bin/,
@@ -367,7 +646,10 @@ test('remembers a manual sort across app restarts and clears it when restoring t
 
     app = await launchMotrix({ userDataDir, rpcPort })
     list = await openDownloads()
-    await expect(list.locator('button[aria-pressed] svg')).toHaveCount(0)
+    await expect(list.locator('button[aria-pressed] svg')).toHaveCount(1)
+    await expect(
+      list.getByRole('columnheader', { name: /Date created/ })
+    ).toHaveAttribute('aria-sort', 'descending')
     await expect(list.locator('[data-task-id]')).toHaveText([
       /Gamma.bin/,
       /Beta.bin/,
@@ -603,7 +885,7 @@ test('clears selection with modifier clicks, Escape and list whitespace', async 
 test('opens details by double click and keeps selection separate from inspector visibility', async ({
   electronApp,
   mainWindow,
-}) => {
+}, testInfo) => {
   await waitForEngineReady(mainWindow)
   await setTaskInspectorContentSize(electronApp, mainWindow, 1280, 900)
   await mainWindow.getByRole('link', { name: 'Downloads', exact: true }).click()
@@ -660,6 +942,32 @@ test('opens details by double click and keeps selection separate from inspector 
   await expect(
     content.getByText('Details 0.bin', { exact: true })
   ).toBeVisible()
+  await rows.nth(0).dblclick()
+  await expect(drawer).toBeVisible()
+  await expect(handle).toHaveAttribute(
+    'aria-valuenow',
+    String(Math.round(viewportHeight * 0.75))
+  )
+  await testInfo.attach('inspector-open', {
+    body: await mainWindow.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  })
+  await grid.press('Escape')
+  await expect(selected).toHaveCount(0)
+  await expect(drawer).toBeHidden()
+  await expect(
+    mainWindow.getByRole('button', { name: 'Show Inspector', exact: true })
+  ).toBeDisabled()
+  await testInfo.attach('inspector-selection-cleared', {
+    body: await mainWindow.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  })
+  await rows.nth(0).click()
+  await expect(drawer).toBeHidden()
+  await testInfo.attach('inspector-reselected-stays-closed', {
+    body: await mainWindow.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  })
   await rows.nth(0).dblclick()
   await expect(drawer).toBeVisible()
   await expect(handle).toHaveAttribute(
@@ -1012,6 +1320,15 @@ test('native list controls preserve selection through context menus, column chan
   await expect(
     mainWindow.getByRole('menuitem', { name: 'Resume', exact: true })
   ).toBeVisible()
+  await expect(
+    mainWindow.getByRole('menuitem', { name: 'Pause All', exact: true })
+  ).toBeEnabled()
+  await expect(
+    mainWindow.getByRole('menuitem', { name: 'Resume All', exact: true })
+  ).toBeEnabled()
+  await mainWindow.screenshot({
+    path: testInfo.outputPath('global-transfer-actions.png'),
+  })
   await mainWindow.keyboard.press('Escape')
   await expect(mainWindow.getByRole('menu')).toHaveCount(0)
 
@@ -1029,7 +1346,7 @@ test('native list controls preserve selection through context menus, column chan
   const nameResize = grid.getByRole('separator', { name: 'Resize Name column' })
   await nameResize.focus()
   await mainWindow.keyboard.press('ArrowRight')
-  await expect(nameResize).toHaveAttribute('aria-valuenow', '256')
+  await expect(nameResize).toHaveAttribute('aria-valuenow', '216')
   const nameHeader = grid.getByRole('button', { name: 'Name', exact: true })
   await nameHeader.click({ button: 'right' })
   await mainWindow
@@ -1158,7 +1475,7 @@ test('native list controls preserve selection through context menus, column chan
     }),
   ])
   const darkRow = mainWindow.getByRole('row', { name: '示例任务.zip' })
-  await darkRow.click()
+  await darkRow.dblclick()
   await expectDrawerSettled(
     mainWindow.getByRole('dialog', { name: '任务详情' })
   )
@@ -1213,7 +1530,7 @@ test('compact search filters the table and explains active query and type filter
   await expect(input).toBeFocused()
   await expect(root).toHaveAttribute('data-filter-active', 'false')
   const filter = mainWindow.getByRole('button', { name: /^Filters/ })
-  await expect(filter.locator('svg')).toHaveClass(/lucide-list-filter/)
+  await expect(filter.locator('svg')).toHaveAttribute('data-icon', 'filter')
   await input.fill('alpha')
   await expect(mainWindow.locator('[data-task-id]')).toHaveCount(2)
   await expect(root).toHaveAttribute('data-filter-active', 'true')
@@ -1977,6 +2294,36 @@ test('organized context menus expose working scoped shortcuts and keep text edit
     exact: true,
   })
   await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('checkbox')).not.toBeChecked()
+  expect(await removeCalls()).toEqual([])
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+
+  for (const entry of ['context', 'more'] as const) {
+    for (const shift of [true, false]) {
+      if (entry === 'context')
+        await row('shortcut-b').click({ button: 'right' })
+      else
+        await mainWindow
+          .getByRole('button', { name: 'More', exact: true })
+          .click()
+      await menu.getByRole('menuitem', { name: 'Remove', exact: true }).click({
+        modifiers: shift ? ['Shift'] : [],
+      })
+      await expect(dialog).toBeVisible()
+      await expect(dialog.getByRole('checkbox')).toBeChecked({ checked: shift })
+      expect(await removeCalls()).toEqual([])
+      await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+      await expect(dialog).toHaveCount(0)
+    }
+  }
+
+  await grid.focus()
+  await mainWindow.keyboard.press(
+    macOS ? 'Meta+Shift+Backspace' : 'Shift+Delete'
+  )
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('checkbox')).toBeChecked()
   expect(await removeCalls()).toEqual([])
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(dialog).toHaveCount(0)

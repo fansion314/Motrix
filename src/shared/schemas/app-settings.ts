@@ -7,12 +7,20 @@ import {
   DEFAULT_BYTE_UNIT_PREFERENCE,
 } from './byte-unit-system'
 import { DirectoryPreferencesSchema } from './directory-preferences'
-import { supportedLocaleSchema } from './locale'
+import { languagePreferenceSchema } from './locale'
 import { settingsInputObject } from './settings-input'
+import { sidebarColorSchema } from './sidebar-color'
+import { DEFAULT_TRAY_ICON_COLOR, trayIconColorSchema } from './tray-icon-color'
 
 export const appUpdateChannelSchema = z.enum(['stable', 'beta'])
 export const UI_SCALE_MIN = 75
 export const UI_SCALE_MAX = 200
+export const fileDeletionModeSchema = z.enum(['trash', 'permanent'])
+export type FileDeletionMode = z.infer<typeof fileDeletionModeSchema>
+export const notificationBadgeStyleSchema = z.enum(['count', 'dot', 'hidden'])
+export type NotificationBadgeStyle = z.infer<
+  typeof notificationBadgeStyleSchema
+>
 
 export const MAGNET_FILE_SELECTION_TIMEOUT_MIN_SECONDS = 10
 export const MAGNET_FILE_SELECTION_TIMEOUT_MAX_SECONDS = 3600
@@ -27,20 +35,24 @@ export const appSettingsSchema = z.object({
   showMainWindowAtLogin: z.boolean().catch(false),
   theme: z.enum(['system', 'light', 'dark']).catch('system'),
   uiScale: z.number().int().min(UI_SCALE_MIN).max(UI_SCALE_MAX).catch(100),
-  trayIconTheme: z.enum(['auto', 'light', 'dark']).catch('auto'),
+  sidebarColor: sidebarColorSchema.catch('cyan'),
   reduceMotion: z.boolean().catch(false),
-  language: supportedLocaleSchema.catch(DEFAULT_LOCALE),
+  language: languagePreferenceSchema.catch(DEFAULT_LOCALE),
   byteUnitSystem: byteUnitSystemSchema.catch(DEFAULT_BYTE_UNIT_PREFERENCE),
   // Empty string is a sentinel: SettingsManager (main/server) seeds the
   // absolute platform download directory on first load. The renderer never
   // observes '' because settings are loaded before the UI mounts.
   defaultSaveDir: z.string().catch(''),
+  fileDeletionMode: fileDeletionModeSchema.catch('trash'),
   directoryPreferences: DirectoryPreferencesSchema.catch({
     favorites: [],
     recent: [],
   }),
   notifyOnComplete: z.boolean().catch(true),
   notifyOnError: z.boolean().catch(true),
+  notifyInAppOnComplete: z.boolean().catch(true),
+  notifyInAppOnError: z.boolean().catch(true),
+  notificationBadgeStyle: notificationBadgeStyleSchema.catch('count'),
   autofillClipboardLinks: z.boolean().catch(true),
   protocols: z
     .object({
@@ -50,6 +62,7 @@ export const appSettingsSchema = z.object({
   runMode: z.enum(RunMode).catch(RunMode.Standard),
   lightweightMode: z.boolean().catch(false),
   traySpeedometer: z.boolean().catch(true),
+  trayIconColor: trayIconColorSchema.catch(DEFAULT_TRAY_ICON_COLOR),
   magnetFileSelection: z.boolean().catch(true),
   magnetFileSelectionAutoDownload: z.boolean().catch(false),
   magnetFileSelectionTimeoutSeconds:

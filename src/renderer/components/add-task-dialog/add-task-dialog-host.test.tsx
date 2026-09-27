@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 import '@renderer/lib/i18n'
 import { transport } from '@renderer/lib/transport'
+import { ADD_TASK_COLLAPSED_HEIGHT } from '@shared/constants/add-task'
 import { Events } from '@shared/protocol/events'
 import type { AddTaskFormValues } from '@shared/schemas/add-task'
 import { useState } from 'react'
@@ -16,6 +17,8 @@ vi.mock('@renderer/lib/transport', () => ({
 
 vi.mock('@renderer/hooks/use-task-list', () => ({
   useTaskList: () => ({ tasks: [] }),
+  getTaskListSnapshot: () => ({ tasks: [] }),
+  invalidateTaskList: vi.fn(),
 }))
 
 // Stub AddTaskForm so tests can drive onSubmitSuccess / onCancel directly
@@ -198,7 +201,7 @@ describe('AddTaskDialogHost', () => {
       'motion-reduce:transition-none',
       'sm:max-w-[640px]'
     )
-    expect(dialog.style.height).toBe('374px')
+    expect(dialog.style.height).toBe(`${ADD_TASK_COLLAPSED_HEIGHT}px`)
     expect(dialog.style.maxHeight).toContain('760px')
     expect(dialog.style.maxHeight).toContain('100vh')
     expect(screen.getByTestId('add-task-form-stub')).toHaveAttribute(
@@ -209,7 +212,7 @@ describe('AddTaskDialogHost', () => {
       'pt-[14px]'
     )
     const close = screen.getByRole('button', { name: 'Close' })
-    expect(close).toHaveClass('top-3.5', 'right-3.5', 'size-7')
+    expect(close).toHaveClass('top-3.5', 'end-3.5', 'size-7')
     expect(close.querySelector('[data-caption-icon="close"]')).not.toBeNull()
     expect(document.querySelector('[data-slot="dialog-overlay"]')).toHaveClass(
       'transition-opacity',

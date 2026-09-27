@@ -16,6 +16,7 @@ vi.mock('@resvg/resvg-wasm', () => ({
   Resvg: vi.fn(),
 }))
 
+import type { TrayIconColor } from '@shared/schemas/tray-icon-color'
 import { createLinuxIconProvider, formatSpeed } from './tray-icon'
 
 describe('createLinuxIconProvider', () => {
@@ -100,27 +101,88 @@ describe('createLinuxIconProvider', () => {
       filePath: path.join(assetDir, 'mo-tray-dark-active.png'),
     })
   })
+
+  it.each([
+    { color: 'light' as const, background: 'dark' },
+    { color: 'dark' as const, background: 'light' },
+  ])(
+    'keeps $color artwork independent of the application theme',
+    async ({ color, background }) => {
+      const provider = createLinuxIconProvider(assetDir, () => color)
+      for (const dark of [false, true]) {
+        nativeThemeMock.shouldUseDarkColors = dark
+        await provider.init()
+        for (const active of [false, true]) {
+          expect(provider.getIcon(active)).toEqual({
+            filePath: path.join(
+              assetDir,
+              `mo-tray-${background}-${active ? 'active' : 'normal'}.png`
+            ),
+          })
+        }
+      }
+    }
+  )
+
+  it('reloads a changed preference and resumes following the application theme', async () => {
+    let color: TrayIconColor = 'light'
+    const provider = createLinuxIconProvider(assetDir, () => color)
+    await provider.init()
+    expect(provider.getIcon(false)).toEqual({
+      filePath: path.join(assetDir, 'mo-tray-dark-normal.png'),
+    })
+    color = 'dark'
+    await provider.init()
+    expect(provider.getIcon(true)).toEqual({
+      filePath: path.join(assetDir, 'mo-tray-light-active.png'),
+    })
+    color = 'auto'
+    nativeThemeMock.shouldUseDarkColors = true
+    await provider.init()
+    expect(provider.getIcon(true)).toEqual({
+      filePath: path.join(assetDir, 'mo-tray-dark-active.png'),
+    })
+  })
 })
 
 describe('formatSpeed', () => {
-  it('keeps integer kilobytes as the minimum unit in decimal mode', () => {
+  it.each([
+    [12.34, '12.34 MiB/s'],
+    [999.99, '999.99 MiB/s'],
+    [999.999, '1000 MiB/s'],
+    [1000.23, '1000 MiB/s'],
+    [1023.49, '1023 MiB/s'],
+    [1023.5, '1.00 GiB/s'],
+    [1023.99, '1.00 GiB/s'],
+  ])('formats %s MiB/s for the compact tray', (speed, expected) => {
+    expect(formatSpeed(Math.round(speed * 1_048_576), 'binary')).toBe(expected)
+  })
+
+  it('rounds kilobytes to integers and promotes rounded units', () => {
     expect(formatSpeed(0)).toBe('0 KB/s')
+    expect(formatSpeed(499)).toBe('0 KB/s')
     expect(formatSpeed(512)).toBe('1 KB/s')
     expect(formatSpeed(50_000)).toBe('50 KB/s')
-    expect(formatSpeed(999_999)).toBe('1000 KB/s')
+    expect(formatSpeed(999_499)).toBe('999 KB/s')
+    expect(formatSpeed(999_500)).toBe('1.00 MB/s')
+    expect(formatSpeed(999_990)).toBe('1.00 MB/s')
+    expect(formatSpeed(999_999)).toBe('1.00 MB/s')
   })
-  it('keeps one decimal place for megabytes and above in decimal mode', () => {
-    expect(formatSpeed(16_500_000)).toBe('16.5 MB/s')
-    expect(formatSpeed(125_000_000)).toBe('125.0 MB/s')
-    expect(formatSpeed(1_500_000_000)).toBe('1.5 GB/s')
+  it('keeps two decimal places for megabytes and above', () => {
+    expect(formatSpeed(16_543_210)).toBe('16.54 MB/s')
+    expect(formatSpeed(125_000_000)).toBe('125.00 MB/s')
+    expect(formatSpeed(1_500_000_000)).toBe('1.50 GB/s')
   })
-  it('preserves the original binary rounding with IEC labels', () => {
+  it('uses integer KiB speeds and retains precision for larger IEC units', () => {
     expect(formatSpeed(0, 'binary')).toBe('0 KiB/s')
+    expect(formatSpeed(511, 'binary')).toBe('0 KiB/s')
     expect(formatSpeed(512, 'binary')).toBe('1 KiB/s')
     expect(formatSpeed(50 * 1024, 'binary')).toBe('50 KiB/s')
-    expect(formatSpeed(1_048_575, 'binary')).toBe('1024 KiB/s')
-    expect(formatSpeed(1_048_576, 'binary')).toBe('1.0 MiB/s')
-    expect(formatSpeed(125 * 1_048_576, 'binary')).toBe('125.0 MiB/s')
-    expect(formatSpeed(1_073_741_824, 'binary')).toBe('1.0 GiB/s')
+    expect(formatSpeed(1_048_063, 'binary')).toBe('1023 KiB/s')
+    expect(formatSpeed(1_048_064, 'binary')).toBe('1.00 MiB/s')
+    expect(formatSpeed(1_048_575, 'binary')).toBe('1.00 MiB/s')
+    expect(formatSpeed(1_048_576, 'binary')).toBe('1.00 MiB/s')
+    expect(formatSpeed(125 * 1_048_576, 'binary')).toBe('125.00 MiB/s')
+    expect(formatSpeed(1_073_741_824, 'binary')).toBe('1.00 GiB/s')
   })
 })

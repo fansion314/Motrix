@@ -22,6 +22,13 @@ import {
   MutateDirectoryPreferencesRequestSchema,
 } from '@shared/schemas/directory-preferences'
 import {
+  type DownloadsSettingsResult,
+  type DownloadsSettingsSnapshot,
+  downloadsSettingsSchema,
+  type SaveDownloadsSettingsRequest,
+  saveDownloadsSettingsRequestSchema,
+} from '@shared/schemas/downloads-settings'
+import {
   GeneralSettingsAppSchema,
   type GeneralSettingsResult,
   type GeneralSettingsSnapshot,
@@ -203,6 +210,7 @@ export class SettingsManager {
     let parsed: Record<string, unknown>
     let seedMissingRpcSecret = true
     let seedMissingSpeedLimit = false
+    let migratedTrayIconColor = false
 
     try {
       const raw = await readFile(this.filePath, 'utf-8')
@@ -212,6 +220,19 @@ export class SettingsManager {
       }
       parsed = decoded
       const migrated = migrate(parsed)
+      const app = migrated.app
+      if (isPlainObject(app) && app.trayIconColor === undefined) {
+        const oldColor = app.trayIconTheme
+        if (
+          oldColor === 'auto' ||
+          oldColor === 'light' ||
+          oldColor === 'dark'
+        ) {
+          app.trayIconColor = oldColor
+          delete app.trayIconTheme
+          migratedTrayIconColor = true
+        }
+      }
       // Empty is a supported explicit choice (local RPC with no token), while
       // a missing or invalid field keeps the secure generated first-run
       // default. Check presence after migration so legacy shapes participate.
@@ -236,7 +257,12 @@ export class SettingsManager {
     const seeded = this.seedSentinels(seedMissingRpcSecret)
     const versionStale =
       !parsed.version || parsed.version !== CURRENT_SETTINGS_VERSION
-    if (seeded || seedMissingSpeedLimit || versionStale) {
+    if (
+      seeded ||
+      seedMissingSpeedLimit ||
+      versionStale ||
+      migratedTrayIconColor
+    ) {
       await this.save()
     }
   }
@@ -289,6 +315,52 @@ export class SettingsManager {
         this.settings.app.directoryPreferences
       ),
     }
+  }
+
+  getDownloadsSettingsSnapshot(): DownloadsSettingsSnapshot {
+    return {
+      revision: this.generalSettingsRevision,
+      settings: downloadsSettingsSchema.parse(this.settings),
+      directoryPreferences: structuredClone(
+        this.settings.app.directoryPreferences
+      ),
+    }
+  }
+
+  async saveDownloadsSettings(
+    raw: SaveDownloadsSettingsRequest
+  ): Promise<DownloadsSettingsResult> {
+    const parsed = saveDownloadsSettingsRequestSchema.safeParse(raw)
+    if (!parsed.success) return { ok: false, error: { code: 'invalidPath' } }
+    const { settings, directories, expectedRevision } = parsed.data
+    return this.enqueueMutation(async () => {
+      if (expectedRevision !== this.generalSettingsRevision)
+        return {
+          ok: false,
+          error: { code: 'conflict' },
+          snapshot: this.getDownloadsSettingsSnapshot(),
+        }
+      const preferences = structuredClone(
+        this.settings.app.directoryPreferences
+      )
+      preferences.favorites = [
+        ...new Set([
+          ...preferences.favorites.filter(
+            (path) => !directories.removeFavorites.includes(path)
+          ),
+          ...directories.addFavorites,
+        ]),
+      ]
+      if (preferences.favorites.length > DIRECTORY_FAVORITES_LIMIT)
+        return { ok: false, error: { code: 'limitReached' } }
+      preferences.recent = preferences.recent.filter(
+        (path) => !directories.removeRecent.includes(path)
+      )
+      // One durable write owns directory deltas, the default folder and all
+      // download settings. An empty write still fences timed-out predecessors.
+      const update = await this.persistUpdate(settings, preferences)
+      return { ok: true, value: this.getDownloadsSettingsSnapshot(), update }
+    })
   }
 
   private commitSettings(old: AppSettings, next: AppSettings): void {
@@ -519,10 +591,12 @@ export class SettingsManager {
   }
 
   private async persistUpdate(
-    partial: DeepPartial<AppSettings>
+    partial: DeepPartial<AppSettings>,
+    directories?: AppSettings['app']['directoryPreferences']
   ): Promise<UpdateResult> {
     const old = structuredClone(this.settings)
     const next = structuredClone(this.settings)
+    if (directories) next.app.directoryPreferences = directories
     const changedRestartKeys: string[] = []
     const changedAppRestartKeys: string[] = []
 

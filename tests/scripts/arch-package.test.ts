@@ -12,6 +12,15 @@ import {
 import { validateArchEntries } from '../../scripts/verify-arch-package.mjs'
 
 describe('Arch release contract', () => {
+  it('keeps the AUR package names while showing Motrix on the desktop', async () => {
+    const desktop = await readFile('build/arch/motrix.desktop', 'utf8')
+    expect(desktop).toMatch(/^Name=Motrix$/m)
+    for (const name of ['motrix2', 'motrix2-bin']) {
+      const pkgbuild = await readFile(`aur/${name}/PKGBUILD`, 'utf8')
+      expect(pkgbuild).toMatch(new RegExp(`^pkgname=${name}$`, 'm'))
+    }
+  })
+
   it('generates application notices without requiring bundled system runtime licenses', async () => {
     const outputDir = await mkdtemp(
       path.join(os.tmpdir(), 'arch-notices-test-')

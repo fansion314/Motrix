@@ -80,7 +80,20 @@ describe('SubmitDownloadAdapter.adapt', () => {
     expect(result.sourceMeta.sessionKey).toBe('chromium:e')
   })
 
-  it('rejects non-http(s) URL with invalid-url-scheme', async () => {
+  it('keeps the source fragment available to direct URL resolvers', async () => {
+    const input = baseInput()
+    if (input.selection.kind !== 'direct') throw new Error('expected direct')
+    input.selection.primary.url += '#episode-2'
+    const result = await adapter().adapt(input, {
+      extensionId: 'e',
+      browser: 'chromium',
+    })
+    expect(result).toMatchObject({
+      primaryUrl: 'http://example.com/file.mp4#episode-2',
+    })
+  })
+
+  it('rejects non-http(s) URL with a structured source error', async () => {
     const bad: DownloadSubmitParams = {
       ...baseInput(),
       selection: {
@@ -95,7 +108,13 @@ describe('SubmitDownloadAdapter.adapt', () => {
     }
     await expect(
       adapter().adapt(bad, { extensionId: 'e', browser: 'chromium' })
-    ).rejects.toMatchObject({ code: 'invalid-url-scheme' })
+    ).rejects.toMatchObject({
+      code: 'TASK_SOURCE_INVALID',
+      details: {
+        stage: 'input',
+        diagnostic: { reason: 'unsupportedProtocol' },
+      },
+    })
   })
 
   it('preserves domain scope and millisecond expiry while omitting browser-only fields', async () => {
@@ -121,7 +140,7 @@ describe('SubmitDownloadAdapter.adapt', () => {
     expect(result.cookies[0]?.value).toBe('1')
   })
 
-  it('sanitizes filename: control chars stripped, max 200', async () => {
+  it('extracts the filename before replacing forbidden characters', async () => {
     const input: DownloadSubmitParams = {
       ...baseInput(),
       meta: {
@@ -134,7 +153,53 @@ describe('SubmitDownloadAdapter.adapt', () => {
       browser: 'chromium',
     })
     if (result.kind !== 'direct') throw new Error('expected direct')
-    expect(result.finalName).toBe('a_b_c_d_e_f_g_h_i_j_k.mp4')
+    expect(result.finalName).toBe('c_d_e_f_g_h_i_j_k.mp4')
+  })
+
+  it.each([
+    String.raw`E:\Downloads\BCUninstaller_6.3.0_portable.7z`,
+    String.raw`\\server\share\BCUninstaller_6.3.0_portable.7z`,
+    '/home/user/Downloads/BCUninstaller_6.3.0_portable.7z',
+  ])('accepts only the leaf of a legacy client path: %s', async (name) => {
+    const input = baseInput()
+    input.meta.suggestedFilename = name
+    const result = await adapter().adapt(input, {
+      extensionId: 'e',
+      browser: 'chromium',
+    })
+    if (result.kind !== 'direct') throw new Error('expected direct')
+    expect(result.finalName).toBe('BCUninstaller_6.3.0_portable.7z')
+    expect(result).not.toHaveProperty('discoverFilename')
+  })
+
+  it.each(['', ' ', '.', '..'])(
+    'discovers a remote filename for an unusable hint: %s',
+    async (name) => {
+      const input = baseInput()
+      input.meta.suggestedFilename = name
+      const result = await adapter().adapt(input, {
+        extensionId: 'e',
+        browser: 'chromium',
+      })
+      expect(result).toMatchObject({
+        finalName: 'file.mp4',
+        discoverFilename: true,
+      })
+    }
+  )
+
+  it('bounds a multibyte browser filename without losing its extension', async () => {
+    const input = baseInput()
+    input.meta.suggestedFilename = `${'界'.repeat(240)}.7z`
+    const result = await adapter().adapt(input, {
+      extensionId: 'e',
+      browser: 'chromium',
+    })
+    if (result.kind !== 'direct') throw new Error('expected direct')
+    expect(result.finalName).toMatch(/\.7z$/)
+    expect(
+      Buffer.byteLength(`${result.finalName}.motrix`, 'utf8')
+    ).toBeLessThanOrEqual(255)
   })
 
   it('strips Cookie / Host / Content-Length from headers', async () => {
@@ -363,7 +428,10 @@ describe('SubmitDownloadAdapter.adapt', () => {
         pageTitle: 'demo',
         detectedAt: 1,
       },
-      selection: { kind: 'magnet', uri: 'magnet:?xt=urn:btih:abc&dn=Movie' },
+      selection: {
+        kind: 'magnet',
+        uri: 'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc&dn=Movie',
+      },
       meta: { suggestedFilename: 'Movie', qualityLabel: 'file' },
     }
     const result = await adapter().adapt(input, {
@@ -372,7 +440,9 @@ describe('SubmitDownloadAdapter.adapt', () => {
     })
     expect(result.kind).toBe('magnet')
     if (result.kind === 'magnet') {
-      expect(result.uri).toBe('magnet:?xt=urn:btih:abc&dn=Movie')
+      expect(result.uri).toBe(
+        'magnet:?xt=urn:btih:a03e3f9a05341aa336e9d9d3f06b33cddafe0bdc&dn=Movie'
+      )
       expect(result.saveDir).toBe('/tmp/save')
       expect(result.sourceMeta.kind).toBe('magnet')
       expect(result.sourceMeta.sessionKey).toBe('chromium:e')

@@ -25,7 +25,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
-      pull-requests: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -67,18 +66,14 @@ jobs:
           pnpm exec tsc --noEmit
           pnpm exec vitest run tests/scripts/arch-package.test.ts
           git diff --check
-      - name: Merge a checked recipe-only pull request
+      - name: Commit checked recipes to main
         if: steps.recipes.outputs.changed == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          branch="fix/arch_recipes_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
-          git switch -c "$branch"
           git add aur/motrix2/PKGBUILD aur/motrix2/.SRCINFO aur/motrix2-bin/PKGBUILD aur/motrix2-bin/.SRCINFO
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
             commit -m 'chore(aur): sync verified arch release recipes'
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin "$branch"
-          printf '%s\n' 'Sync the four AUR recipe files from the published, checksum-verified Arch release. Both source and binary recipes were checked; repository boundary, lint, type and Arch packaging tests passed before this pull request was opened.' > /tmp/arch-recipes-pr.md
-          pr=$(gh pr create --base main --head "$branch" --title 'chore(aur): sync verified arch release recipes' --body-file /tmp/arch-recipes-pr.md)
-          gh pr merge "$pr" --squash --delete-branch --match-head-commit "$(git rev-parse HEAD)"
+          # Concurrent main changes fail safely; rerun against the latest main.
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin HEAD:main

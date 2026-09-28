@@ -28,7 +28,8 @@ Follow `commit-and-quality.md` before creating a commit.
 - Branch from current `main`. Use
   `<type>/<snake_case_topic>_<YYYYMMDD>`, optionally placing an issue number
   before the topic.
-- Never push directly or force-push to `main`. All changes use PRs.
+- For the `fansion314/Motrix` fork, push intended changes directly to `main` after the required checks pass. Do not create pull requests unless the user explicitly asks for one. Automated Arch recipe synchronization also commits directly to `main`.
+- Never force-push `main`. For contributions to other remotes, use their branch and PR policy.
 - Rebase a private feature branch onto `main` before review. Never rebase
   `main` or a branch shared with other contributors.
 - After a rebase, update only your own feature branch with

@@ -1,0 +1,84 @@
+name: Sync published Arch recipes
+
+on:
+  workflow_run:
+    workflows: ['Arch Linux release']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Published Arch release to restore; empty selects the latest Arch release'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arch-recipe-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'fansion314/Motrix' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: Select and verify the published recipe bundle
+        id: recipes
+        env:
+          REQUESTED_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="$REQUESTED_TAG"
+          if [[ -z "$tag" ]]; then
+            tag=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '[.[] | select(.draft == false and (.tag_name | startswith("arch-v")))] | sort_by(.published_at) | last | .tag_name')
+          fi
+          python3 scripts/sync_arch_recipes.py --tag "$tag"
+          if git diff --quiet -- aur; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Validate the four recipe files and repository quality gates
+        if: steps.recipes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/test_sync_arch_recipes.py -v
+          npm install --global pnpm@12.5.1
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm run check:boundaries
+          pnpm run lint
+          pnpm exec tsc --noEmit
+          pnpm exec vitest run tests/scripts/arch-package.test.ts
+          git diff --check
+      - name: Merge a checked recipe-only pull request
+        if: steps.recipes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="fix/arch_recipes_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          git switch -c "$branch"
+          git add aur/motrix2/PKGBUILD aur/motrix2/.SRCINFO aur/motrix2-bin/PKGBUILD aur/motrix2-bin/.SRCINFO
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m 'chore(aur): sync verified arch release recipes'
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin "$branch"
+          printf '%s\n' 'Sync the four AUR recipe files from the published, checksum-verified Arch release. Both source and binary recipes were checked; repository boundary, lint, type and Arch packaging tests passed before this pull request was opened.' > /tmp/arch-recipes-pr.md
+          pr=$(gh pr create --base main --head "$branch" --title 'chore(aur): sync verified arch release recipes' --body-file /tmp/arch-recipes-pr.md)
+          gh pr merge "$pr" --squash --delete-branch --match-head-commit "$(git rev-parse HEAD)"

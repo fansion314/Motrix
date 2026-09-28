@@ -6,7 +6,7 @@ const metadata = require('./arch-build.json')
 // This entry is only shipped in the independently packaged Arch application.
 if (process.versions.modules !== metadata.electronAbi) {
   throw new Error(
-    'Electron ABI changed; rebuild or upgrade the motrix2 package'
+    'Electron ABI changed; rebuild or upgrade the motrix-electron package'
   )
 }
 Object.defineProperty(app, 'isPackaged', { value: true })

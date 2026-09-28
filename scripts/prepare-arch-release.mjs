@@ -32,7 +32,7 @@ async function main() {
   const metadata = parseArchTag(process.env.ARCH_TAG, pkg.version)
   const archive = process.argv[2]
   if (!archive) {
-    for (const name of ['motrix2', 'motrix2-bin']) {
+    for (const name of ['motrix-electron', 'motrix-electron-bin']) {
       const file = `aur/${name}/PKGBUILD`
       await writeFile(
         file,
@@ -41,11 +41,13 @@ async function main() {
     }
     return
   }
-  const bytes = await readFile(archive)
+  const packagePath = process.argv[3]
+  assert(packagePath, 'Expected verified pacman package')
+  const bytes = await readFile(packagePath)
   const { extractFile } = await import('@electron/asar')
   const digest = createHash('sha256').update(bytes).digest('hex')
   // Read the build metadata from the staged app matching the verified payload.
-  const appBytes = extractFile(archive, 'usr/lib/motrix2/app.asar')
+  const appBytes = extractFile(archive, 'usr/lib/motrix-electron/app.asar')
   await mkdir('release', { recursive: true })
   const inner = 'release/metadata-app.asar'
   await writeFile(inner, appBytes)
@@ -54,7 +56,7 @@ async function main() {
   assert.equal(build.version, metadata.version)
   assert.equal(build.pkgrel, metadata.pkgrel)
   await rm('release/aur', { recursive: true, force: true })
-  for (const name of ['motrix2', 'motrix2-bin']) {
+  for (const name of ['motrix-electron', 'motrix-electron-bin']) {
     const directory = `release/aur/${name}`
     await mkdir(directory, { recursive: true })
     await writeFile(
@@ -75,27 +77,27 @@ async function main() {
     'tar',
     [
       '-czf',
-      `motrix2-${metadata.version}-${metadata.pkgrel}-aur.tar.gz`,
+      `motrix-electron-${metadata.version}-${metadata.pkgrel}-aur.tar.gz`,
       'aur',
     ],
     { cwd: 'release' }
   )
-  const aurName = `motrix2-${metadata.version}-${metadata.pkgrel}-aur.tar.gz`
+  const aurName = `motrix-electron-${metadata.version}-${metadata.pkgrel}-aur.tar.gz`
   const aurDigest = createHash('sha256')
     .update(await readFile(`release/${aurName}`))
     .digest('hex')
   await writeFile(
     'release/SHA256SUMS',
-    `${digest}  ${path.basename(archive)}\n${aurDigest}  ${aurName}\n`
+    `${digest}  ${path.basename(packagePath)}\n${aurDigest}  ${aurName}\n`
   )
   await writeFile(
     'release/notes.md',
     `Arch Linux x86_64 package based on Motrix ${metadata.version}.\n\n` +
       `Uses system Electron ${build.electron} (ABI ${build.electronAbi}) and the pinned Motrix aria2 fork. ` +
-      'No Electron runtime is bundled. The ASAR contains the application, its native helpers and desktop resources.\n\n' +
+      'No Electron runtime is bundled. The pacman package contains the application, its native helpers and desktop resources.\n\n' +
       'Settings → Appearance supports custom interface scaling and light/dark Linux tray icons. Changes apply immediately and persist across restarts.\n\n' +
-      'The AUR source archive contains motrix2 and motrix2-bin PKGBUILDs with .SRCINFO; motrix2-bin pins the ASAR SHA-256. ' +
-      'Install updates through pacman/your AUR helper. No AUR upload is performed by this workflow.\n'
+      'Download the .pkg.tar.zst asset and install with pacman -U, or use the motrix-electron-bin PKGBUILD through an AUR helper. ' +
+      'The AUR path still uses makepkg to create a local package.\n'
   )
 }
 

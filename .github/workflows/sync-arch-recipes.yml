@@ -71,7 +71,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git add aur/motrix2/PKGBUILD aur/motrix2/.SRCINFO aur/motrix2-bin/PKGBUILD aur/motrix2-bin/.SRCINFO
+          git add aur/motrix-electron/PKGBUILD aur/motrix-electron/.SRCINFO aur/motrix-electron-bin/PKGBUILD aur/motrix-electron-bin/.SRCINFO
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
             commit -m 'chore(aur): sync verified arch release recipes'
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')

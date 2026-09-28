@@ -39,7 +39,7 @@ jobs:
           chown -R builder:builder "$GITHUB_WORKSPACE"
           runuser -u builder -- bash -euo pipefail <<'BUILD'
           node scripts/prepare-arch-release.mjs
-          cd aur/motrix2
+          cd aur/motrix-electron
           makepkg --noconfirm --nodeps
           BUILD
 
@@ -48,7 +48,7 @@ jobs:
         run: |
           chown builder:builder "$GITHUB_STEP_SUMMARY"
           runuser -u builder -- bash -euo pipefail <<'CHECK'
-          source_root="$PWD/aur/motrix2/src/Motrix"
+          source_root="$PWD/aur/motrix-electron/src/Motrix"
           cd "$source_root"
           pnpm run check:boundaries
           pnpm run lint
@@ -60,6 +60,7 @@ jobs:
           dbus-run-session -- xvfb-run -a pnpm run verify:arch -- release/*.asar --smoke
           mkdir -p "$GITHUB_WORKSPACE/release"
           cp release/*.asar "$GITHUB_WORKSPACE/release/"
+          cp "$GITHUB_WORKSPACE"/aur/motrix-electron/*.pkg.tar.zst "$GITHUB_WORKSPACE/release/"
           CHECK
 
       - name: Generate AUR metadata and validate the binary PKGBUILD
@@ -67,10 +68,10 @@ jobs:
         run: |
           runuser -u builder -- bash -euo pipefail <<'PACKAGE'
           # Reuse the verified build's locked JavaScript tools.
-          ln -s aur/motrix2/src/Motrix/node_modules node_modules
-          node scripts/prepare-arch-release.mjs release/*.asar
-          cp release/*.asar release/aur/motrix2-bin/
-          cd release/aur/motrix2-bin
+          ln -s aur/motrix-electron/src/Motrix/node_modules node_modules
+          node scripts/prepare-arch-release.mjs release/*.asar release/*.pkg.tar.zst
+          cp release/*.pkg.tar.zst release/aur/motrix-electron-bin/
+          cd release/aur/motrix-electron-bin
           makepkg --noconfirm --nodeps
           PACKAGE
 
@@ -79,7 +80,7 @@ jobs:
           name: arch-release
           if-no-files-found: error
           path: |
-            release/*.asar
+            release/*.pkg.tar.zst
             release/*-aur.tar.gz
             release/SHA256SUMS
             release/notes.md
@@ -108,4 +109,4 @@ jobs:
           flags=()
           if [[ "$ARCH_TAG" == *-beta.* ]]; then flags+=(--prerelease); fi
           gh release create "$ARCH_TAG" --verify-tag --title "Motrix ${ARCH_TAG#arch-v} for Arch Linux" \
-            --notes-file notes.md "${flags[@]}" ./*.asar ./*-aur.tar.gz SHA256SUMS
+            --notes-file notes.md "${flags[@]}" ./*.pkg.tar.zst ./*-aur.tar.gz SHA256SUMS

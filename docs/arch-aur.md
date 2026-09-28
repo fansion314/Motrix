@@ -13,26 +13,29 @@ Download the `*-aur.tar.gz` asset from an
 [Arch release](https://github.com/fansion314/Motrix/releases), extract it, then
 choose one of these packages:
 
+For direct installation, download the `.pkg.tar.zst` asset from that release
+and run `sudo pacman -U motrix-electron-*.pkg.tar.zst`.
+
 ```sh
-cd aur/motrix2       # Build Motrix from the tagged source
+cd aur/motrix-electron       # Build Motrix from the tagged source
 makepkg -si
 ```
 
 ```sh
-cd aur/motrix2-bin   # Download the verified prebuilt ASAR
+cd aur/motrix-electron-bin   # Download the verified prebuilt Arch package
 makepkg -si
 ```
 
 The release contains complete PKGBUILDs and `.SRCINFO` files. The binary recipe
-pins its ASAR SHA-256. Recipes in the repository are the release templates;
+pins the package SHA-256. Recipes in the repository are the release templates;
 the binary checksum is finalized by Actions. The workflow does not upload to
 AUR. Publishing these recipes to AUR requires the maintainer's AUR account.
 
-Both packages install `/usr/bin/motrix` and `/usr/bin/motrix2`, a desktop entry,
-and `/usr/lib/motrix2/`. They conflict with each other and other native Motrix
+Both packages install `/usr/bin/motrix`, a desktop entry,
+and `/usr/lib/motrix-electron/`. They conflict with each other and other native Motrix
 packages, and retain Motrix's existing user data. Updates are managed through
 pacman/AUR, not the application's bundled-runtime updater.
-The package names stay `motrix2` and `motrix2-bin`; the desktop entry displays
+The package names stay `motrix-electron` and `motrix-electron-bin`; the desktop entry displays
 **Motrix**.
 
 ## Appearance
@@ -51,7 +54,7 @@ then run in a checkout:
 ELECTRON_SKIP_BINARY_DOWNLOAD=1 MOTRIX_SKIP_ELECTRON_REBUILD=1 \
   MOTRIX_SKIP_ENGINE_FETCH=1 pnpm install --frozen-lockfile
 pnpm run build:arch
-pnpm run verify:arch -- release/motrix2-2.0.0-beta.41-1-x86_64.asar
+pnpm run verify:arch -- release/motrix-electron-2.0.0-beta.41-3-x86_64.asar
 ```
 
 The build queries `/usr/bin/electron`, compiles SQLite against that runtime,
@@ -63,21 +66,19 @@ The beta.41 lock uses `motrixapp/aria2` v1.37.0-motrix.16, a static musl Linux x
 binary with SQLite persistence and task-scoped cookies. It runs on Arch without
 recompilation; no separate aria2 build pipeline or system aria2 package is needed.
 
-The single distribution ASAR contains `usr/`: an application `app.asar`, its
+The release package contains `usr/`: an application `app.asar`, its
 unpacked native modules and renderer assets, Motrix's aria2 fork and native helpers, plugin
-seeds, notices, launcher, desktop entry and icon. This outer archive is an
-installation payload; it is not passed directly to Electron. `makepkg` extracts
-it into the package root. This preserves real filesystem paths
-required by native modules and helper processes while shipping one ASAR asset.
+seeds, notices, launcher, desktop entry and icon. The `.pkg.tar.zst` asset can be installed directly with `pacman -U`. AUR helpers still use `makepkg` to rebuild the binary variant. This preserves real filesystem paths
+required by native modules and helper processes while shipping one pacman package asset.
 
 Packages depend on system `electron` without a version constraint. The application
 still checks its native ABI at startup. If an Electron update changes that ABI,
-rebuild `motrix2` or install a matching `motrix2-bin` release.
+rebuild `motrix-electron` or install a matching `motrix-electron-bin` release.
 
 ## Tag releases
 
 Push a tag `arch-v<package.json version>-<pkgrel>`, for example
-`arch-v2.0.0-beta.41-1`, to `fansion314/Motrix`. Increment `pkgrel` for packaging
+`arch-v2.0.0-beta.41-3`, to `fansion314/Motrix`. Increment `pkgrel` for packaging
 revisions; never move published tags. The independent `arch-v` prefix avoids
 the upstream `v*` multi-platform release pipeline.
 
@@ -86,7 +87,7 @@ official `archlinux:base` image, fully upgrades its packages, builds the source
 PKGBUILD as a regular user, runs quality checks, loads SQLite with the system
 Electron, and smoke-tests the real application and bundled Motrix aria2 under Xvfb.
 It generates and builds the binary PKGBUILD before a separate job publishes the
-ASAR, AUR recipes and `SHA256SUMS`. No AppImage, Electron runtime or pacman binary package is published. Beta versions are GitHub prereleases.
+pacman package, AUR recipes and `SHA256SUMS`. No AppImage or Electron runtime is published. Beta versions are GitHub prereleases.
 
 ## Keeping the fork small
 

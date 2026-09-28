@@ -32,14 +32,13 @@ export function validateArchEntries(entries) {
     )
   }
   for (const required of [
-    'usr/lib/motrix2/app.asar',
-    'usr/lib/motrix2/bin/motrix-native-host',
-    'usr/lib/motrix2/bin/motrix-finalize-fs',
+    'usr/lib/motrix-electron/app.asar',
+    'usr/lib/motrix-electron/bin/motrix-native-host',
+    'usr/lib/motrix-electron/bin/motrix-finalize-fs',
     'usr/bin/motrix',
-    'usr/bin/motrix2',
     'usr/share/applications/motrix.desktop',
-    'usr/lib/motrix2/extra/aria2.conf',
-    'usr/lib/motrix2/extra/linux/x64/aria2c',
+    'usr/lib/motrix-electron/extra/aria2.conf',
+    'usr/lib/motrix-electron/extra/linux/x64/aria2c',
   ]) {
     assert(entries.includes(`/${required}`), `Missing ${required}`)
   }
@@ -59,7 +58,7 @@ export async function verifyArchPackage(archive, { smoke = false } = {}) {
       /^Name=Motrix$/m,
       'Packaged desktop entry must display Motrix'
     )
-    const resources = path.join(temporary, 'usr/lib/motrix2')
+    const resources = path.join(temporary, 'usr/lib/motrix-electron')
     const appArchive = path.join(resources, 'app.asar')
     const metadata = JSON.parse(extractFile(appArchive, 'arch-build.json'))
     const manifest = JSON.parse(extractFile(appArchive, 'package.json'))

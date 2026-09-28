@@ -1,11 +1,16 @@
-pkgbase = motrix2-bin
-	pkgdesc = Motrix 2 download manager using system Electron and bundled Motrix aria2 (prebuilt ASAR)
+pkgbase = motrix-electron
+	pkgdesc = Motrix download manager using system Electron and bundled Motrix aria2
 	pkgver = 2.0.0beta.41
-	pkgrel = 2
+	pkgrel = 3
 	url = https://github.com/fansion314/Motrix
 	arch = x86_64
 	license = MIT
 	license = GPL-2.0-or-later
+	makedepends = git
+	makedepends = nodejs
+	makedepends = pnpm
+	makedepends = python
+	makedepends = rust
 	makedepends = asar
 	depends = electron
 	depends = gcc-libs
@@ -20,9 +25,10 @@ pkgbase = motrix2-bin
 	conflicts = motrix-git
 	conflicts = motrix-beta-bin
 	conflicts = motrix2
-	noextract = motrix2-2.0.0-beta.41-2-x86_64.asar
+	conflicts = motrix2-bin
+	conflicts = motrix-electron-bin
 	options = !strip
-	source = https://github.com/fansion314/Motrix/releases/download/arch-v2.0.0-beta.41-2/motrix2-2.0.0-beta.41-2-x86_64.asar
-	sha256sums = a8524e30d0aecf9047325a323382b664350e770f0d326aa333bae47bd8bdf6e3
+	source = Motrix::git+https://github.com/fansion314/Motrix.git#tag=arch-v2.0.0-beta.41-3
+	sha256sums = SKIP
 
-pkgname = motrix2-bin
+pkgname = motrix-electron

@@ -12,7 +12,7 @@ spec.loader.exec_module(sync)
 
 def recipes(revision, digest='a'*64):
     files = {}
-    for name in ['motrix2', 'motrix2-bin']:
+    for name in ['motrix-electron', 'motrix-electron-bin']:
         files[f'aur/{name}/PKGBUILD'] = f"pkgname={name}\npkgver=2.0.0beta.41\npkgrel={revision}\n_version=2.0.0-beta.41\nsha256sums=('{digest}')\n"
         files[f'aur/{name}/.SRCINFO'] = f'pkgbase = {name}\npkgname = {name}\npkgver = 2.0.0beta.41\npkgrel = {revision}\nsha256sums = {digest}\n'
     return files
@@ -36,6 +36,16 @@ class RecipeSyncTests(unittest.TestCase):
             self.assertFalse(sync.apply_files(root, recipes(1), 'arch-v2.0.0-beta.41-1'))
             with self.assertRaisesRegex(ValueError, 'same-version'):
                 sync.apply_files(root, recipes(2, 'b'*64), 'arch-v2.0.0-beta.41-2')
+
+    def test_same_version_unpinned_template_accepts_published_checksum(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            template = recipes(2)
+            template['aur/motrix-electron-bin/PKGBUILD'] = template['aur/motrix-electron-bin/PKGBUILD'].replace("sha256sums=('" + 'a'*64 + "')", "sha256sums=('SKIP')")
+            for file, content in template.items():
+                (root/file).parent.mkdir(parents=True, exist_ok=True)
+                (root/file).write_text(content)
+            self.assertTrue(sync.apply_files(root, recipes(2), 'arch-v2.0.0-beta.41-2'))
 
     def test_archive_identity_and_extra_entries(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -9,7 +9,7 @@ import subprocess
 import tarfile
 import tempfile
 
-FILES = [f'aur/{name}/{file}' for name in ['motrix2', 'motrix2-bin'] for file in ['PKGBUILD', '.SRCINFO']]
+FILES = [f'aur/{name}/{file}' for name in ['motrix-electron', 'motrix-electron-bin'] for file in ['PKGBUILD', '.SRCINFO']]
 
 
 def parse_tag(tag):
@@ -34,14 +34,14 @@ def checked_files(archive, tag, application_digest):
     files = {}
     with tarfile.open(archive) as tar:
         for member in tar:
-            if member.isdir() and member.name.rstrip('/') in ['aur', 'aur/motrix2', 'aur/motrix2-bin']:
+            if member.isdir() and member.name.rstrip('/') in ['aur', 'aur/motrix-electron', 'aur/motrix-electron-bin']:
                 continue
             if member.name not in FILES or not member.isfile() or member.size > 65536 or member.name in files:
                 raise ValueError(f'Unexpected recipe archive entry: {member.name}')
             files[member.name] = tar.extractfile(member).read().decode()
     if set(files) != set(FILES):
         raise ValueError('Incomplete recipe archive')
-    for name in ['motrix2', 'motrix2-bin']:
+    for name in ['motrix-electron', 'motrix-electron-bin']:
         recipe = files[f'aur/{name}/PKGBUILD']
         if recipe_tag(recipe) != tag or not re.search(rf'^pkgname={name}$', recipe, re.M):
             raise ValueError('Recipe identity differs from release')
@@ -49,29 +49,30 @@ def checked_files(archive, tag, application_digest):
         for field, expected in [('pkgbase', name), ('pkgname', name), ('pkgver', version.replace('-', '')), ('pkgrel', revision)]:
             if not re.search(rf'^\s*{field} = {re.escape(expected)}$', srcinfo, re.M):
                 raise ValueError(f'Invalid .SRCINFO {field}')
-    if not re.search(rf"^sha256sums=\('{application_digest}'\)$", files['aur/motrix2-bin/PKGBUILD'], re.M):
+    if not re.search(rf"^sha256sums=\('{application_digest}'\)$", files['aur/motrix-electron-bin/PKGBUILD'], re.M):
         raise ValueError('Binary recipe checksum differs from the application')
-    if f'sha256sums = {application_digest}' not in files['aur/motrix2-bin/.SRCINFO']:
+    if f'sha256sums = {application_digest}' not in files['aur/motrix-electron-bin/.SRCINFO']:
         raise ValueError('Binary .SRCINFO checksum differs from the application')
     return files
 
 
 def apply_files(root, files, tag):
     incoming = parse_tag(tag)[0]
-    for name in ['motrix2', 'motrix2-bin']:
+    for name in ['motrix-electron', 'motrix-electron-bin']:
         existing_recipe = (root/f'aur/{name}/PKGBUILD').read_text()
         current = parse_tag(recipe_tag(existing_recipe))[0]
         if current > incoming:
             print('Default branch already has a newer recipe; skipping old release.')
             return False
-        if current == incoming and existing_recipe != files[f'aur/{name}/PKGBUILD']:
+        template_checksum = re.search(r"^sha256sums=\('SKIP'\)$", existing_recipe, re.M)
+        if current == incoming and existing_recipe != files[f'aur/{name}/PKGBUILD'] and not (name.endswith('-bin') and template_checksum):
             raise ValueError('Refusing same-version recipe replacement; increment pkgrel')
     changed = [file for file in FILES if (root/file).read_text() != files[file]]
     # A same-version retry may repair stale metadata, but never change pinned payload bytes.
-    existing = (root/'aur/motrix2-bin/PKGBUILD').read_text()
+    existing = (root/'aur/motrix-electron-bin/PKGBUILD').read_text()
     if parse_tag(recipe_tag(existing))[0] == incoming:
         digest = re.search(r"^sha256sums=\('([a-f0-9]{64})'\)$", existing, re.M)
-        new_digest = re.search(r"^sha256sums=\('([a-f0-9]{64})'\)$", files['aur/motrix2-bin/PKGBUILD'], re.M)
+        new_digest = re.search(r"^sha256sums=\('([a-f0-9]{64})'\)$", files['aur/motrix-electron-bin/PKGBUILD'], re.M)
         if digest and new_digest and digest[1] != new_digest[1]:
             raise ValueError('Refusing same-version binary replacement')
     for file in changed:
@@ -90,8 +91,8 @@ def main():
                                                   '--json', 'isDraft,assets'], text=True))
     if release['isDraft']:
         raise ValueError('Refusing draft release')
-    archive = f'motrix2-{version}-{revision}-aur.tar.gz'
-    application = f'motrix2-{version}-{revision}-x86_64.asar'
+    archive = f'motrix-electron-{version}-{revision}-aur.tar.gz'
+    application = f'motrix-electron-{version.replace("-", "")}-{revision}-x86_64.pkg.tar.zst'
     with tempfile.TemporaryDirectory(prefix='motrix-arch-sync-') as directory:
         subprocess.run(['gh', 'release', 'download', args.tag, '--repo', args.repository,
                         '--pattern', archive, '--pattern', application, '--pattern', 'SHA256SUMS', '--dir', directory], check=True)

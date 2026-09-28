@@ -103,7 +103,7 @@ appManifest.main = 'entry.cjs'
 await writeFile(appManifestPath, `${JSON.stringify(appManifest, null, 2)}\n`)
 const payload = path.join(root, 'dist/arch-root')
 await rm(payload, { recursive: true, force: true })
-const resources = path.join(payload, 'usr/lib/motrix2')
+const resources = path.join(payload, 'usr/lib/motrix-electron')
 await mkdir(resources, { recursive: true })
 await createPackageWithOptions(stageRoot, path.join(resources, 'app.asar'), {
   unpack: '**/*.node',
@@ -118,35 +118,40 @@ const copy = async (from, to, mode) => {
 for (const name of ['native-host', 'finalize-fs']) {
   await copy(
     `packages/${name}/target/release/motrix-${name}`,
-    `usr/lib/motrix2/bin/motrix-${name}`,
+    `usr/lib/motrix-electron/bin/motrix-${name}`,
     0o755
   )
 }
-await copy('extra/aria2.conf', 'usr/lib/motrix2/extra/aria2.conf')
+await copy('extra/aria2.conf', 'usr/lib/motrix-electron/extra/aria2.conf')
 await copy(
   'extra/linux/x64/aria2c',
-  'usr/lib/motrix2/extra/linux/x64/aria2c',
+  'usr/lib/motrix-electron/extra/linux/x64/aria2c',
   0o755
 )
 for (const name of await readdir('extra/tray')) {
   if (name.endsWith('.png'))
-    await copy(`extra/tray/${name}`, `usr/lib/motrix2/extra/tray/${name}`)
+    await copy(
+      `extra/tray/${name}`,
+      `usr/lib/motrix-electron/extra/tray/${name}`
+    )
 }
-await copy('dist/builtin-plugins', 'usr/lib/motrix2/builtin-plugins')
-await copy('build/legal', 'usr/lib/motrix2/legal')
+await copy('dist/builtin-plugins', 'usr/lib/motrix-electron/builtin-plugins')
+await copy('build/legal', 'usr/lib/motrix-electron/legal')
 for (const name of ['THIRD_PARTY_NOTICES.md', 'THIRD_PARTY_NOTICES.zh-CN.md']) {
-  await copy(name, `usr/lib/motrix2/${name}`)
+  await copy(name, `usr/lib/motrix-electron/${name}`)
 }
-await copy('THIRD_PARTY_LICENSES', 'usr/lib/motrix2/THIRD_PARTY_LICENSES')
-await copy('LICENSE', 'usr/share/licenses/motrix2/LICENSE')
+await copy(
+  'THIRD_PARTY_LICENSES',
+  'usr/lib/motrix-electron/THIRD_PARTY_LICENSES'
+)
+await copy('LICENSE', 'usr/share/licenses/motrix-electron/LICENSE')
 await copy(
   'build/256x256.png',
   'usr/share/icons/hicolor/256x256/apps/motrix.png'
 )
 await copy('build/arch/motrix.desktop', 'usr/share/applications/motrix.desktop')
 await copy('build/arch/motrix', 'usr/bin/motrix', 0o755)
-await copy('build/arch/motrix', 'usr/bin/motrix2', 0o755)
 await mkdir('release', { recursive: true })
-const artifact = `release/motrix2-${pkg.version}-${pkgrel}-x86_64.asar`
+const artifact = `release/motrix-electron-${pkg.version}-${pkgrel}-x86_64.asar`
 await createPackage(payload, artifact)
 console.log(`Built ${artifact} using system Electron ${versions.electron}`)

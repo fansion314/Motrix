@@ -10,24 +10,27 @@
 从 [Arch Release](https://github.com/fansion314/Motrix/releases) 下载
 `*-aur.tar.gz`，解压后选择其中一个包：
 
+若要直接安装，从同一 Release 下载 `.pkg.tar.zst`，执行
+`sudo pacman -U motrix-electron-*.pkg.tar.zst`。
+
 ```sh
-cd aur/motrix2       # 从标签对应的源码构建 Motrix
+cd aur/motrix-electron       # 从标签对应的源码构建 Motrix
 makepkg -si
 ```
 
 ```sh
-cd aur/motrix2-bin   # 下载已验证的预构建 ASAR
+cd aur/motrix-electron-bin   # 下载已验证的预构建 Arch 包
 makepkg -si
 ```
 
-Release 包含完整的 PKGBUILD 和 `.SRCINFO`，二进制包配方固定 ASAR 的 SHA-256。
+Release 包含完整的 PKGBUILD 和 `.SRCINFO`，二进制包配方固定包的 SHA-256。
 仓库内的配方是发布模板，二进制校验和由 Actions 最终填写。此工作流不上传 AUR；
 发布到 AUR 需要维护者的 AUR 账号。
 
-两种包均安装 `/usr/bin/motrix`、`/usr/bin/motrix2`、桌面入口及 `/usr/lib/motrix2/`，
+两种包均安装 `/usr/bin/motrix`、桌面入口及 `/usr/lib/motrix-electron/`，
 互相冲突，也与其他原生 Motrix 包冲突，并沿用现有 Motrix 用户数据。
 更新由 pacman/AUR 管理，应用不会使用捆绑运行时的自动更新流程。
-包名仍为 `motrix2` 和 `motrix2-bin`，桌面入口显示为 **Motrix**。
+包名仍为 `motrix-electron` 和 `motrix-electron-bin`，桌面入口显示为 **Motrix**。
 
 ## 外观设置
 
@@ -44,7 +47,7 @@ Release 包含完整的 PKGBUILD 和 `.SRCINFO`，二进制包配方固定 ASAR 
 ELECTRON_SKIP_BINARY_DOWNLOAD=1 MOTRIX_SKIP_ELECTRON_REBUILD=1 \
   MOTRIX_SKIP_ENGINE_FETCH=1 pnpm install --frozen-lockfile
 pnpm run build:arch
-pnpm run verify:arch -- release/motrix2-2.0.0-beta.41-1-x86_64.asar
+pnpm run verify:arch -- release/motrix-electron-2.0.0-beta.41-3-x86_64.asar
 ```
 
 构建会查询 `/usr/bin/electron` 的版本，针对该运行时编译 SQLite，使用 Arch Rust
@@ -55,24 +58,23 @@ beta.41 锁定 `motrixapp/aria2` v1.37.0-motrix.16，提供静态链接 musl 的
 预构建程序，支持 SQLite 持久化和任务独立 Cookie。它可以直接在 Arch 运行，
 无需重新编译，也无需新增 aria2 构建流水线或安装系统 aria2 包。
 
-单个发行 ASAR 包含 `usr/` 安装目录：应用 `app.asar`、解包的原生模块和界面资源、
+发行的 pacman 包包含 `usr/` 安装目录：应用 `app.asar`、解包的原生模块和界面资源、
 Motrix aria2 fork 和辅助程序、内置插件、许可声明、启动器、桌面入口与图标。
-外层 ASAR 是安装载荷，不能直接交给 Electron 启动。`makepkg` 将它解包至软件包根目录。这样既保留原生模块和辅助进程所需的真实文件路径，
-也能以一个 ASAR 文件分发应用。
+发布的 `.pkg.tar.zst` 可以直接由 `pacman -U` 安装；通过 AUR helper 安装时仍需 `makepkg` 重新打包。原生模块和辅助进程所需文件保留真实路径。
 
 软件包仅依赖系统 `electron`，不限制版本。应用启动时仍会检查原生 ABI。
-如果 Electron 更新改变了 ABI，请重新构建 `motrix2` 或安装匹配的新版 `motrix2-bin`。
+如果 Electron 更新改变了 ABI，请重新构建 `motrix-electron` 或安装匹配的新版 `motrix-electron-bin`。
 
 ## 标签发布
 
 向 `fansion314/Motrix` 推送 `arch-v<package.json version>-<pkgrel>` 标签，例如
-`arch-v2.0.0-beta.41-1`。打包修订递增 `pkgrel`，不要移动已发布的标签。
+`arch-v2.0.0-beta.41-3`。打包修订递增 `pkgrel`，不要移动已发布的标签。
 独立的 `arch-v` 前缀可避免触发上游 `v*` 多平台发布流程。
 
 `.github/workflows/arch-release.yml` 仅响应标签推送。它使用官方 `archlinux:base`
 镜像，完整更新系统包，以普通用户构建源码 PKGBUILD，运行质量检查，使用系统 Electron
 加载 SQLite，并在 Xvfb 下验证实际应用及捆绑的 Motrix aria2。生成并构建二进制 PKGBUILD 后，
-独立发布任务才上传 ASAR、AUR 配方及 `SHA256SUMS`。不会发布 AppImage、Electron 运行时或 pacman 二进制包。Beta 版本标记为 GitHub 预发布。
+独立发布任务才上传 pacman 包、AUR 配方及 `SHA256SUMS`。不会发布 AppImage 或 Electron 运行时。Beta 版本标记为 GitHub 预发布。
 
 ## 保持轻量分叉
 

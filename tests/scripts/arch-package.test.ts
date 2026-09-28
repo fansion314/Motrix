@@ -12,10 +12,10 @@ import {
 import { validateArchEntries } from '../../scripts/verify-arch-package.mjs'
 
 describe('Arch release contract', () => {
-  it('keeps the AUR package names while showing Motrix on the desktop', async () => {
+  it('uses the system Electron package names while showing Motrix on the desktop', async () => {
     const desktop = await readFile('build/arch/motrix.desktop', 'utf8')
     expect(desktop).toMatch(/^Name=Motrix$/m)
-    for (const name of ['motrix2', 'motrix2-bin']) {
+    for (const name of ['motrix-electron', 'motrix-electron-bin']) {
       const pkgbuild = await readFile(`aur/${name}/PKGBUILD`, 'utf8')
       expect(pkgbuild).toMatch(new RegExp(`^pkgname=${name}$`, 'm'))
     }
@@ -58,7 +58,7 @@ describe('Arch release contract', () => {
   })
 
   it('pins the binary checksum and keeps the system Electron dependency unversioned', async () => {
-    const template = await readFile('aur/motrix2-bin/PKGBUILD', 'utf8')
+    const template = await readFile('aur/motrix-electron-bin/PKGBUILD', 'utf8')
     const output = renderArchPkgbuild(
       template,
       parseArchTag('arch-v2.0.0-beta.40-3', '2.0.0-beta.40'),
@@ -70,6 +70,7 @@ describe('Arch release contract', () => {
       /^depends=\('electron' 'gcc-libs' 'glibc' 'xdg-utils'\)$/m
     )
     expect(output).toContain(`sha256sums=('${'a'.repeat(64)}')`)
+    expect(output).toContain('pkg.tar.zst')
     expect(() => renderArchPkgbuild(template, {}, 'SKIP')).toThrow()
   })
 
@@ -102,11 +103,12 @@ describe('Arch release contract', () => {
     }
     let mainLoaded = false
     const context = {
-      __dirname: '/usr/lib/motrix2/app.asar',
+      __dirname: '/usr/lib/motrix-electron/app.asar',
       app,
       process,
       require: (name: string) => {
-        if (name === 'node:path') return { dirname: () => '/usr/lib/motrix2' }
+        if (name === 'node:path')
+          return { dirname: () => '/usr/lib/motrix-electron' }
         if (name === 'electron') return { app }
         if (name === './arch-build.json') return { electronAbi: '149' }
         if (name === './dist/main/index.cjs') {
@@ -118,7 +120,7 @@ describe('Arch release contract', () => {
     }
     vm.runInNewContext(code, context)
     expect(mainLoaded).toBe(true)
-    expect(process.resourcesPath).toBe('/usr/lib/motrix2')
+    expect(process.resourcesPath).toBe('/usr/lib/motrix-electron')
     expect(paths.exe).toBe('/usr/bin/motrix')
     expect(paths.desktop).toBe('motrix.desktop')
     expect(Object.getOwnPropertyDescriptor(app, 'isPackaged')?.value).toBe(true)

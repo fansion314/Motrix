@@ -107,6 +107,21 @@
     "extendInfo": {
       "NSLocalNetworkUsageDescription": "Motrix uses the local network for UPnP port mapping and discovering download peers."
     },
+    "sign": "./scripts/sign-macos.mjs",
+    "extraFiles": [
+      {
+        "from": "packages/safari-bootstrap/dist/darwin-${arch}/MotrixSafariBootstrap",
+        "to": "Library/LaunchServices/MotrixSafariBootstrap"
+      },
+      {
+        "from": "packages/safari-bootstrap/dist/darwin-${arch}/MotrixSafariRegistrar",
+        "to": "MacOS/MotrixSafariRegistrar"
+      },
+      {
+        "from": "signing-build-resources/app.motrix.safari.bootstrap.plist",
+        "to": "Library/LaunchAgents/app.motrix.safari.bootstrap.plist"
+      }
+    ],
     "target": ["dmg", "zip"],
     "extraResources": [
       { "from": "./extra/aria2.conf", "to": "./extra/aria2.conf" },
@@ -176,7 +191,7 @@
     "perMachine": false
   },
   "electronDist": "trusted/electron.zip",
-  "electronVersion": "44.4.3",
+  "electronVersion": "44.4.5",
   "npmRebuild": true,
   "beforeBuild": "./scripts/before-build-use-staged-dependencies.mjs",
   "detectUpdateChannel": true,

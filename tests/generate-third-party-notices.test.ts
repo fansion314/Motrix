@@ -163,7 +163,7 @@ describe('third-party notice generator', () => {
     }
 
     expect(bundle.packageCount).toBeGreaterThan(100)
-    expect(inventory).toContain('| @xyflow/react | 12.11.6 |')
+    expect(inventory).toContain('| @xyflow/react | 12.12.0 |')
     expect(inventory).toContain('| aria2 | 1.37.0-motrix.16 |')
     expect(inventory).toContain('| motrix.filename-template | 1.1.1 |')
     expect(inventory).toContain('Apple San Francisco tray font')
@@ -173,7 +173,7 @@ describe('third-party notice generator', () => {
     )
     expect(sbom.spdxVersion).toBe('SPDX-2.3')
     expect(sbom.packages).toContainEqual(
-      expect.objectContaining({ name: 'Electron', versionInfo: '44.4.3' })
+      expect.objectContaining({ name: 'Electron', versionInfo: '44.4.5' })
     )
     expect(
       sbom.packages.every(
@@ -198,7 +198,7 @@ describe('third-party notice generator', () => {
       (relationship) => relationship.relationshipType === 'DESCRIBES'
     )?.relatedSpdxElement
     const packageIds = new Map(
-      sbom.packages.map((pkg) => [pkg.name, pkg.SPDXID])
+      sbom.packages.map((pkg) => [`${pkg.name}@${pkg.versionInfo}`, pkg.SPDXID])
     )
     const rootDependencyIds = new Set(
       sbom.relationships
@@ -220,7 +220,17 @@ describe('third-party notice generator', () => {
       'ws',
       'zod',
     ]) {
-      expect(rootDependencyIds).toContain(packageIds.get(packageName))
+      // A transitive dependency can install another version of the same name.
+      // The root edge must point to the version actually resolved by the app.
+      const manifest = JSON.parse(
+        await readFile(
+          path.join(process.cwd(), 'node_modules', packageName, 'package.json'),
+          'utf8'
+        )
+      ) as { version: string }
+      expect(rootDependencyIds).toContain(
+        packageIds.get(`${packageName}@${manifest.version}`)
+      )
     }
 
     const parsedAgain = JSON.parse(

@@ -1078,7 +1078,18 @@
           "summary_one": "{{count}} ردیاب",
           "summary_other": "{{count}} ردیاب",
           "syncFailed": "همگام‌سازی ردیاب‌ها ناموفق بود: {{reason}}",
-          "syncPrivateDisabled": "همگام‌سازی برای تورنت‌های خصوصی در دسترس نیست."
+          "syncPrivateDisabled": "همگام‌سازی برای تورنت‌های خصوصی در دسترس نیست.",
+          "preview": {
+            "title": "به‌روزرسانی ردیاب‌های کار",
+            "description": "تغییرات ردیاب‌های تکمیلی را بررسی کنید. نشانی‌های خود تورنت و نشانی‌های دستی حفظ می‌شوند.",
+            "reconnect": "این کار برای مدت کوتاهی مکث می‌کند، دوباره متصل می‌شود و خودکار ادامه می‌یابد.",
+            "added": "افزودن: {{count}}",
+            "removed": "حذف: {{count}}",
+            "retained": "حفظ {{count}} ردیاب تکمیلی موجود. گروه‌های announce اصلی تغییر نمی‌کنند.",
+            "excluded": "{{count}} ردیابی که حذف کرده‌اید در به‌روزرسانی خودکار دوباره اضافه نمی‌شوند.",
+            "apply": "اعمال به‌روزرسانی",
+            "changesPending": "تغییرات در انتظار: {{count}}"
+          }
         }
       },
       "media": {
@@ -1673,6 +1684,8 @@
         "retry": "تلاش دوباره",
         "title": "به‌روزرسانی‌های برنامه",
         "unsupported": "این نسخه خودکار به‌روز نمی‌شود. آخرین نسخه را از وب‌سایت رسمی دانلود کنید.",
+        "managedTitle": "به‌روزرسانی از منبع نصب",
+        "managedDescription": "این نسخهٔ بسته‌بندی‌شدهٔ ویندوز از طریق منبع اصلی نصب به‌روزرسانی می‌شود. به‌روزرسانی درون برنامه در دسترس نیست.",
         "unsupportedTitle": "به‌روزرسانی خودکار در دسترس نیست",
         "upToDate": "نسخهٔ {{version}} آخرین نسخهٔ موجود است.",
         "upToDateTitle": "Motrix به‌روز است"
@@ -1707,8 +1720,8 @@
       }
     },
     "appearance": {
-      "byteUnitBinary": "دودویی (MiB، GiB · 1024)",
-      "byteUnitDecimal": "ده‌دهی (MB، GB · 1000)",
+      "byteUnitBinary": "دودویی ({{megabyte}}، {{gigabyte}} · 1024)",
+      "byteUnitDecimal": "ده‌دهی ({{megabyte}}، {{gigabyte}} · 1000)",
       "byteUnitSystem": "واحدهای اندازه و سرعت",
       "byteUnitSystemDefault": "پیروی از سیستم ({{units}})",
       "byteUnitSystemDesc": "نحوهٔ نمایش اندازهٔ فایل‌ها و سرعت‌ها را انتخاب کنید.",
@@ -1736,6 +1749,7 @@
       "sidebarColors": {
         "auto": "خودکار",
         "blue": "آبی",
+        "cloud": "سفید ابری",
         "cyan": "فیروزه‌ای",
         "gold": "طلایی",
         "gray": "خاکستری",
@@ -1900,7 +1914,7 @@
       "defaultDownloadFolder": "پوشهٔ دانلود پیش‌فرض",
       "description": "فایل‌ها، سرعت دانلود و اتصال‌ها",
       "disk": {
-        "diskCache": "حافظهٔ نهان دیسک (MiB)",
+        "diskCache": "حافظهٔ نهان دیسک ({{unit}})",
         "diskCacheDesc": "حافظهٔ مورد استفاده برای نگه‌داری موقت فایل‌ها پیش از نوشتن روی دیسک.",
         "fileAllocation": "رزرو فضای دیسک",
         "fileAllocationDesc": "پیش از دانلود فایل، فضا رزرو شود.",
@@ -1941,7 +1955,7 @@
           "minimum": "حداقل اندازهٔ بخش",
           "perServer": "حد هر سرور"
         },
-        "minSplitSize": "حداقل اندازهٔ بخش (MiB)",
+        "minSplitSize": "حداقل اندازهٔ بخش ({{unit}})",
         "minSplitSizeDesc": "بخش‌های کوچک‌تر از دو برابر این اندازه تقسیم نمی‌شوند.",
         "profile": "کارایی دانلود",
         "profileDesc": "میان سرعت دانلود و مصرف منابع تعادل برقرار کنید.",
@@ -1974,7 +1988,7 @@
       "reliability": {
         "connectTimeout": "مهلت اتصال (ثانیه)",
         "connectTimeoutDesc": "مدت انتظار برای برقراری اتصال.",
-        "lowestSpeedLimit": "حداقل سرعت اتصال (KiB/s)",
+        "lowestSpeedLimit": "حداقل سرعت اتصال ({{unit}})",
         "lowestSpeedLimitDesc": "زیر این سرعت، اتصال قطع شود. 0 = غیرفعال.",
         "maxTries": "حداکثر تلاش‌ها",
         "maxTriesDesc": "شامل تلاش اول است. 0 = نامحدود.",
@@ -2109,6 +2123,8 @@
       "inAppNotificationsDesc": "انتخاب کنید کدام اعلان‌های دانلود نمایش داده شوند. هشدارهای برنامه فعال می‌مانند.",
       "launchAtStartup": "باز شدن هنگام ورود به سیستم",
       "launchAtStartupDesc": "هنگام ورود به سیستم، Motrix خودکار اجرا شود.",
+      "linuxAutostartDesc": "اجرای خودکار هنگام ورود را در محیط دسکتاپ تنظیم کنید.",
+      "linuxAutostartGuide": "مشاهدهٔ راهنمای تنظیم",
       "lightweightMode": "کاهش مصرف حافظه هنگام بسته بودن پنجره",
       "lightweightModeDesc": "دانلودها ادامه می‌یابند. باز شدن دوباره کندتر است و ورودی‌های ذخیره‌نشده پاک می‌شوند.",
       "notificationBadgeCount": "تعداد",
@@ -2766,7 +2782,7 @@
       "disabled": "غیرفعال است؛ برای دیدن فهرست ردیاب‌های مؤثر، فعال کنید.",
       "empty": "هنوز ردیاب مؤثری وجود ندارد. برای پر کردن فهرست، همگام‌سازی را اجرا کنید.",
       "enabled": "افزودن ردیاب‌های گزینش‌شده",
-      "enabledDesc": "فهرست ردیاب‌های گزینش‌شده به همهٔ کارهای BitTorrent افزوده شود."
+      "enabledDesc": "ردیاب‌های منتخب را به کارهای عمومی جدید BitTorrent اضافه کنید."
     },
     "sync": {
       "applying": "در حال اعمال فهرست ردیاب‌ها…",
@@ -2774,7 +2790,57 @@
       "fetching": "در حال دریافت فهرست ردیاب‌ها…",
       "probing": "در حال بررسی دسترسی به ردیاب‌ها…",
       "syncing": "در حال همگام‌سازی…",
-      "unavailable": "خواندن وضعیت همگام‌سازی ممکن نیست. اتصال را بررسی کنید و دوباره تلاش کنید."
+      "unavailable": "خواندن وضعیت همگام‌سازی ممکن نیست. اتصال را بررسی کنید و دوباره تلاش کنید.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "tray": {
@@ -2786,5 +2852,23 @@
     "preferences": "تنظیمات",
     "quit": "خروج",
     "showMotrix": "نمایش Motrix"
+  },
+  "units": {
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB",
+      "pb": "PB",
+      "eb": "EB",
+      "kib": "KiB",
+      "mib": "MiB",
+      "gib": "GiB",
+      "tib": "TiB",
+      "pib": "PiB",
+      "eib": "EiB"
+    },
+    "perSecond": "{{value}}/ثانیه"
   }
 }

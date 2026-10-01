@@ -53,6 +53,7 @@ import {
   BridgeEvents,
   BridgeQueries,
   type BridgeStatusInfo,
+  type Browser,
   type ClientIdentity,
   type PairRequestPayload,
   pairRequestKey,
@@ -76,6 +77,7 @@ import {
   type SyncArgs,
 } from './native-messaging-installer'
 import { PairingDialogController } from './pairing-dialog-controller'
+import { registerSafariBootstrap } from './safari-bootstrap-registration'
 import {
   isValidSnapInstanceName,
   type PackagedLinuxSnapEnvironment,
@@ -428,6 +430,8 @@ export async function bootstrapBridge(args: {
   >[0]['isMagnetFileSelectionEnabled']
   finalNamePicker: { pick(saveDir: string, desired: string): Promise<string> }
   getDefaultSaveDir: BridgeReceiverDeps['getDefaultSaveDir']
+  resolveSaveDir?: BridgeReceiverDeps['resolveSaveDir']
+  recordDirectory?: BridgeReceiverDeps['recordDirectory']
   // Spec 3 — v1 READ methods over the unary POST /mdxp transport.
   readHandlerDeps: ReadHandlerDeps
   // Spec 4 — v1 WRITE methods (pause/resume/remove/add).
@@ -597,6 +601,8 @@ export async function bootstrapBridge(args: {
     const receiver = new BridgeReceiver({
       mediaMetaStore: args.mediaMetaStore,
       getDefaultSaveDir: args.getDefaultSaveDir,
+      resolveSaveDir: args.resolveSaveDir,
+      recordDirectory: args.recordDirectory,
       pickName: (saveDir, desired) =>
         args.finalNamePicker.pick(saveDir, desired),
       createTask: (req, _deps, options) =>
@@ -845,6 +851,18 @@ export async function bootstrapBridge(args: {
       },
     })
 
+    const safariStatus = await registerSafariBootstrap({
+      platform: process.platform,
+      isPackaged: app.isPackaged,
+      executablePath: process.execPath,
+    })
+    if (safariStatus !== 'not-bundled') {
+      nativeMessagingLog.info(
+        { status: safariStatus },
+        'Safari bootstrap registration'
+      )
+    }
+
     const endpointWriter = new EndpointFileWriter(
       join(dataDir, 'endpoint.json')
     )
@@ -978,7 +996,7 @@ export async function bootstrapBridge(args: {
         _e,
         params: {
           id: string
-          browser: 'chromium' | 'firefox'
+          browser: Browser
           label?: string
         }
       ) => {
@@ -989,7 +1007,7 @@ export async function bootstrapBridge(args: {
     )
     installIpcHandler(
       BridgeCommands.RemoveTrusted,
-      async (_e, params: { id: string; browser: 'chromium' | 'firefox' }) => {
+      async (_e, params: { id: string; browser: Browser }) => {
         await updateTrustedExtensions(() =>
           registry.remove(params.id, params.browser)
         )

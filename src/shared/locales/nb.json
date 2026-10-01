@@ -1078,7 +1078,18 @@
           "summary_one": "{{count}} tracker",
           "summary_other": "{{count}} trackere",
           "syncFailed": "Kunne ikke synkronisere trackere: {{reason}}",
-          "syncPrivateDisabled": "Synkronisering er utilgjengelig for private torrenter."
+          "syncPrivateDisabled": "Synkronisering er utilgjengelig for private torrenter.",
+          "preview": {
+            "title": "Oppdater oppgavens trackere",
+            "description": "Se gjennom endringene i ekstra trackere. Torrentens adresser og manuelt lagte adresser beholdes.",
+            "reconnect": "Oppgaven settes kort på pause, kobles til på nytt og fortsetter automatisk.",
+            "added": "Legg til: {{count}}",
+            "removed": "Fjern: {{count}}",
+            "retained": "Behold {{count}} eksisterende ekstra trackere. Torrentens announce-grupper forblir uendret.",
+            "excluded": "De {{count}} trackerne du fjernet, legges ikke til igjen ved automatiske oppdateringer.",
+            "apply": "Bruk oppdatering",
+            "changesPending": "Ventende endringer: {{count}}"
+          }
         }
       },
       "media": {
@@ -1673,6 +1684,8 @@
         "retry": "Prøv igjen",
         "title": "Appoppdateringer",
         "unsupported": "Denne versjonen kan ikke oppdateres automatisk. Last ned den nyeste versjonen fra det offisielle nettstedet.",
+        "managedTitle": "Oppdateringer fra installasjonskilden",
+        "managedDescription": "Denne pakkede Windows-utgaven oppdateres via den opprinnelige installasjonskilden. Oppdatering fra appen er ikke tilgjengelig.",
         "unsupportedTitle": "Automatiske oppdateringer er utilgjengelige",
         "upToDate": "Versjon {{version}} er den nyeste tilgjengelige utgaven.",
         "upToDateTitle": "Motrix er oppdatert"
@@ -1707,8 +1720,8 @@
       }
     },
     "appearance": {
-      "byteUnitBinary": "Binære (MiB, GiB · 1024)",
-      "byteUnitDecimal": "Desimale (MB, GB · 1000)",
+      "byteUnitBinary": "Binære ({{megabyte}}, {{gigabyte}} · 1024)",
+      "byteUnitDecimal": "Desimale ({{megabyte}}, {{gigabyte}} · 1000)",
       "byteUnitSystem": "Enheter for størrelse og hastighet",
       "byteUnitSystemDefault": "Følg systemet ({{units}})",
       "byteUnitSystemDesc": "Velg hvordan filstørrelser og hastigheter vises.",
@@ -1736,6 +1749,7 @@
       "sidebarColors": {
         "auto": "Automatisk",
         "blue": "Blå",
+        "cloud": "Skyhvit",
         "cyan": "Cyan",
         "gold": "Gull",
         "gray": "Grå",
@@ -1900,7 +1914,7 @@
       "defaultDownloadFolder": "Standard nedlastingsmappe",
       "description": "Filer, nedlastingshastighet og tilkoblinger",
       "disk": {
-        "diskCache": "Diskbuffer (MiB)",
+        "diskCache": "Diskbuffer ({{unit}})",
         "diskCacheDesc": "Minne som brukes til å mellomlagre filer før de skrives til disken.",
         "fileAllocation": "Reserver diskplass",
         "fileAllocationDesc": "Reserver plass før en fil lastes ned.",
@@ -1941,7 +1955,7 @@
           "minimum": "Min. segment",
           "perServer": "Grense per server"
         },
-        "minSplitSize": "Min. segmentstørrelse (MiB)",
+        "minSplitSize": "Min. segmentstørrelse ({{unit}})",
         "minSplitSizeDesc": "Segmenter under det dobbelte av denne størrelsen deles ikke opp.",
         "profile": "Nedlastingsytelse",
         "profileDesc": "Balanser nedlastingshastighet og ressursbruk.",
@@ -1974,7 +1988,7 @@
       "reliability": {
         "connectTimeout": "Tidsgrense for tilkobling (s)",
         "connectTimeoutDesc": "Hvor lenge det skal ventes på en tilkobling.",
-        "lowestSpeedLimit": "Minste tilkoblingshastighet (KiB/s)",
+        "lowestSpeedLimit": "Minste tilkoblingshastighet ({{unit}})",
         "lowestSpeedLimitDesc": "Koble fra under denne hastigheten. 0 = deaktivert.",
         "maxTries": "Maksimalt antall forsøk",
         "maxTriesDesc": "Inkluderer første forsøk. 0 = ubegrenset.",
@@ -2109,6 +2123,8 @@
       "inAppNotificationsDesc": "Velg hvilke nedlastingsvarsler som skal vises. Appvarsler forblir på.",
       "launchAtStartup": "Åpne ved pålogging",
       "launchAtStartupDesc": "Start Motrix automatisk når du logger på.",
+      "linuxAutostartDesc": "Konfigurer oppstart ved innlogging i skrivebordsmiljøet ditt.",
+      "linuxAutostartGuide": "Se oppsettsveiledningen",
       "lightweightMode": "Spar minne når vinduet er lukket",
       "lightweightModeDesc": "Nedlastingene fortsetter. Det tar lengre tid å åpne vinduet igjen, og ulagrede inndata tømmes.",
       "notificationBadgeCount": "Antall",
@@ -2766,7 +2782,7 @@
       "disabled": "Deaktivert — slå på for å se trackerlisten som brukes.",
       "empty": "Ingen trackere i bruk ennå. Kjør synkronisering for å fylle listen.",
       "enabled": "Legg til utvalgte trackere",
-      "enabledDesc": "Legg den utvalgte trackerlisten til i alle BitTorrent-oppgaver."
+      "enabledDesc": "Legg til utvalgte trackere i nye offentlige BitTorrent-oppgaver."
     },
     "sync": {
       "applying": "Tar i bruk trackerlister…",
@@ -2774,7 +2790,57 @@
       "fetching": "Henter trackerlister…",
       "probing": "Kontrollerer trackertilgjengelighet…",
       "syncing": "Synkroniserer…",
-      "unavailable": "Kan ikke lese synkroniseringsstatus. Kontroller tilkoblingen og prøv igjen."
+      "unavailable": "Kan ikke lese synkroniseringsstatus. Kontroller tilkoblingen og prøv igjen.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "tray": {
@@ -2786,5 +2852,23 @@
     "preferences": "Innstillinger",
     "quit": "Avslutt",
     "showMotrix": "Vis Motrix"
+  },
+  "units": {
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB",
+      "pb": "PB",
+      "eb": "EB",
+      "kib": "KiB",
+      "mib": "MiB",
+      "gib": "GiB",
+      "tib": "TiB",
+      "pib": "PiB",
+      "eib": "EiB"
+    },
+    "perSecond": "{{value}}/s"
   }
 }

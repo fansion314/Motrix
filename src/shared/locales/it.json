@@ -830,7 +830,18 @@
           "invalidLines_other": "Ignorate {{count}} righe non valide",
           "invalidLines_many": "Ignorate {{count}} righe non valide",
           "editPlaceholder": "Un URL tracker per riga. Solo http(s)/udp/ws(s).",
-          "editHint": "Questi tracker sostituiscono l’elenco bt-tracker usato dall’attività. Le voci announce-list del file .torrent rimangono invariate."
+          "editHint": "Questi tracker sostituiscono l’elenco bt-tracker usato dall’attività. Le voci announce-list del file .torrent rimangono invariate.",
+          "preview": {
+            "title": "Aggiorna i tracker dell’attività",
+            "description": "Controlla le modifiche ai tracker aggiuntivi. Gli indirizzi del torrent e quelli aggiunti manualmente vengono mantenuti.",
+            "reconnect": "L’attività verrà sospesa brevemente, riconnessa e ripresa automaticamente.",
+            "added": "Aggiunte: {{count}}",
+            "removed": "Rimozioni: {{count}}",
+            "retained": "Mantieni {{count}} tracker aggiuntivi esistenti. I gruppi announce originali restano invariati.",
+            "excluded": "I {{count}} tracker rimossi non verranno aggiunti nuovamente dagli aggiornamenti automatici.",
+            "apply": "Applica aggiornamento",
+            "changesPending": "Modifiche in sospeso: {{count}}"
+          }
         },
         "multi": {
           "totals": "Totali",
@@ -1210,6 +1221,8 @@
     "general": {
       "launchAtStartup": "Apri al login",
       "launchAtStartupDesc": "Avvia Motrix automaticamente quando accedi al sistema.",
+      "linuxAutostartDesc": "Configura l’avvio all’accesso nel tuo ambiente desktop.",
+      "linuxAutostartGuide": "Visualizza la guida alla configurazione",
       "showMainWindowAtLogin": "Mostra finestra al login",
       "showMainWindowAtLoginDesc": "Nascosta con “{{mode}}”.",
       "defaultSaveDir": "Cartella download predefinita",
@@ -1282,20 +1295,21 @@
       "lightweightModeDesc": "Risparmia memoria quando la finestra è chiusa. I download continuano, ma la riapertura richiede più tempo e i dati non salvati vengono cancellati.",
       "byteUnitSystem": "Unità di dimensione e velocità",
       "byteUnitSystemDesc": "Scegli come visualizzare le dimensioni dei file e le velocità.",
-      "byteUnitDecimal": "Decimali (MB, GB · 1000)",
-      "byteUnitBinary": "Binarie (MiB, GiB · 1024)",
+      "byteUnitDecimal": "Decimali ({{megabyte}}, {{gigabyte}} · 1000)",
+      "byteUnitBinary": "Binarie ({{megabyte}}, {{gigabyte}} · 1024)",
       "byteUnitSystemDefault": "Segui il sistema ({{units}})",
       "sidebarColor": "Colore principale",
       "sidebarColors": {
+        "auto": "Automatico",
         "blue": "Blu",
-        "violet": "Viola",
-        "pink": "Rosa",
-        "orange": "Arancione",
-        "gold": "Oro",
-        "green": "Verde",
+        "cloud": "Bianco nuvola",
         "cyan": "Ciano",
+        "gold": "Oro",
         "gray": "Grigio",
-        "auto": "Automatico"
+        "green": "Verde",
+        "orange": "Arancione",
+        "pink": "Rosa",
+        "violet": "Viola"
       },
       "themeAndEffects": "Tema ed effetti",
       "languageAndDisplay": "Lingua e visualizzazione",
@@ -1340,6 +1354,8 @@
         "currentVersion": "Versione attuale {{version}}",
         "idleTitle": "Mantieni Motrix aggiornato",
         "idle": "È installata la versione {{version}}. Cerca ora gli aggiornamenti oppure lascia che Motrix li cerchi all’avvio.",
+        "managedTitle": "Aggiornamenti dalla fonte di installazione",
+        "managedDescription": "Questa edizione Windows in pacchetto viene aggiornata tramite la fonte di installazione originale. Gli aggiornamenti dall’app non sono disponibili.",
         "unsupportedTitle": "Aggiornamenti automatici non disponibili",
         "unsupported": "Questa versione non può aggiornarsi automaticamente. Scarica l’ultima versione dal sito ufficiale.",
         "check": "Cerca aggiornamenti",
@@ -1517,7 +1533,7 @@
         "maxConnectionPerServerDesc": "Limite di connessioni per file verso un singolo server.",
         "split": "Connessioni massime per file",
         "splitDesc": "Connessioni usate per scaricare un file.",
-        "minSplitSize": "Dimensione minima del segmento (MiB)",
+        "minSplitSize": "Dimensione minima del segmento ({{unit}})",
         "minSplitSizeDesc": "I segmenti più piccoli del doppio di questa dimensione non vengono suddivisi."
       },
       "reliability": {
@@ -1532,7 +1548,7 @@
         "maxTriesDesc": "Include il primo tentativo. 0 = illimitati.",
         "retryWait": "Attesa prima di riprovare (s)",
         "retryWaitDesc": "Attendi questo tempo prima di riprovare.",
-        "lowestSpeedLimit": "Velocità minima della connessione (KiB/s)",
+        "lowestSpeedLimit": "Velocità minima della connessione ({{unit}})",
         "lowestSpeedLimitDesc": "Interrompi la connessione sotto questa velocità. 0 = disattivato."
       },
       "disk": {
@@ -1552,7 +1568,7 @@
         "modifiedTimeDesc": "Per i download HTTP e FTP completati.",
         "modifiedTimeLocal": "Data del download",
         "modifiedTimeServer": "Data dal server",
-        "diskCache": "Cache disco (MiB)",
+        "diskCache": "Cache disco ({{unit}})",
         "diskCacheDesc": "Memoria usata per memorizzare temporaneamente i dati dei file prima di scriverli sul disco.",
         "sessionSaveInterval": "Intervallo di salvataggio dell’avanzamento (s)",
         "sessionSaveIntervalDesc": "Salva più spesso per ridurre i progressi persi dopo un arresto anomalo."
@@ -2167,7 +2183,7 @@
   "trackers": {
     "effective": {
       "enabled": "Aggiungi tracker selezionati",
-      "enabledDesc": "Aggiungi l’elenco dei tracker selezionati a tutte le attività BitTorrent.",
+      "enabledDesc": "Aggiungi i tracker selezionati alle nuove attività BitTorrent pubbliche.",
       "disabled": "Disattivato: attiva per visualizzare l’elenco dei tracker effettivamente usati.",
       "empty": "Nessun tracker effettivamente in uso. Esegui la sincronizzazione per compilare l’elenco.",
       "column": {
@@ -2205,7 +2221,57 @@
       "probing": "Verifica della disponibilità dei tracker…",
       "applying": "Applicazione degli elenchi tracker…",
       "failed": "Sincronizzazione incompleta. Controlla la rete o le fonti e riprova.",
-      "unavailable": "Impossibile leggere lo stato della sincronizzazione. Controlla la connessione e riprova."
+      "unavailable": "Impossibile leggere lo stato della sincronizzazione. Controlla la connessione e riprova.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "plugins": {
@@ -2808,5 +2874,23 @@
     },
     "manageAction": "Gestisci",
     "alreadyFavorite": "Già nei preferiti"
+  },
+  "units": {
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB",
+      "pb": "PB",
+      "eb": "EB",
+      "kib": "KiB",
+      "mib": "MiB",
+      "gib": "GiB",
+      "tib": "TiB",
+      "pib": "PiB",
+      "eib": "EiB"
+    },
+    "perSecond": "{{value}}/s"
   }
 }

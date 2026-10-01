@@ -1078,7 +1078,18 @@
           "summary_one": "{{count}} тракер",
           "summary_other": "{{count}} тракера",
           "syncFailed": "Списъкът с тракери не можа да бъде синхронизиран: {{reason}}",
-          "syncPrivateDisabled": "Синхронизирането е недостъпно за частни торенти."
+          "syncPrivateDisabled": "Синхронизирането е недостъпно за частни торенти.",
+          "preview": {
+            "title": "Обновяване на тракерите на задачата",
+            "description": "Прегледайте промените в допълнителните тракери. Адресите от торента и добавените ръчно се запазват.",
+            "reconnect": "Задачата ще бъде спряна за кратко, ще се свърже отново и ще продължи автоматично.",
+            "added": "Добавяне: {{count}}",
+            "removed": "Премахване: {{count}}",
+            "retained": "Запазване на {{count}} съществуващи допълнителни тракера. Оригиналните announce групи остават непроменени.",
+            "excluded": "Премахнатите от вас тракери ({{count}}) няма да се добавят отново при автоматично обновяване.",
+            "apply": "Прилагане на обновяването",
+            "changesPending": "Чакащи промени: {{count}}"
+          }
         }
       },
       "media": {
@@ -1673,6 +1684,8 @@
         "retry": "Повторен опит",
         "title": "Актуализации на приложението",
         "unsupported": "Тази версия не може да се обновява автоматично. Изтеглете най-новата версия от официалния уебсайт.",
+        "managedTitle": "Актуализации от източника на инсталиране",
+        "managedDescription": "Това пакетирано издание за Windows се актуализира чрез първоначалния източник на инсталиране. Актуализациите в приложението не са налични.",
         "unsupportedTitle": "Автоматичните актуализации са недостъпни",
         "upToDate": "Версия {{version}} е най-новото налично издание.",
         "upToDateTitle": "Motrix е с най-новата версия"
@@ -1707,8 +1720,8 @@
       }
     },
     "appearance": {
-      "byteUnitBinary": "Двоични (MiB, GiB · 1024)",
-      "byteUnitDecimal": "Десетични (MB, GB · 1000)",
+      "byteUnitBinary": "Двоични ({{megabyte}}, {{gigabyte}} · 1024)",
+      "byteUnitDecimal": "Десетични ({{megabyte}}, {{gigabyte}} · 1000)",
       "byteUnitSystem": "Мерни единици за размер и скорост",
       "byteUnitSystemDefault": "Според системата ({{units}})",
       "byteUnitSystemDesc": "Изберете как да се показват размерите на файловете и скоростите.",
@@ -1736,6 +1749,7 @@
       "sidebarColors": {
         "auto": "Автоматично",
         "blue": "Синьо",
+        "cloud": "Облачно бяло",
         "cyan": "Циан",
         "gold": "Златисто",
         "gray": "Сиво",
@@ -1900,7 +1914,7 @@
       "defaultDownloadFolder": "Папка за изтегляне по подразбиране",
       "description": "Файлове, скорост на изтегляне и връзки",
       "disk": {
-        "diskCache": "Дисков кеш (MiB)",
+        "diskCache": "Дисков кеш ({{unit}})",
         "diskCacheDesc": "Памет за буфериране на файловете преди запис на диска.",
         "fileAllocation": "Резервиране на дисково пространство",
         "fileAllocationDesc": "Резервира място преди изтегляне на файл.",
@@ -1941,7 +1955,7 @@
           "minimum": "Минимален сегмент",
           "perServer": "Лимит за сървър"
         },
-        "minSplitSize": "Минимален размер на сегмента (MiB)",
+        "minSplitSize": "Минимален размер на сегмента ({{unit}})",
         "minSplitSizeDesc": "Сегменти, по-малки от 2× този размер, няма да се разделят.",
         "profile": "Производителност на изтегляне",
         "profileDesc": "Балансира скоростта на изтегляне и използването на ресурси.",
@@ -1974,7 +1988,7 @@
       "reliability": {
         "connectTimeout": "Време за изчакване на връзка (сек)",
         "connectTimeoutDesc": "Колко дълго да се изчаква установяването на връзка.",
-        "lowestSpeedLimit": "Минимална скорост на връзката (KiB/s)",
+        "lowestSpeedLimit": "Минимална скорост на връзката ({{unit}})",
         "lowestSpeedLimitDesc": "Прекъсва връзката под тази скорост. 0 = изключено.",
         "maxTries": "Максимален брой опити",
         "maxTriesDesc": "Включва първия опит. 0 = без ограничение.",
@@ -2109,6 +2123,8 @@
       "inAppNotificationsDesc": "Изберете кои известия за изтегляния да се показват. Предупрежденията на приложението остават включени.",
       "launchAtStartup": "Отваряне при влизане в системата",
       "launchAtStartupDesc": "Стартира Motrix автоматично при влизане в системата.",
+      "linuxAutostartDesc": "Настройте стартирането при вход в работната си среда.",
+      "linuxAutostartGuide": "Отваряне на ръководството",
       "lightweightMode": "Пестене на памет при затворен прозорец",
       "lightweightModeDesc": "Изтеглянията продължават. Повторното отваряне е по-бавно, а незапазените въведени данни се изчистват.",
       "notificationBadgeCount": "Брой",
@@ -2372,7 +2388,7 @@
         "restartHint": "Запазено. Рестартирайте Motrix, за да открият активните приставки промените.",
         "restartNow": "Рестартиране сега",
         "savedTitle": "Настройките на FFmpeg са запазени",
-        "stagingMB": "Лимит за временни файлове (MB)",
+        "stagingMB": "Лимит за временни файлове (МБ)",
         "stagingMBDesc": "Място за междинни файлове, отделно за всяка приставка и задача.",
         "state": {
           "active": "Използва се",
@@ -2626,7 +2642,7 @@
         "unsupportedInput": "Този формат на входните данни не е внесен. Поставете URL адрес или поддържан вход във формат JSON или Bash cURL.",
         "unsupportedProtocol": "Протоколът на този URL адрес не се поддържа за това изтегляне.",
         "unsupportedRequestOptions": "HTTP заглавки не могат да се прилагат към FTP изтегляне.",
-        "urlTooLong": "URL адресът надхвърля ограничението от 16 KiB."
+        "urlTooLong": "URL адресът надхвърля ограничението от 16 КиБ."
       },
       "sourceLine": "Ред {{line}}",
       "split": "Връзки",
@@ -2766,7 +2782,7 @@
       "disabled": "Изключено — включете, за да видите действащия списък с тракери.",
       "empty": "Все още няма действащи тракери. Синхронизирайте, за да попълните списъка.",
       "enabled": "Добавяне на подбрани тракери",
-      "enabledDesc": "Добавя списъка с подбрани тракери към всички BitTorrent задачи."
+      "enabledDesc": "Добавяне на избраните тракери към нови публични BitTorrent задачи."
     },
     "sync": {
       "applying": "Прилагане на списъците с тракери…",
@@ -2774,7 +2790,57 @@
       "fetching": "Изтегляне на списъците с тракери…",
       "probing": "Проверка на достъпността на тракерите…",
       "syncing": "Синхронизиране…",
-      "unavailable": "Състоянието на синхронизирането не може да се прочете. Проверете връзката и опитайте отново."
+      "unavailable": "Състоянието на синхронизирането не може да се прочете. Проверете връзката и опитайте отново.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "tray": {
@@ -2786,5 +2852,23 @@
     "preferences": "Настройки",
     "quit": "Изход",
     "showMotrix": "Показване на Motrix"
+  },
+  "units": {
+    "bytes": {
+      "b": "Б",
+      "kb": "КБ",
+      "mb": "МБ",
+      "gb": "ГБ",
+      "tb": "ТБ",
+      "pb": "ПБ",
+      "eb": "ЕБ",
+      "kib": "КиБ",
+      "mib": "МиБ",
+      "gib": "ГиБ",
+      "tib": "ТиБ",
+      "pib": "ПиБ",
+      "eib": "ЕиБ"
+    },
+    "perSecond": "{{value}}/с"
   }
 }

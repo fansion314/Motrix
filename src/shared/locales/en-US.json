@@ -818,7 +818,18 @@
           "invalidLines_one": "Skipped {{count}} invalid line",
           "invalidLines_other": "Skipped {{count}} invalid lines",
           "editPlaceholder": "One tracker URL per line. http(s)/udp/ws(s) only.",
-          "editHint": "These trackers replace the task’s effective bt-tracker list. Announce-list entries from the .torrent are unaffected."
+          "editHint": "These trackers replace the task’s effective bt-tracker list. Announce-list entries from the .torrent are unaffected.",
+          "preview": {
+            "title": "Update task trackers",
+            "description": "Review changes to supplemental trackers. Torrent trackers and manually added addresses are preserved.",
+            "reconnect": "This task will briefly pause and reconnect, then resume automatically.",
+            "added": "Add: {{count}}",
+            "removed": "Remove: {{count}}",
+            "retained": "Keep {{count}} existing supplemental trackers. Native announce tiers stay unchanged.",
+            "excluded": "{{count}} trackers you removed are excluded from automatic updates.",
+            "apply": "Apply update",
+            "changesPending": "Pending changes: {{count}}"
+          }
         },
         "multi": {
           "totals": "Totals",
@@ -1196,6 +1207,8 @@
     "general": {
       "launchAtStartup": "Open at login",
       "launchAtStartupDesc": "Start Motrix automatically when you log in.",
+      "linuxAutostartDesc": "Manage login startup in your desktop environment.",
+      "linuxAutostartGuide": "View setup guide",
       "showMainWindowAtLogin": "Show window at login",
       "showMainWindowAtLoginDesc": "Hidden with “{{mode}}”.",
       "defaultSaveDir": "Default download folder",
@@ -1268,20 +1281,21 @@
       "lightweightModeDesc": "Save memory when the window is closed. Downloads continue, but reopening takes longer and clears unsaved input.",
       "byteUnitSystem": "Size and speed units",
       "byteUnitSystemDesc": "Choose how file sizes and speeds are displayed.",
-      "byteUnitDecimal": "Decimal (MB, GB · 1000)",
-      "byteUnitBinary": "Binary (MiB, GiB · 1024)",
+      "byteUnitDecimal": "Decimal ({{megabyte}}, {{gigabyte}} · 1000)",
+      "byteUnitBinary": "Binary ({{megabyte}}, {{gigabyte}} · 1024)",
       "byteUnitSystemDefault": "Follow system ({{units}})",
       "sidebarColor": "Accent color",
       "sidebarColors": {
+        "auto": "Auto",
         "blue": "Blue",
-        "violet": "Violet",
-        "pink": "Pink",
-        "orange": "Orange",
-        "gold": "Gold",
-        "green": "Green",
+        "cloud": "Cloud White",
         "cyan": "Cyan",
+        "gold": "Gold",
         "gray": "Gray",
-        "auto": "Auto"
+        "green": "Green",
+        "orange": "Orange",
+        "pink": "Pink",
+        "violet": "Violet"
       },
       "themeAndEffects": "Theme and effects",
       "languageAndDisplay": "Language and display",
@@ -1326,6 +1340,8 @@
         "currentVersion": "Current version {{version}}",
         "idleTitle": "Keep Motrix up to date",
         "idle": "Version {{version}} is installed. Check now, or let Motrix check when it opens.",
+        "managedTitle": "Updates from your installation source",
+        "managedDescription": "This packaged Windows edition is updated through its original installation source. In-app updates are unavailable.",
         "unsupportedTitle": "Automatic updates unavailable",
         "unsupported": "This version cannot update automatically. Download the latest version from the official website.",
         "check": "Check for updates",
@@ -1503,7 +1519,7 @@
         "maxConnectionPerServerDesc": "Per-file connection limit for one server.",
         "split": "Max connections per file",
         "splitDesc": "Connections used to download one file.",
-        "minSplitSize": "Min segment size (MiB)",
+        "minSplitSize": "Min segment size ({{unit}})",
         "minSplitSizeDesc": "Segments below 2× this size won’t split."
       },
       "reliability": {
@@ -1518,7 +1534,7 @@
         "maxTriesDesc": "Includes the first attempt. 0 = unlimited.",
         "retryWait": "Retry delay (s)",
         "retryWaitDesc": "Wait this long before trying again.",
-        "lowestSpeedLimit": "Minimum connection speed (KiB/s)",
+        "lowestSpeedLimit": "Minimum connection speed ({{unit}})",
         "lowestSpeedLimitDesc": "Disconnect below this speed. 0 = disabled."
       },
       "disk": {
@@ -1538,7 +1554,7 @@
         "modifiedTimeDesc": "For completed HTTP and FTP downloads.",
         "modifiedTimeLocal": "Download time",
         "modifiedTimeServer": "Time from server",
-        "diskCache": "Disk cache (MiB)",
+        "diskCache": "Disk cache ({{unit}})",
         "diskCacheDesc": "Memory used to buffer files before writing to disk.",
         "sessionSaveInterval": "Progress save interval (s)",
         "sessionSaveIntervalDesc": "Save more often to reduce progress lost after a crash."
@@ -2152,7 +2168,7 @@
   "trackers": {
     "effective": {
       "enabled": "Inject curated trackers",
-      "enabledDesc": "Append the curated tracker list to all BitTorrent tasks.",
+      "enabledDesc": "Add curated trackers to new public BitTorrent tasks.",
       "disabled": "Disabled — turn on to view the effective tracker list.",
       "empty": "No effective trackers yet. Run sync to populate.",
       "column": {
@@ -2190,7 +2206,57 @@
       "probing": "Checking tracker availability…",
       "applying": "Applying tracker lists…",
       "failed": "Sync incomplete. Check your network or sources and try again.",
-      "unavailable": "Can’t read sync status. Check your connection and try again."
+      "unavailable": "Can’t read sync status. Check your connection and try again.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "plugins": {
@@ -2786,5 +2852,23 @@
     },
     "manageAction": "Manage",
     "alreadyFavorite": "Already in favorites"
+  },
+  "units": {
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB",
+      "pb": "PB",
+      "eb": "EB",
+      "kib": "KiB",
+      "mib": "MiB",
+      "gib": "GiB",
+      "tib": "TiB",
+      "pib": "PiB",
+      "eib": "EiB"
+    },
+    "perSecond": "{{value}}/s"
   }
 }

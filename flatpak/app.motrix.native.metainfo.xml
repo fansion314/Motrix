@@ -68,6 +68,33 @@
   </screenshots>
 
   <releases>
+    <release version="2.0.0-beta.44" date="2026-09-29">
+      <description>
+        <p>
+          Distinguishes zero, unknown, and inapplicable download metrics,
+          fixes Safari helper signing order, and includes the Safari desktop
+          bootstrap with improved registration after macOS upgrades.
+        </p>
+      </description>
+    </release>
+    <release version="2.0.0-beta.43" date="2026-09-29">
+      <description>
+        <p>
+          Packages the Safari desktop bootstrap in signed macOS builds,
+          improves registration after upgrades, and avoids repeated bootstrap
+          requests when a running bridge refuses nonce issuance.
+        </p>
+      </description>
+    </release>
+    <release version="2.0.0-beta.42" date="2026-09-29">
+      <description>
+        <p>
+          Adds recoverable Tracker refreshes and task updates, fixes desktop
+          notification modes and Linux startup guidance, localizes information
+          units, and improves download controls and file completion reliability.
+        </p>
+      </description>
+    </release>
     <release version="2.0.0-beta.41" date="2026-09-27">
       <description>
         <p>

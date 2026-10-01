@@ -806,7 +806,18 @@
           "deleteFailed": "트래커를 제거하지 못했습니다: {{reason}}",
           "invalidLines_other": "올바르지 않은 줄 {{count}}개를 건너뛰었습니다",
           "editPlaceholder": "한 줄에 트래커 URL 하나를 입력하세요. http(s)/udp/ws(s)만 지원합니다.",
-          "editHint": "이 트래커 목록은 작업에 적용되는 bt-tracker 목록을 대체합니다. .torrent의 announce-list 항목에는 영향을 주지 않습니다."
+          "editHint": "이 트래커 목록은 작업에 적용되는 bt-tracker 목록을 대체합니다. .torrent의 announce-list 항목에는 영향을 주지 않습니다.",
+          "preview": {
+            "title": "작업 트래커 업데이트",
+            "description": "보조 트래커 변경 사항을 확인하세요. 토렌트에 포함된 주소와 수동으로 추가한 주소는 유지됩니다.",
+            "reconnect": "이 작업은 잠시 일시 중지되어 다시 연결된 후 자동으로 재개됩니다.",
+            "added": "추가: {{count}}",
+            "removed": "제거: {{count}}",
+            "retained": "기존 보조 트래커 {{count}}개를 유지합니다. 토렌트의 announce 그룹은 변경되지 않습니다.",
+            "excluded": "삭제한 트래커 {{count}}개는 자동 업데이트 시 다시 추가되지 않습니다.",
+            "apply": "업데이트 적용",
+            "changesPending": "대기 중인 변경: {{count}}"
+          }
         },
         "multi": {
           "totals": "합계",
@@ -1182,6 +1193,8 @@
     "general": {
       "launchAtStartup": "로그인 시 열기",
       "launchAtStartupDesc": "로그인하면 Motrix를 자동으로 시작합니다.",
+      "linuxAutostartDesc": "데스크톱 환경에서 로그인 시 자동 시작을 설정하세요.",
+      "linuxAutostartGuide": "설정 가이드 보기",
       "showMainWindowAtLogin": "로그인 시 창 표시",
       "showMainWindowAtLoginDesc": "“{{mode}}” 모드에서는 숨겨집니다.",
       "defaultSaveDir": "기본 다운로드 폴더",
@@ -1254,20 +1267,21 @@
       "lightweightModeDesc": "창을 닫으면 메모리를 절약합니다. 다운로드는 계속되지만 창을 다시 여는 데 더 오래 걸리며 저장하지 않은 입력 내용은 지워집니다.",
       "byteUnitSystem": "크기 및 속도 단위",
       "byteUnitSystemDesc": "파일 크기와 속도의 표시 방식을 선택하세요.",
-      "byteUnitDecimal": "십진수(MB, GB · 1000)",
-      "byteUnitBinary": "이진수(MiB, GiB · 1024)",
+      "byteUnitDecimal": "십진수({{megabyte}}, {{gigabyte}} · 1000)",
+      "byteUnitBinary": "이진수({{megabyte}}, {{gigabyte}} · 1024)",
       "byteUnitSystemDefault": "시스템 설정 따르기({{units}})",
       "sidebarColor": "강조 색상",
       "sidebarColors": {
+        "auto": "자동",
         "blue": "파란색",
-        "violet": "보라색",
-        "pink": "분홍색",
-        "orange": "주황색",
-        "gold": "금색",
-        "green": "초록색",
+        "cloud": "클라우드 화이트",
         "cyan": "청록색",
+        "gold": "금색",
         "gray": "회색",
-        "auto": "자동"
+        "green": "초록색",
+        "orange": "주황색",
+        "pink": "분홍색",
+        "violet": "보라색"
       },
       "themeAndEffects": "테마 및 효과",
       "languageAndDisplay": "언어 및 표시",
@@ -1312,6 +1326,8 @@
         "currentVersion": "현재 버전 {{version}}",
         "idleTitle": "Motrix를 최신 상태로 유지하세요",
         "idle": "현재 설치된 버전은 {{version}}입니다. 지금 업데이트를 확인하거나 Motrix를 열 때 확인하도록 설정하세요.",
+        "managedTitle": "설치 출처를 통한 업데이트",
+        "managedDescription": "이 Windows 패키지 버전은 원래 설치 출처를 통해 업데이트됩니다. 앱 내 업데이트는 사용할 수 없습니다.",
         "unsupportedTitle": "자동 업데이트를 사용할 수 없음",
         "unsupported": "이 버전은 자동으로 업데이트할 수 없습니다. 공식 웹사이트에서 최신 버전을 다운로드하세요.",
         "check": "업데이트 확인",
@@ -1489,7 +1505,7 @@
         "maxConnectionPerServerDesc": "한 서버에서 파일 하나를 다운로드할 때의 연결 수 제한입니다.",
         "split": "파일당 최대 연결 수",
         "splitDesc": "파일 하나를 다운로드하는 데 사용하는 연결 수입니다.",
-        "minSplitSize": "최소 세그먼트 크기(MiB)",
+        "minSplitSize": "최소 세그먼트 크기({{unit}})",
         "minSplitSizeDesc": "이 크기의 2배보다 작은 세그먼트는 분할하지 않습니다."
       },
       "reliability": {
@@ -1504,7 +1520,7 @@
         "maxTriesDesc": "첫 시도를 포함합니다. 0 = 무제한.",
         "retryWait": "재시도 대기 시간(초)",
         "retryWaitDesc": "다시 시도하기 전에 기다리는 시간입니다.",
-        "lowestSpeedLimit": "최소 연결 속도(KiB/s)",
+        "lowestSpeedLimit": "최소 연결 속도({{unit}})",
         "lowestSpeedLimitDesc": "속도가 이 값보다 낮으면 연결을 끊습니다. 0 = 사용 안 함."
       },
       "disk": {
@@ -1524,7 +1540,7 @@
         "modifiedTimeDesc": "완료된 HTTP 및 FTP 다운로드에 적용됩니다.",
         "modifiedTimeLocal": "다운로드 시간",
         "modifiedTimeServer": "서버에서 제공한 시간",
-        "diskCache": "디스크 캐시(MiB)",
+        "diskCache": "디스크 캐시({{unit}})",
         "diskCacheDesc": "디스크에 쓰기 전에 파일 데이터를 임시 보관하는 메모리입니다.",
         "sessionSaveInterval": "진행 상황 저장 간격(초)",
         "sessionSaveIntervalDesc": "자주 저장하면 비정상 종료 시 잃는 진행 상황을 줄일 수 있습니다."
@@ -2137,7 +2153,7 @@
   "trackers": {
     "effective": {
       "enabled": "선별된 트래커 추가",
-      "enabledDesc": "모든 BitTorrent 작업에 선별된 트래커 목록을 추가합니다.",
+      "enabledDesc": "새 공개 BitTorrent 작업에 선정된 트래커를 추가합니다.",
       "disabled": "비활성화됨. 유효한 트래커 목록을 보려면 켜세요.",
       "empty": "아직 유효한 트래커가 없습니다. 동기화하여 목록을 채우세요.",
       "column": {
@@ -2175,7 +2191,57 @@
       "probing": "트래커 사용 가능 여부를 확인하는 중…",
       "applying": "트래커 목록을 적용하는 중…",
       "failed": "동기화가 완료되지 않았습니다. 네트워크 또는 소스를 확인하고 다시 시도하세요.",
-      "unavailable": "동기화 상태를 읽지 못했습니다. 연결을 확인하고 다시 시도하세요."
+      "unavailable": "동기화 상태를 읽지 못했습니다. 연결을 확인하고 다시 시도하세요.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "plugins": {
@@ -2764,5 +2830,23 @@
     },
     "manageAction": "관리",
     "alreadyFavorite": "이미 즐겨찾기에 있음"
+  },
+  "units": {
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB",
+      "pb": "PB",
+      "eb": "EB",
+      "kib": "KiB",
+      "mib": "MiB",
+      "gib": "GiB",
+      "tib": "TiB",
+      "pib": "PiB",
+      "eib": "EiB"
+    },
+    "perSecond": "{{value}}/초"
   }
 }

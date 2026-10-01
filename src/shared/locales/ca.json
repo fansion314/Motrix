@@ -1090,7 +1090,18 @@
           "summary_one": "{{count}} rastrejador",
           "summary_other": "{{count}} rastrejadors",
           "syncFailed": "No s'han pogut sincronitzar els rastrejadors: {{reason}}",
-          "syncPrivateDisabled": "La sincronització no està disponible per als torrents privats."
+          "syncPrivateDisabled": "La sincronització no està disponible per als torrents privats.",
+          "preview": {
+            "title": "Actualitza els trackers de la tasca",
+            "description": "Revisa els canvis dels trackers addicionals. Es conserven les adreces del torrent i les afegides manualment.",
+            "reconnect": "La tasca es posarà en pausa breument, es reconnectarà i es reprendrà automàticament.",
+            "added": "Afegeix: {{count}}",
+            "removed": "Elimina: {{count}}",
+            "retained": "Es conserven {{count}} trackers addicionals existents. Els grups announce originals no canvien.",
+            "excluded": "Els {{count}} trackers que has eliminat no es tornaran a afegir en les actualitzacions automàtiques.",
+            "apply": "Aplica l’actualització",
+            "changesPending": "Canvis pendents: {{count}}"
+          }
         }
       },
       "media": {
@@ -1692,6 +1703,8 @@
         "retry": "Tornar-ho a provar",
         "title": "Actualitzacions de l'aplicació",
         "unsupported": "Aquesta versió no es pot actualitzar automàticament. Baixeu l'última versió del lloc web oficial.",
+        "managedTitle": "Actualitzacions des de la font d’instal·lació",
+        "managedDescription": "Aquesta edició empaquetada per a Windows s’actualitza des de la font d’instal·lació original. Les actualitzacions des de l’aplicació no estan disponibles.",
         "unsupportedTitle": "Actualitzacions automàtiques no disponibles",
         "upToDate": "La versió {{version}} és l'última disponible.",
         "upToDateTitle": "El Motrix està actualitzat"
@@ -1726,8 +1739,8 @@
       }
     },
     "appearance": {
-      "byteUnitBinary": "Binàries (MiB, GiB · 1024)",
-      "byteUnitDecimal": "Decimals (MB, GB · 1000)",
+      "byteUnitBinary": "Binàries ({{megabyte}}, {{gigabyte}} · 1024)",
+      "byteUnitDecimal": "Decimals ({{megabyte}}, {{gigabyte}} · 1000)",
       "byteUnitSystem": "Unitats de mida i velocitat",
       "byteUnitSystemDefault": "Seguir el sistema ({{units}})",
       "byteUnitSystemDesc": "Trieu com es mostren les mides dels fitxers i les velocitats.",
@@ -1755,6 +1768,7 @@
       "sidebarColors": {
         "auto": "Automàtic",
         "blue": "Blau",
+        "cloud": "Blanc núvol",
         "cyan": "Cian",
         "gold": "Daurat",
         "gray": "Gris",
@@ -1919,7 +1933,7 @@
       "defaultDownloadFolder": "Carpeta de baixades predeterminada",
       "description": "Fitxers, velocitat de baixada i connexions",
       "disk": {
-        "diskCache": "Memòria cau del disc (MiB)",
+        "diskCache": "Memòria cau del disc ({{unit}})",
         "diskCacheDesc": "Memòria per emmagatzemar temporalment els fitxers abans d'escriure'ls al disc.",
         "fileAllocation": "Reservar espai al disc",
         "fileAllocationDesc": "Reserva espai abans de baixar un fitxer.",
@@ -1960,7 +1974,7 @@
           "minimum": "Segment mínim",
           "perServer": "Límit per servidor"
         },
-        "minSplitSize": "Mida mínima del segment (MiB)",
+        "minSplitSize": "Mida mínima del segment ({{unit}})",
         "minSplitSizeDesc": "Els segments més petits que el doble d'aquesta mida no es divideixen.",
         "profile": "Rendiment de baixada",
         "profileDesc": "Equilibra la velocitat de baixada i l'ús de recursos.",
@@ -1993,7 +2007,7 @@
       "reliability": {
         "connectTimeout": "Temps d'espera de connexió (s)",
         "connectTimeoutDesc": "Quant de temps s'espera per establir una connexió.",
-        "lowestSpeedLimit": "Velocitat mínima de connexió (KiB/s)",
+        "lowestSpeedLimit": "Velocitat mínima de connexió ({{unit}})",
         "lowestSpeedLimitDesc": "Desconnecta si la velocitat és inferior. 0 = desactivat.",
         "maxTries": "Nombre màxim d'intents",
         "maxTriesDesc": "Inclou el primer intent. 0 = sense límit.",
@@ -2128,6 +2142,8 @@
       "inAppNotificationsDesc": "Trieu quines notificacions de baixades es mostren. Els avisos de l'aplicació continuen actius.",
       "launchAtStartup": "Obrir en iniciar la sessió",
       "launchAtStartupDesc": "Inicia el Motrix automàticament quan inicieu la sessió.",
+      "linuxAutostartDesc": "Configureu l’arrencada de l’aplicació en iniciar la sessió a l’entorn d’escriptori.",
+      "linuxAutostartGuide": "Mostra la guia de configuració",
       "lightweightMode": "Estalviar memòria quan la finestra és tancada",
       "lightweightModeDesc": "Les baixades continuen. Tornar a obrir la finestra és més lent i s'esborren les dades no desades.",
       "notificationBadgeCount": "Nombre",
@@ -2788,7 +2804,7 @@
       "disabled": "Desactivat; activeu-ho per veure la llista de rastrejadors efectius.",
       "empty": "Encara no hi ha rastrejadors efectius. Sincronitzeu per emplenar la llista.",
       "enabled": "Afegir rastrejadors seleccionats",
-      "enabledDesc": "Afegeix la llista de rastrejadors seleccionats a totes les tasques de BitTorrent."
+      "enabledDesc": "Afegeix els trackers seleccionats a les noves tasques públiques de BitTorrent."
     },
     "sync": {
       "applying": "S'estan aplicant les llistes de rastrejadors…",
@@ -2796,7 +2812,57 @@
       "fetching": "S'estan obtenint les llistes de rastrejadors…",
       "probing": "S'està comprovant la disponibilitat dels rastrejadors…",
       "syncing": "S'està sincronitzant…",
-      "unavailable": "No es pot llegir l'estat de sincronització. Comproveu la connexió i torneu-ho a provar."
+      "unavailable": "No es pot llegir l'estat de sincronització. Comproveu la connexió i torneu-ho a provar.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "tray": {
@@ -2808,5 +2874,23 @@
     "preferences": "Configuració",
     "quit": "Sortir",
     "showMotrix": "Mostrar el Motrix"
+  },
+  "units": {
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB",
+      "pb": "PB",
+      "eb": "EB",
+      "kib": "KiB",
+      "mib": "MiB",
+      "gib": "GiB",
+      "tib": "TiB",
+      "pib": "PiB",
+      "eib": "EiB"
+    },
+    "perSecond": "{{value}}/s"
   }
 }

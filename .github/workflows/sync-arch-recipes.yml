@@ -59,7 +59,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tests/test_sync_arch_recipes.py -v
-          npm install --global pnpm@12.5.1
+          npm install --global pnpm@12.6.0
           pnpm install --frozen-lockfile --ignore-scripts
           pnpm run check:boundaries
           pnpm run lint

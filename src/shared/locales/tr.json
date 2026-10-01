@@ -818,7 +818,18 @@
           "invalidLines_one": "{{count}} geçersiz satır atlandı",
           "invalidLines_other": "{{count}} geçersiz satır atlandı",
           "editPlaceholder": "Her satıra bir izleyici URL’si girin. Yalnızca http(s)/udp/ws(s).",
-          "editHint": "Bu izleyiciler, görevin kullanılan bt-tracker listesinin yerini alır. .torrent dosyasındaki announce-list kayıtları etkilenmez."
+          "editHint": "Bu izleyiciler, görevin kullanılan bt-tracker listesinin yerini alır. .torrent dosyasındaki announce-list kayıtları etkilenmez.",
+          "preview": {
+            "title": "Görev izleyicilerini güncelle",
+            "description": "Ek izleyici değişikliklerini inceleyin. Torrent adresleri ve elle eklenen adresler korunur.",
+            "reconnect": "Bu görev kısa süreliğine duraklatılacak, yeniden bağlanacak ve otomatik sürdürülecektir.",
+            "added": "Ekle: {{count}}",
+            "removed": "Kaldır: {{count}}",
+            "retained": "Mevcut {{count}} ek izleyici korunur. Torrentin announce grupları değişmez.",
+            "excluded": "Kaldırdığınız {{count}} izleyici otomatik güncellemelerle yeniden eklenmez.",
+            "apply": "Güncellemeyi uygula",
+            "changesPending": "Bekleyen değişiklikler: {{count}}"
+          }
         },
         "multi": {
           "totals": "Toplamlar",
@@ -1196,6 +1207,8 @@
     "general": {
       "launchAtStartup": "Oturum açıldığında aç",
       "launchAtStartupDesc": "Oturum açtığınızda Motrix’i otomatik olarak başlatın.",
+      "linuxAutostartDesc": "Oturum açıldığında başlatmayı masaüstü ortamınızda yapılandırın.",
+      "linuxAutostartGuide": "Kurulum kılavuzunu görüntüle",
       "showMainWindowAtLogin": "Oturum açıldığında pencereyi göster",
       "showMainWindowAtLoginDesc": "“{{mode}}” seçildiğinde gizlenir.",
       "defaultSaveDir": "Varsayılan indirme klasörü",
@@ -1268,20 +1281,21 @@
       "lightweightModeDesc": "Pencere kapalıyken bellekten tasarruf edin. İndirmeler devam eder ancak pencerenin yeniden açılması daha uzun sürer ve kaydedilmemiş girişler temizlenir.",
       "byteUnitSystem": "Boyut ve hız birimleri",
       "byteUnitSystemDesc": "Dosya boyutlarının ve hızların nasıl gösterileceğini seçin.",
-      "byteUnitDecimal": "Ondalık (MB, GB · 1000)",
-      "byteUnitBinary": "İkili (MiB, GiB · 1024)",
+      "byteUnitDecimal": "Ondalık ({{megabyte}}, {{gigabyte}} · 1000)",
+      "byteUnitBinary": "İkili ({{megabyte}}, {{gigabyte}} · 1024)",
       "byteUnitSystemDefault": "Sistemi kullan ({{units}})",
       "sidebarColor": "Vurgu rengi",
       "sidebarColors": {
+        "auto": "Otomatik",
         "blue": "Mavi",
-        "violet": "Mor",
-        "pink": "Pembe",
-        "orange": "Turuncu",
-        "gold": "Altın",
-        "green": "Yeşil",
+        "cloud": "Bulut beyazı",
         "cyan": "Camgöbeği",
+        "gold": "Altın",
         "gray": "Gri",
-        "auto": "Otomatik"
+        "green": "Yeşil",
+        "orange": "Turuncu",
+        "pink": "Pembe",
+        "violet": "Mor"
       },
       "themeAndEffects": "Tema ve efektler",
       "languageAndDisplay": "Dil ve görüntüleme",
@@ -1326,6 +1340,8 @@
         "currentVersion": "Geçerli sürüm {{version}}",
         "idleTitle": "Motrix’i güncel tutun",
         "idle": "{{version}} sürümü yüklü. Şimdi denetleyin veya Motrix açıldığında denetlemesine izin verin.",
+        "managedTitle": "Yükleme kaynağından güncellemeler",
+        "managedDescription": "Bu paketlenmiş Windows sürümü, ilk yükleme kaynağı üzerinden güncellenir. Uygulama içi güncellemeler kullanılamaz.",
         "unsupportedTitle": "Otomatik güncellemeler kullanılamıyor",
         "unsupported": "Bu sürüm otomatik olarak güncellenemez. En son sürümü resmî web sitesinden indirin.",
         "check": "Güncellemeleri denetle",
@@ -1503,7 +1519,7 @@
         "maxConnectionPerServerDesc": "Bir sunucu için dosya başına bağlantı sınırı.",
         "split": "Dosya başına en fazla bağlantı",
         "splitDesc": "Bir dosyayı indirmek için kullanılan bağlantılar.",
-        "minSplitSize": "En küçük bölüm boyutu (MiB)",
+        "minSplitSize": "En küçük bölüm boyutu ({{unit}})",
         "minSplitSizeDesc": "Bu boyutun 2 katından küçük bölümler bölünmez."
       },
       "reliability": {
@@ -1518,7 +1534,7 @@
         "maxTriesDesc": "İlk deneme dahildir. 0 = sınırsız.",
         "retryWait": "Yeniden deneme gecikmesi (sn)",
         "retryWaitDesc": "Yeniden denemeden önce bu süre kadar bekleyin.",
-        "lowestSpeedLimit": "En düşük bağlantı hızı (KiB/s)",
+        "lowestSpeedLimit": "En düşük bağlantı hızı ({{unit}})",
         "lowestSpeedLimitDesc": "Hız bu değerin altına düşerse bağlantıyı kesin. 0 = devre dışı."
       },
       "disk": {
@@ -1538,7 +1554,7 @@
         "modifiedTimeDesc": "Tamamlanan HTTP ve FTP indirmeleri için.",
         "modifiedTimeLocal": "İndirme zamanı",
         "modifiedTimeServer": "Sunucudan alınan zaman",
-        "diskCache": "Disk önbelleği (MiB)",
+        "diskCache": "Disk önbelleği ({{unit}})",
         "diskCacheDesc": "Dosyaları diske yazmadan önce arabellekte tutmak için kullanılan bellek.",
         "sessionSaveInterval": "İlerleme kaydetme aralığı (sn)",
         "sessionSaveIntervalDesc": "Çökme sonrasında kaybolan ilerlemeyi azaltmak için daha sık kaydedin."
@@ -2152,7 +2168,7 @@
   "trackers": {
     "effective": {
       "enabled": "Seçilmiş izleyicileri ekle",
-      "enabledDesc": "Seçilmiş izleyici listesini tüm BitTorrent görevlerine ekleyin.",
+      "enabledDesc": "Seçilen izleyicileri yeni herkese açık BitTorrent görevlerine ekle.",
       "disabled": "Devre dışı. Kullanılan izleyici listesini görmek için açın.",
       "empty": "Henüz kullanılan izleyici yok. Listeyi doldurmak için eşzamanlayın.",
       "column": {
@@ -2190,7 +2206,57 @@
       "probing": "İzleyicilerin kullanılabilirliği kontrol ediliyor…",
       "applying": "İzleyici listeleri uygulanıyor…",
       "failed": "Eşzamanlama tamamlanmadı. Ağınızı veya kaynakları kontrol edip tekrar deneyin.",
-      "unavailable": "Eşzamanlama durumu okunamıyor. Bağlantınızı kontrol edip tekrar deneyin."
+      "unavailable": "Eşzamanlama durumu okunamıyor. Bağlantınızı kontrol edip tekrar deneyin.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "plugins": {
@@ -2786,5 +2852,23 @@
     },
     "manageAction": "Yönet",
     "alreadyFavorite": "Zaten favorilerde"
+  },
+  "units": {
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB",
+      "pb": "PB",
+      "eb": "EB",
+      "kib": "KiB",
+      "mib": "MiB",
+      "gib": "GiB",
+      "tib": "TiB",
+      "pib": "PiB",
+      "eib": "EiB"
+    },
+    "perSecond": "{{value}}/sn"
   }
 }

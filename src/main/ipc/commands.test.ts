@@ -3,8 +3,10 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { NOOP_TASK_ACTIVITY_RECORDER } from '@core/activity'
 import { Aria2Adapter } from '@core/engine/aria2/aria2-adapter'
+import { EventBus } from '@core/events/event-bus'
 import { AppliedDownloadProxyPolicy } from '@core/proxy/applied-download-proxy-policy'
 import { SettingsManager } from '@core/settings/settings-manager'
+import { ErrorCode } from '@shared/errors'
 import { EXTERNAL_URLS } from '@shared/external-urls'
 import { Commands } from '@shared/protocol/commands'
 import { Events } from '@shared/protocol/events'
@@ -20,6 +22,7 @@ import { makeMediaMetaStoreStub } from '@test-utils/media-meta-store'
 import { makeDownloadTask } from '@test-utils/task'
 import { directTaskUpdatePublication } from '@test-utils/task-update'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createAppUpdateService } from '../core/app-update-service'
 import { MainProcessWorkCoordinator } from '../main-process-work-coordinator'
 import { WINDOWS_DEFAULT_APPS_SETTINGS_URL } from '../platform/windows-default-apps'
 import type { CommandContext } from './commands'
@@ -198,6 +201,7 @@ function fakeCtx() {
       setChannel: vi.fn(),
     },
     trackerManager: {
+      applySelectionChange: vi.fn().mockResolvedValue(undefined),
       applySourcesChange: vi.fn().mockResolvedValue(undefined),
       applyBlacklistChange: vi.fn().mockResolvedValue(undefined),
       applySyncScheduleChange: vi.fn(),
@@ -908,6 +912,37 @@ describe('buildCommandHandlers', () => {
     })
   })
 
+  it('rejects direct update IPC for a Windows package without loading its updater', async () => {
+    const loadUpdater = vi.fn(async () => {
+      throw new Error('Application updater must stay unloaded')
+    })
+    const updateManager = await createAppUpdateService({
+      eventBus: new EventBus(),
+      currentVersion: '2.0.0',
+      channel: 'stable',
+      isWindowsPackage: true,
+      supported: true,
+      loadUpdater,
+      getManagedMessage: () => 'Updates come from the installation source',
+    })
+    const handlers = buildCommandHandlers({
+      ...fakeCtx(),
+      updateManager,
+    } as unknown as CommandContext)
+
+    for (const command of [
+      Commands.CheckForUpdates,
+      Commands.DownloadUpdate,
+      Commands.InstallUpdate,
+    ]) {
+      await expect(handlers[command]?.()).rejects.toMatchObject({
+        code: ErrorCode.AppUpdateManaged,
+      })
+    }
+    expect(loadUpdater).not.toHaveBeenCalled()
+    expect(updateManager.getState().phase).toBe('managed')
+  })
+
   it.each([0, 1, 2])(
     'applies App batch options and records history only for accepted tasks (%s failures)',
     async (failures) => {
@@ -1306,6 +1341,7 @@ describe('SetTaskBtTracker handler', () => {
       taskManager,
     } as unknown as CommandContext)
     await handlers[Commands.SetTaskBtTracker]?.({
+      taskId: 'task-1',
       engineGid: 'gid-1',
       trackers: ['http://a'],
     })
@@ -1316,7 +1352,7 @@ describe('SetTaskBtTracker handler', () => {
     )
   })
 
-  it('no-ops when task not found', async () => {
+  it('rejects a missing task without mutating trackers', async () => {
     const trackerManager = { setBtTracker: vi.fn() }
     const taskManager = {
       ...fakeCtx().taskManager,
@@ -1327,10 +1363,13 @@ describe('SetTaskBtTracker handler', () => {
       trackerManager,
       taskManager,
     } as unknown as CommandContext)
-    await handlers[Commands.SetTaskBtTracker]?.({
-      engineGid: 'gid-x',
-      trackers: [],
-    })
+    await expect(
+      handlers[Commands.SetTaskBtTracker]?.({
+        taskId: 'task-1',
+        engineGid: 'gid-x',
+        trackers: [],
+      })
+    ).rejects.toThrow('Tracker task changed')
     expect(trackerManager.setBtTracker).not.toHaveBeenCalled()
   })
 })
@@ -2100,6 +2139,36 @@ describe('Commands.UpdateSettings', () => {
     expect(ctx.notificationCenter.notify).not.toHaveBeenCalled()
   })
 
+  it('reselects when the configured cap changes without fetching sources', async () => {
+    const ctx = fakeCtx()
+    const before = makeSettingsLike(PROXY_OFF, {
+      tracker: { maxTrackerCount: 50 },
+    })
+    const after = makeSettingsLike(PROXY_OFF, {
+      tracker: { maxTrackerCount: 10 },
+    })
+    const settingsManager = {
+      ...ctx.settingsManager,
+      get: vi.fn().mockReturnValueOnce(before).mockReturnValueOnce(after),
+      update: vi.fn().mockResolvedValue({
+        ok: true,
+        requiresRestart: false,
+        changedRestartKeys: [],
+      }),
+    }
+    const handlers = buildCommandHandlers({
+      ...ctx,
+      settingsManager,
+    } as unknown as CommandContext)
+    await handlers[Commands.UpdateSettings]?.({
+      tracker: { maxTrackerCount: 10 },
+    })
+    expect(ctx.trackerManager.applySelectionChange).toHaveBeenCalledOnce()
+    expect(ctx.trackerManager.syncAndCurate).not.toHaveBeenCalled()
+    await handlers[Commands.RetryTrackerSources]?.()
+    expect(ctx.trackerManager.syncAndCurate).toHaveBeenCalledWith('retry')
+  })
+
   it('calls trackerManager.applySourcesChange when sourcesEnabled changes', async () => {
     const ctx = fakeCtx()
     const before = makeSettingsLike(PROXY_OFF, {
@@ -2341,7 +2410,7 @@ describe('SyncTaskBtTracker handler', () => {
     )
   })
 
-  it('defaults isPrivate to false when metadata not found', async () => {
+  it('blocks public supplementation when private metadata is unknown', async () => {
     const trackerManager = {
       syncBtTracker: vi.fn().mockResolvedValue(undefined),
     }
@@ -2362,7 +2431,7 @@ describe('SyncTaskBtTracker handler', () => {
     expect(trackerManager.syncBtTracker).toHaveBeenCalledWith(
       'task-1',
       'gid-1',
-      false
+      true
     )
   })
 })

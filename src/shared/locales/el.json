@@ -1078,7 +1078,18 @@
           "summary_one": "{{count}} tracker",
           "summary_other": "{{count}} trackers",
           "syncFailed": "Δεν ήταν δυνατός ο συγχρονισμός των trackers: {{reason}}",
-          "syncPrivateDisabled": "Ο συγχρονισμός δεν είναι διαθέσιμος για ιδιωτικά torrents."
+          "syncPrivateDisabled": "Ο συγχρονισμός δεν είναι διαθέσιμος για ιδιωτικά torrents.",
+          "preview": {
+            "title": "Ενημέρωση trackers εργασίας",
+            "description": "Ελέγξτε τις αλλαγές στους πρόσθετους trackers. Οι διευθύνσεις του torrent και όσες προστέθηκαν χειροκίνητα διατηρούνται.",
+            "reconnect": "Η εργασία θα διακοπεί στιγμιαία, θα επανασυνδεθεί και θα συνεχιστεί αυτόματα.",
+            "added": "Προσθήκη: {{count}}",
+            "removed": "Αφαίρεση: {{count}}",
+            "retained": "Διατήρηση {{count}} υπαρχόντων πρόσθετων trackers. Οι αρχικές ομάδες announce παραμένουν αμετάβλητες.",
+            "excluded": "Οι {{count}} trackers που αφαιρέσατε δεν θα προστεθούν ξανά στις αυτόματες ενημερώσεις.",
+            "apply": "Εφαρμογή ενημέρωσης",
+            "changesPending": "Εκκρεμείς αλλαγές: {{count}}"
+          }
         }
       },
       "media": {
@@ -1673,6 +1684,8 @@
         "retry": "Επανάληψη",
         "title": "Ενημερώσεις εφαρμογής",
         "unsupported": "Αυτή η έκδοση δεν μπορεί να ενημερωθεί αυτόματα. Κατεβάστε την τελευταία έκδοση από τον επίσημο ιστότοπο.",
+        "managedTitle": "Ενημερώσεις από την πηγή εγκατάστασης",
+        "managedDescription": "Αυτή η έκδοση πακέτου για Windows ενημερώνεται μέσω της αρχικής πηγής εγκατάστασης. Οι ενημερώσεις μέσα από την εφαρμογή δεν είναι διαθέσιμες.",
         "unsupportedTitle": "Οι αυτόματες ενημερώσεις δεν είναι διαθέσιμες",
         "upToDate": "Η έκδοση {{version}} είναι η πιο πρόσφατη διαθέσιμη έκδοση.",
         "upToDateTitle": "Το Motrix είναι ενημερωμένο"
@@ -1707,8 +1720,8 @@
       }
     },
     "appearance": {
-      "byteUnitBinary": "Δυαδικές (MiB, GiB · 1024)",
-      "byteUnitDecimal": "Δεκαδικές (MB, GB · 1000)",
+      "byteUnitBinary": "Δυαδικές ({{megabyte}}, {{gigabyte}} · 1024)",
+      "byteUnitDecimal": "Δεκαδικές ({{megabyte}}, {{gigabyte}} · 1000)",
       "byteUnitSystem": "Μονάδες μεγέθους και ταχύτητας",
       "byteUnitSystemDefault": "Σύμφωνα με το σύστημα ({{units}})",
       "byteUnitSystemDesc": "Επιλέξτε πώς εμφανίζονται τα μεγέθη αρχείων και οι ταχύτητες.",
@@ -1736,6 +1749,7 @@
       "sidebarColors": {
         "auto": "Αυτόματο",
         "blue": "Μπλε",
+        "cloud": "Λευκό σύννεφο",
         "cyan": "Κυανό",
         "gold": "Χρυσαφί",
         "gray": "Γκρι",
@@ -1900,7 +1914,7 @@
       "defaultDownloadFolder": "Προεπιλεγμένος φάκελος λήψεων",
       "description": "Αρχεία, ταχύτητα λήψης και συνδέσεις",
       "disk": {
-        "diskCache": "Προσωρινή μνήμη δίσκου (MiB)",
+        "diskCache": "Προσωρινή μνήμη δίσκου ({{unit}})",
         "diskCacheDesc": "Μνήμη που χρησιμοποιείται για την προσωρινή αποθήκευση αρχείων πριν από την εγγραφή στον δίσκο.",
         "fileAllocation": "Δέσμευση χώρου στον δίσκο",
         "fileAllocationDesc": "Δέσμευση χώρου πριν από τη λήψη ενός αρχείου.",
@@ -1941,7 +1955,7 @@
           "minimum": "Ελάχιστο τμήμα",
           "perServer": "Όριο ανά διακομιστή"
         },
-        "minSplitSize": "Ελάχιστο μέγεθος τμήματος (MiB)",
+        "minSplitSize": "Ελάχιστο μέγεθος τμήματος ({{unit}})",
         "minSplitSizeDesc": "Τα τμήματα μικρότερα από το διπλάσιο αυτού του μεγέθους δεν διαιρούνται.",
         "profile": "Επιδόσεις λήψεων",
         "profileDesc": "Ισορροπία μεταξύ ταχύτητας λήψης και χρήσης πόρων.",
@@ -1974,7 +1988,7 @@
       "reliability": {
         "connectTimeout": "Χρονικό όριο σύνδεσης (δευτ.)",
         "connectTimeoutDesc": "Χρόνος αναμονής για σύνδεση.",
-        "lowestSpeedLimit": "Ελάχιστη ταχύτητα σύνδεσης (KiB/s)",
+        "lowestSpeedLimit": "Ελάχιστη ταχύτητα σύνδεσης ({{unit}})",
         "lowestSpeedLimitDesc": "Αποσύνδεση κάτω από αυτή την ταχύτητα. 0 = απενεργοποίηση.",
         "maxTries": "Μέγιστες προσπάθειες",
         "maxTriesDesc": "Περιλαμβάνει την πρώτη προσπάθεια. 0 = χωρίς όριο.",
@@ -2109,6 +2123,8 @@
       "inAppNotificationsDesc": "Επιλέξτε ποιες ειδοποιήσεις λήψεων θα εμφανίζονται. Οι προειδοποιήσεις της εφαρμογής παραμένουν ενεργές.",
       "launchAtStartup": "Άνοιγμα κατά τη σύνδεση",
       "launchAtStartupDesc": "Εκκινεί αυτόματα το Motrix όταν συνδέεστε στο σύστημα.",
+      "linuxAutostartDesc": "Ρυθμίστε την αυτόματη εκκίνηση κατά τη σύνδεση στο περιβάλλον επιφάνειας εργασίας σας.",
+      "linuxAutostartGuide": "Προβολή οδηγού ρύθμισης",
       "lightweightMode": "Εξοικονόμηση μνήμης όταν το παράθυρο είναι κλειστό",
       "lightweightModeDesc": "Οι λήψεις συνεχίζονται. Το άνοιγμα είναι πιο αργό και τα μη αποθηκευμένα δεδομένα εισόδου διαγράφονται.",
       "notificationBadgeCount": "Αριθμός",
@@ -2766,7 +2782,7 @@
       "disabled": "Απενεργοποιημένο — ενεργοποιήστε το για να δείτε τη λίστα trackers που εφαρμόζεται.",
       "empty": "Δεν υπάρχουν ακόμη trackers προς εφαρμογή. Εκτελέστε συγχρονισμό για να συμπληρωθεί η λίστα.",
       "enabled": "Προσθήκη επιλεγμένων trackers",
-      "enabledDesc": "Προσθήκη της επιλεγμένης λίστας trackers σε όλες τις εργασίες BitTorrent."
+      "enabledDesc": "Προσθήκη επιλεγμένων trackers σε νέες δημόσιες εργασίες BitTorrent."
     },
     "sync": {
       "applying": "Εφαρμογή λιστών trackers…",
@@ -2774,7 +2790,57 @@
       "fetching": "Λήψη λιστών trackers…",
       "probing": "Έλεγχος διαθεσιμότητας trackers…",
       "syncing": "Συγχρονισμός…",
-      "unavailable": "Δεν είναι δυνατή η ανάγνωση της κατάστασης συγχρονισμού. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά."
+      "unavailable": "Δεν είναι δυνατή η ανάγνωση της κατάστασης συγχρονισμού. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "tray": {
@@ -2786,5 +2852,23 @@
     "preferences": "Ρυθμίσεις",
     "quit": "Έξοδος",
     "showMotrix": "Εμφάνιση Motrix"
+  },
+  "units": {
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB",
+      "pb": "PB",
+      "eb": "EB",
+      "kib": "KiB",
+      "mib": "MiB",
+      "gib": "GiB",
+      "tib": "TiB",
+      "pib": "PiB",
+      "eib": "EiB"
+    },
+    "perSecond": "{{value}}/s"
   }
 }

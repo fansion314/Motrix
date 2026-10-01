@@ -1078,7 +1078,18 @@
           "summary_one": "{{count}} tracker",
           "summary_other": "{{count}} trackers",
           "syncFailed": "Trackers konden niet worden gesynchroniseerd: {{reason}}",
-          "syncPrivateDisabled": "Synchronisatie is niet beschikbaar voor privétorrents."
+          "syncPrivateDisabled": "Synchronisatie is niet beschikbaar voor privétorrents.",
+          "preview": {
+            "title": "Taaktrackers bijwerken",
+            "description": "Controleer de wijzigingen in aanvullende trackers. Adressen uit de torrent en handmatig toegevoegde adressen blijven behouden.",
+            "reconnect": "De taak wordt kort gepauzeerd, opnieuw verbonden en automatisch hervat.",
+            "added": "Toevoegen: {{count}}",
+            "removed": "Verwijderen: {{count}}",
+            "retained": "{{count}} bestaande aanvullende trackers behouden. De oorspronkelijke announce-groepen blijven ongewijzigd.",
+            "excluded": "De {{count}} door jou verwijderde trackers worden bij automatische updates niet opnieuw toegevoegd.",
+            "apply": "Update toepassen",
+            "changesPending": "Openstaande wijzigingen: {{count}}"
+          }
         }
       },
       "media": {
@@ -1673,6 +1684,8 @@
         "retry": "Opnieuw proberen",
         "title": "Appupdates",
         "unsupported": "Deze versie kan niet automatisch worden bijgewerkt. Download de nieuwste versie van de officiële website.",
+        "managedTitle": "Updates via de installatiebron",
+        "managedDescription": "Deze verpakte Windows-editie wordt bijgewerkt via de oorspronkelijke installatiebron. Updates vanuit de app zijn niet beschikbaar.",
         "unsupportedTitle": "Automatische updates niet beschikbaar",
         "upToDate": "Versie {{version}} is de nieuwste beschikbare versie.",
         "upToDateTitle": "Motrix is up-to-date"
@@ -1707,8 +1720,8 @@
       }
     },
     "appearance": {
-      "byteUnitBinary": "Binair (MiB, GiB · 1024)",
-      "byteUnitDecimal": "Decimaal (MB, GB · 1000)",
+      "byteUnitBinary": "Binair ({{megabyte}}, {{gigabyte}} · 1024)",
+      "byteUnitDecimal": "Decimaal ({{megabyte}}, {{gigabyte}} · 1000)",
       "byteUnitSystem": "Eenheden voor grootte en snelheid",
       "byteUnitSystemDefault": "Systeem volgen ({{units}})",
       "byteUnitSystemDesc": "Kies hoe bestandsgroottes en snelheden worden weergegeven.",
@@ -1736,6 +1749,7 @@
       "sidebarColors": {
         "auto": "Automatisch",
         "blue": "Blauw",
+        "cloud": "Wolkenwit",
         "cyan": "Cyaan",
         "gold": "Goud",
         "gray": "Grijs",
@@ -1900,7 +1914,7 @@
       "defaultDownloadFolder": "Standaarddownloadmap",
       "description": "Bestanden, downloadsnelheid en verbindingen",
       "disk": {
-        "diskCache": "Schijfcache (MiB)",
+        "diskCache": "Schijfcache ({{unit}})",
         "diskCacheDesc": "Geheugen voor het bufferen van bestanden voordat ze naar schijf worden geschreven.",
         "fileAllocation": "Schijfruimte reserveren",
         "fileAllocationDesc": "Ruimte reserveren voordat een bestand wordt gedownload.",
@@ -1941,7 +1955,7 @@
           "minimum": "Min. segmentgrootte",
           "perServer": "Limiet per server"
         },
-        "minSplitSize": "Minimale segmentgrootte (MiB)",
+        "minSplitSize": "Minimale segmentgrootte ({{unit}})",
         "minSplitSizeDesc": "Segmenten kleiner dan 2× deze grootte worden niet gesplitst.",
         "profile": "Downloadprestaties",
         "profileDesc": "Vind een balans tussen downloadsnelheid en het gebruik van systeembronnen.",
@@ -1974,7 +1988,7 @@
       "reliability": {
         "connectTimeout": "Verbindingstime-out (s)",
         "connectTimeoutDesc": "Hoelang op een verbinding wordt gewacht.",
-        "lowestSpeedLimit": "Minimale verbindingssnelheid (KiB/s)",
+        "lowestSpeedLimit": "Minimale verbindingssnelheid ({{unit}})",
         "lowestSpeedLimitDesc": "Verbreek de verbinding onder deze snelheid. 0 = uitgeschakeld.",
         "maxTries": "Maximaal aantal pogingen",
         "maxTriesDesc": "Inclusief de eerste poging. 0 = onbeperkt.",
@@ -2109,6 +2123,8 @@
       "inAppNotificationsDesc": "Kies welke downloadmeldingen je wilt zien. Appwaarschuwingen blijven ingeschakeld.",
       "launchAtStartup": "Openen bij inloggen",
       "launchAtStartupDesc": "Motrix automatisch starten wanneer je inlogt.",
+      "linuxAutostartDesc": "Stel automatisch starten bij aanmelden in via je bureaubladomgeving.",
+      "linuxAutostartGuide": "Installatiehandleiding bekijken",
       "lightweightMode": "Geheugen besparen wanneer het venster gesloten is",
       "lightweightModeDesc": "Downloads gaan door. Opnieuw openen duurt langer en niet-opgeslagen invoer wordt gewist.",
       "notificationBadgeCount": "Aantal",
@@ -2766,7 +2782,7 @@
       "disabled": "Uitgeschakeld — schakel in om de gebruikte trackerlijst te bekijken.",
       "empty": "Nog geen trackers in gebruik. Synchroniseer om de lijst te vullen.",
       "enabled": "Geselecteerde trackers toevoegen",
-      "enabledDesc": "De samengestelde trackerlijst aan alle BitTorrent-taken toevoegen."
+      "enabledDesc": "Geselecteerde trackers toevoegen aan nieuwe openbare BitTorrent-taken."
     },
     "sync": {
       "applying": "Trackerlijsten toepassen…",
@@ -2774,7 +2790,57 @@
       "fetching": "Trackerlijsten ophalen…",
       "probing": "Beschikbaarheid van trackers controleren…",
       "syncing": "Synchroniseren…",
-      "unavailable": "De synchronisatiestatus kan niet worden gelezen. Controleer je verbinding en probeer het opnieuw."
+      "unavailable": "De synchronisatiestatus kan niet worden gelezen. Controleer je verbinding en probeer het opnieuw.",
+      "details": {
+        "title": "Update details",
+        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
+        "sources": "Source status",
+        "candidates": "Candidates",
+        "history": "Update history",
+        "disabled": "Disabled",
+        "noSources": "No enabled sources",
+        "attention": "{{count}} trackers · {{failed}} sources need attention",
+        "summary": "{{count}} trackers · Last successful update: {{time}}",
+        "lastAttempt": "Last check",
+        "nextCheck": "Next check",
+        "autoOff": "Automatic updates off",
+        "enginePending": "Saved; waiting to apply defaults to the download engine.",
+        "sourceResult": "{{count}} addresses · Last success: {{time}}",
+        "retryAt": "Next retry: {{time}}",
+        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
+        "firstSeen": "First seen: {{time}}",
+        "noCandidates": "No matching candidates",
+        "showMore": "Show more",
+        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
+        "noHistory": "No update history",
+        "retry": "Retry failed sources",
+        "state": {
+          "fresh": "Up to date",
+          "cached": "Using last successful cache",
+          "expired": "Cache expired",
+          "pending": "Not checked yet",
+          "failed": "No usable cache"
+        },
+        "failure": {
+          "network": "Connection failed. The previous cache is retained for up to 7 days.",
+          "http": "The source returned an HTTP error.",
+          "invalid": "The response is not a valid tracker list.",
+          "limit": "The source exceeded the size or address limit.",
+          "missing-cache": "The source returned 304 without a usable cache."
+        },
+        "reason": {
+          "selected": "Selected",
+          "capacity": "Reserve",
+          "blacklisted": "Blacklisted",
+          "unsupported": "Unsupported protocol",
+          "cooldown": "Repeated connection failures"
+        },
+        "outcome": {
+          "success": "Completed",
+          "partial": "Partially completed",
+          "failed": "Failed"
+        }
+      }
     }
   },
   "tray": {
@@ -2786,5 +2852,23 @@
     "preferences": "Instellingen",
     "quit": "Afsluiten",
     "showMotrix": "Motrix tonen"
+  },
+  "units": {
+    "bytes": {
+      "b": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB",
+      "pb": "PB",
+      "eb": "EB",
+      "kib": "KiB",
+      "mib": "MiB",
+      "gib": "GiB",
+      "tib": "TiB",
+      "pib": "PiB",
+      "eib": "EiB"
+    },
+    "perSecond": "{{value}}/s"
   }
 }

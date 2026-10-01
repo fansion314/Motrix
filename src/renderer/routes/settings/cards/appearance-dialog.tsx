@@ -41,6 +41,7 @@ import {
 } from '@renderer/components/ui/select'
 import { Separator } from '@renderer/components/ui/separator'
 import { Switch } from '@renderer/components/ui/switch'
+import { useByteFormat } from '@renderer/hooks/use-byte-format'
 import { pickDirty } from '@renderer/lib/form-utils'
 import { saveSettings } from '@renderer/lib/settings-save'
 import { useSidebarColorState } from '@renderer/lib/sidebar-color'
@@ -150,6 +151,7 @@ export function AppearanceDialog({
     onClose()
   })
 
+  const { formatByteUnit } = useByteFormat()
   const systemUnits = resolveByteUnitSystem(
     'system',
     transport.platform === 'web' ? navigator.platform : transport.platform
@@ -158,11 +160,26 @@ export function AppearanceDialog({
     {
       value: 'system',
       label: t('settings.appearance.byteUnitSystemDefault', {
-        units: systemUnits === 'binary' ? 'MiB, GiB' : 'MB, GB',
+        units: (systemUnits === 'binary'
+          ? [formatByteUnit('MiB'), formatByteUnit('GiB')]
+          : [formatByteUnit('MB'), formatByteUnit('GB')]
+        ).join(', '),
       }),
     },
-    { value: 'decimal', label: t('settings.appearance.byteUnitDecimal') },
-    { value: 'binary', label: t('settings.appearance.byteUnitBinary') },
+    {
+      value: 'decimal',
+      label: t('settings.appearance.byteUnitDecimal', {
+        megabyte: formatByteUnit('MB'),
+        gigabyte: formatByteUnit('GB'),
+      }),
+    },
+    {
+      value: 'binary',
+      label: t('settings.appearance.byteUnitBinary', {
+        megabyte: formatByteUnit('MiB'),
+        gigabyte: formatByteUnit('GiB'),
+      }),
+    },
   ] satisfies Array<{
     value: AppearanceFields['byteUnitSystem']
     label: string

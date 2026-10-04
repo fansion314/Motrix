@@ -1263,6 +1263,8 @@
     },
     "appearance": {
       "theme": "Téma",
+      "uiScale": "Felület méretezése (%)",
+      "uiScaleDesc": "75–200%. A módosítások mentéskor minden ablakra érvényesek.",
       "themeAuto": "Rendszer",
       "themeLight": "Világos",
       "themeDark": "Sötét",

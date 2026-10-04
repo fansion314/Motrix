@@ -74,6 +74,33 @@ describe('Arch release contract', () => {
     expect(() => renderArchPkgbuild(template, {}, 'SKIP')).toThrow()
   })
 
+  it('clears the previous binary digest for a new release and preserves same-version pins', async () => {
+    const template = await readFile('aur/motrix-electron-bin/PKGBUILD', 'utf8')
+    const current = renderArchPkgbuild(
+      template,
+      parseArchTag('arch-v2.0.0-beta.40-3', '2.0.0-beta.40'),
+      'a'.repeat(64)
+    )
+    expect(
+      renderArchPkgbuild(
+        current,
+        parseArchTag('arch-v2.0.0-beta.41-1', '2.0.0-beta.41')
+      )
+    ).toContain("sha256sums=('SKIP')")
+    expect(
+      renderArchPkgbuild(
+        current,
+        parseArchTag('arch-v2.0.0-beta.40-4', '2.0.0-beta.40')
+      )
+    ).toContain("sha256sums=('SKIP')")
+    expect(
+      renderArchPkgbuild(
+        current,
+        parseArchTag('arch-v2.0.0-beta.40-3', '2.0.0-beta.40')
+      )
+    ).toBe(current)
+  })
+
   it('rejects bundled system runtimes and incomplete distribution archives', () => {
     for (const entry of [
       '/usr/lib/electron',

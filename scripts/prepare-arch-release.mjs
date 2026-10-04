@@ -23,6 +23,11 @@ export function renderArchPkgbuild(template, metadata, digest) {
   if (digest) {
     assert(/^[a-f0-9]{64}$/.test(digest), 'Invalid release SHA-256')
     result = result.replace(/^sha256sums=.*$/m, `sha256sums=('${digest}')`)
+  } else if (
+    result !== template &&
+    /^pkgname=motrix-electron-bin$/m.test(template)
+  ) {
+    result = result.replace(/^sha256sums=.*$/m, "sha256sums=('SKIP')")
   }
   return result
 }

@@ -970,6 +970,18 @@
         "downloadEta": "Download-Restzeit",
         "avgDownloadProgress": "Durchschnittlicher Download-Fortschritt",
         "processingTasks": "In Verarbeitung"
+      },
+      "completionShutdown": {
+        "more": "Weitere Download-Aktionen",
+        "enable": "Nach allen Downloads herunterfahren",
+        "disable": "Herunterfahren nach Downloads abbrechen",
+        "waiting": "Warten auf den Abschluss aller Downloads",
+        "countdown": "Herunterfahren in {{seconds}} Sekunden",
+        "detail": "Gilt einmalig. Pausierte oder fehlgeschlagene Aufgaben verhindern das Herunterfahren. Seeding endet beim Herunterfahren.",
+        "unavailable": "Automatisches Herunterfahren ist nicht verfügbar oder wurde nicht erlaubt.",
+        "failed": "Das Herunterfahren konnte nicht vorbereitet oder angefordert werden. Es wurde nicht erzwungen.",
+        "preparing": "Herunterfahren wird vorbereitet…",
+        "requested": "Herunterfahren angefordert"
       }
     }
   },
@@ -1815,6 +1827,7 @@
           "chrome": "Chrome",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Installieren",
           "development": "Entwicklung"
@@ -1960,7 +1973,40 @@
         "binaryPath": "Benutzerdefinierter FFmpeg-Pfad",
         "browse": "Durchsuchen…",
         "download": {
-          "action": "FFmpeg herunterladen"
+          "action": "FFmpeg herunterladen",
+          "verifyInstall": "Herunterladen und prüfen",
+          "manual": "FFmpeg-Handbuch",
+          "installing": "Wird geprüft…",
+          "installed": "Geprüft und installiert.",
+          "failed": "Download oder Prüfung fehlgeschlagen. Die bisherige Installation bleibt erhalten.",
+          "disclosure": "Geprüft wird die Motrix-Projektsignatur, nicht Authenticode. Windows-Warnungen können weiterhin erscheinen.",
+          "projectDisclosure": "Motrix-Build · GPL. Wird geprüft und im Motrix-Datenverzeichnis installiert.",
+          "macDisclosure": "Developer ID und Notarisierung werden geprüft. Der Systemschutz bleibt aktiv.",
+          "progress": "FFmpeg-Downloadfortschritt",
+          "bytes": "{{received}} / {{total}} Bytes",
+          "directory": "Installationsverzeichnis: {{path}}",
+          "detectionRefreshFailed": "Die FFmpeg-Erkennung konnte nicht aktualisiert werden. Erneut auf Aktualisieren klicken.",
+          "restartPluginHint": "Motrix neu starten, damit aktive Plugins die Installation erkennen.",
+          "phases": {
+            "idle": "Bereit zum Herunterladen",
+            "metadata": "Offizielle Veröffentlichung wird geprüft…",
+            "downloading": "FFmpeg wird heruntergeladen…",
+            "verifying": "Signatur der Veröffentlichung wird geprüft…",
+            "extracting": "Dateien werden geprüft und entpackt…",
+            "systemTrust": "macOS-Signatur und Beglaubigung werden geprüft…",
+            "installing": "FFmpeg wird installiert…",
+            "installed": "Geprüft und installiert.",
+            "failed": "Installation fehlgeschlagen."
+          },
+          "errors": {
+            "unavailable": "Es ist noch keine vollständige, unveränderliche offizielle Veröffentlichung verfügbar.",
+            "unsupported": "Die Ein-Klick-Installation wird auf dieser Plattform nicht unterstützt.",
+            "busy": "Eine andere FFmpeg-Installation läuft bereits.",
+            "download": "Download fehlgeschlagen oder Zeitlimit überschritten. Netzwerk prüfen und erneut versuchen.",
+            "verification": "Die Prüfung der Signatur, der Paketstruktur oder der Dateiintegrität ist fehlgeschlagen.",
+            "install": "Dateien konnten nicht installiert werden. Zugriffsrechte und freien Speicherplatz im Datenverzeichnis prüfen.",
+            "systemTrust": "macOS hat die Signaturidentität oder Beglaubigung abgelehnt. Systemsicherheitsprüfungen wurden nicht umgangen."
+          }
         },
         "detection": {
           "readyTitle": "FFmpeg {{version}}",
@@ -2208,53 +2254,53 @@
       "failed": "Synchronisierung unvollständig. Prüfen Sie Ihr Netzwerk oder Ihre Quellen und versuchen Sie es erneut.",
       "unavailable": "Der Synchronisierungsstatus konnte nicht gelesen werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Details zur Aktualisierung",
+        "scope": "Diese Standardwerte ergänzen neue öffentliche BitTorrent-Tasks. Bestehende Downloads behalten ihre aktuellen Tracker.",
+        "sources": "Quellenstatus",
+        "candidates": "Kandidaten",
+        "history": "Aktualisierungsverlauf",
+        "disabled": "Deaktiviert",
+        "noSources": "Keine aktivierten Quellen",
+        "attention": "{{count}} Tracker · {{failed}} Quellen erfordern Aufmerksamkeit",
+        "summary": "{{count}} Tracker · Letzte erfolgreiche Aktualisierung: {{time}}",
+        "lastAttempt": "Letzte Prüfung",
+        "nextCheck": "Nächste Prüfung",
+        "autoOff": "Automatische Aktualisierungen deaktiviert",
+        "enginePending": "Gespeichert; die Anwendung der Standardwerte auf die Download-Engine steht noch aus.",
+        "sourceResult": "{{count}} Adressen · Letzter erfolgreicher Abruf: {{time}}",
+        "retryAt": "Nächster Versuch: {{time}}",
+        "evidence": "Verbindungsprüfungen zeigen die Erreichbarkeit an, garantieren jedoch weder Peers noch Downloadgeschwindigkeit.",
+        "firstSeen": "Erstmals erkannt: {{time}}",
+        "noCandidates": "Keine passenden Kandidaten",
+        "showMore": "Mehr anzeigen",
+        "run": "{{success}} Quellen erfolgreich · {{failed}} fehlgeschlagen · +{{added}} / −{{removed}} ausgewählt",
+        "noHistory": "Kein Aktualisierungsverlauf",
+        "retry": "Fehlgeschlagene Quellen erneut versuchen",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "Aktuell",
+          "cached": "Cache der letzten erfolgreichen Aktualisierung in Verwendung",
+          "expired": "Cache abgelaufen",
+          "pending": "Noch nicht geprüft",
+          "failed": "Kein nutzbarer Cache"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "Verbindung fehlgeschlagen. Der bisherige Cache bleibt bis zu 7 Tage erhalten.",
+          "http": "Die Quelle hat einen HTTP-Fehler zurückgegeben.",
+          "invalid": "Die Antwort ist keine gültige Tracker-Liste.",
+          "limit": "Die Quelle hat das Größen- oder Adresslimit überschritten.",
+          "missing-cache": "Die Quelle hat 304 zurückgegeben, ohne dass ein nutzbarer Cache vorhanden ist."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Ausgewählt",
+          "capacity": "In Reserve",
+          "blacklisted": "Auf der Sperrliste",
+          "unsupported": "Nicht unterstütztes Protokoll",
+          "cooldown": "Wiederholte Verbindungsfehler"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Abgeschlossen",
+          "partial": "Teilweise abgeschlossen",
+          "failed": "Fehlgeschlagen"
         }
       }
     }
@@ -2870,5 +2916,17 @@
       "eib": "EiB"
     },
     "perSecond": "{{value}}/s"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "Das Protokoll mo:// wurde eingestellt. Verwenden Sie motrix://.",
+    "deprecatedCommand": "Diese Link-Aktion wurde eingestellt. Verwenden Sie die Bedienelemente in Motrix.",
+    "unsupportedCommand": "Dieser Link-Befehl wird nicht unterstützt.",
+    "unsupportedParameters": "Der Link enthält nicht unterstützte Parameter. Es wurde nichts geöffnet oder geändert.",
+    "invalidLink": "Dieser Motrix-Link ist ungültig.",
+    "invalidSource": "Der Link muss eine gültige HTTP-, HTTPS-, FTP- oder Magnet-Adresse enthalten.",
+    "waitingMerged": "Wartende Aufgaben werden jetzt unter Aktiv angezeigt. Aktiv wurde geöffnet.",
+    "stoppedSplit": "Gestoppte Aufgaben sind jetzt unter Abgeschlossen und Fehler zu finden. Alle Downloads wurden geöffnet.",
+    "invalidStatus": "Diese Download-Kategorie ist ungültig. Alle Downloads wurden geöffnet."
   }
 }

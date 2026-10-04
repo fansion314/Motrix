@@ -1251,6 +1251,18 @@
         "sortBy": "ترتيب حسب",
         "taskActions": "إجراءات أخرى",
         "title": "عرض القائمة"
+      },
+      "completionShutdown": {
+        "more": "إجراءات تنزيل إضافية",
+        "enable": "إيقاف التشغيل بعد اكتمال جميع التنزيلات",
+        "disable": "إلغاء إيقاف التشغيل بعد التنزيلات",
+        "waiting": "بانتظار اكتمال جميع التنزيلات",
+        "countdown": "إيقاف التشغيل خلال {{seconds}} ثانية",
+        "detail": "يسري مرة واحدة. تمنع المهام المتوقفة مؤقتًا أو الفاشلة إيقاف التشغيل. تتوقف المشاركة عند إيقاف تشغيل الكمبيوتر.",
+        "unavailable": "إيقاف التشغيل التلقائي غير متاح أو تم رفض الإذن.",
+        "failed": "تعذر التحضير لإيقاف التشغيل أو طلبه. لم يتم فرض إيقاف التشغيل.",
+        "preparing": "جارٍ التحضير لإيقاف التشغيل…",
+        "requested": "تم طلب إيقاف التشغيل"
       }
     },
     "trackers": {
@@ -2297,6 +2309,7 @@
           "development": "تطوير",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "تثبيت"
         },
@@ -2457,7 +2470,40 @@
           "usingSource": "يُستخدم {{source}}"
         },
         "download": {
-          "action": "تنزيل FFmpeg"
+          "action": "تنزيل FFmpeg",
+          "verifyInstall": "تنزيل والتحقق",
+          "manual": "دليل FFmpeg",
+          "installing": "جارٍ التحقق…",
+          "installed": "تم التحقق والتثبيت.",
+          "failed": "فشل التنزيل أو التحقق. تم الاحتفاظ بالتثبيت السابق.",
+          "disclosure": "يُتحقق بتوقيع مشروع Motrix، لا Authenticode. قد تبقى تحذيرات Windows.",
+          "projectDisclosure": "نسخة Motrix · GPL. تُثبّت في مجلد بيانات Motrix بعد التحقق.",
+          "macDisclosure": "يُتحقق من Developer ID والتوثيق لدى Apple. تبقى حماية النظام مفعّلة.",
+          "progress": "تقدم تنزيل FFmpeg",
+          "bytes": "{{received}} / {{total}} بايت",
+          "directory": "مجلد التثبيت: {{path}}",
+          "detectionRefreshFailed": "تعذّر تحديث اكتشاف FFmpeg. اضغط على تحديث مجددًا.",
+          "restartPluginHint": "أعد تشغيل Motrix حتى تتمكن الإضافات النشطة من اكتشاف التثبيت.",
+          "phases": {
+            "idle": "جاهز للتنزيل",
+            "metadata": "جارٍ التحقق من الإصدار الرسمي…",
+            "downloading": "جارٍ تنزيل FFmpeg…",
+            "verifying": "جارٍ التحقق من توقيع الإصدار…",
+            "extracting": "جارٍ التحقق من الملفات واستخراجها…",
+            "systemTrust": "جارٍ التحقق من توقيع macOS وتوثيق Apple…",
+            "installing": "جارٍ تثبيت FFmpeg…",
+            "installed": "تم التحقق والتثبيت.",
+            "failed": "فشل التثبيت."
+          },
+          "errors": {
+            "unavailable": "لا يتوفر بعد إصدار رسمي مكتمل وغير قابل للتغيير.",
+            "unsupported": "التثبيت بنقرة واحدة غير مدعوم على هذه المنصة.",
+            "busy": "هناك عملية تثبيت أخرى لـ FFmpeg قيد التنفيذ.",
+            "download": "فشل التنزيل أو انتهت مهلة الانتظار. تحقق من الشبكة وحاول مجددًا.",
+            "verification": "فشل التحقق من التوقيع أو بنية الحزمة أو سلامة الملفات.",
+            "install": "تعذّر تثبيت الملفات. تحقق من أذونات مجلد البيانات والمساحة المتاحة.",
+            "systemTrust": "رفض macOS هوية التوقيع أو توثيق Apple. لم يتم تجاوز فحوص أمان النظام."
+          }
         },
         "ffmpegRequired": "يتطلب هذا التنزيل FFmpeg. اضبطه في الإعدادات ← التكامل ← أدوات الوسائط، واحفظ، ثم حاول مجددًا.",
         "notDetected": "لم يُكتشف FFmpeg",
@@ -2880,53 +2926,53 @@
       "syncing": "جارٍ المزامنة…",
       "unavailable": "تعذّرت قراءة حالة المزامنة. تحقق من الاتصال وحاول مجددًا.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "تفاصيل التحديث",
+        "scope": "تُضاف هذه المتعقّبات الافتراضية إلى مهام BitTorrent العامة الجديدة. وتحتفظ التنزيلات الحالية بمتعقّباتها.",
+        "sources": "حالة المصادر",
+        "candidates": "المتعقّبات المرشّحة",
+        "history": "سجل التحديثات",
+        "disabled": "معطّل",
+        "noSources": "لا توجد مصادر مفعّلة",
+        "attention": "المتعقّبات: {{count}} · مصادر تتطلب الانتباه: {{failed}}",
+        "summary": "المتعقّبات: {{count}} · آخر تحديث ناجح: {{time}}",
+        "lastAttempt": "آخر فحص",
+        "nextCheck": "الفحص التالي",
+        "autoOff": "التحديثات التلقائية معطّلة",
+        "enginePending": "حُفظت الإعدادات؛ بانتظار تطبيق القيم الافتراضية على محرّك التنزيل.",
+        "sourceResult": "العناوين: {{count}} · آخر نجاح: {{time}}",
+        "retryAt": "إعادة المحاولة التالية: {{time}}",
+        "evidence": "تُظهر فحوص الاتصال إمكانية الوصول، لكنها لا تضمن توفر الأقران أو سرعة التنزيل.",
+        "firstSeen": "أول ظهور: {{time}}",
+        "noCandidates": "لا توجد متعقّبات مرشّحة مطابقة",
+        "showMore": "عرض المزيد",
+        "run": "المصادر الناجحة: {{success}} · المصادر التي فشلت: {{failed}} · المتعقّبات المختارة: +{{added}} / −{{removed}}",
+        "noHistory": "لا يوجد سجل تحديثات",
+        "retry": "إعادة محاولة المصادر التي فشلت",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "محدّث",
+          "cached": "استخدام آخر نسخة مخزّنة مؤقتًا بنجاح",
+          "expired": "انتهت صلاحية النسخة المخزّنة مؤقتًا",
+          "pending": "لم يُفحص بعد",
+          "failed": "لا توجد نسخة مخزّنة مؤقتًا قابلة للاستخدام"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "فشل الاتصال. يُحتفظ بالنسخة السابقة المخزّنة مؤقتًا لمدة تصل إلى 7 أيام.",
+          "http": "أعاد المصدر خطأ HTTP.",
+          "invalid": "الاستجابة ليست قائمة متعقّبات صالحة.",
+          "limit": "تجاوز المصدر الحد الأقصى للحجم أو عدد العناوين.",
+          "missing-cache": "أعاد المصدر الرمز 304 دون وجود نسخة مخزّنة مؤقتًا قابلة للاستخدام."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "مختار",
+          "capacity": "احتياطي",
+          "blacklisted": "محظور",
+          "unsupported": "بروتوكول غير مدعوم",
+          "cooldown": "إخفاقات متكررة في الاتصال"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "مكتمل",
+          "partial": "مكتمل جزئيًا",
+          "failed": "فشل"
         }
       }
     }
@@ -2958,5 +3004,17 @@
       "eib": "EiB"
     },
     "perSecond": "{{value}}/ث"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "تم إيقاف بروتوكول mo://. استخدم motrix:// بدلاً منه.",
+    "deprecatedCommand": "تم إيقاف هذا الإجراء عبر الرابط. استخدم أدوات التحكم في Motrix.",
+    "unsupportedCommand": "أمر الرابط هذا غير مدعوم.",
+    "unsupportedParameters": "يحتوي الرابط على معلمات غير مدعومة. لم يتم فتح أو تغيير أي شيء.",
+    "invalidLink": "رابط Motrix هذا غير صالح.",
+    "invalidSource": "يجب أن يحتوي الرابط على عنوان HTTP أو HTTPS أو FTP أو Magnet صالح واحد.",
+    "waitingMerged": "تظهر المهام المنتظرة الآن ضمن النشطة. تم فتح هذا العرض.",
+    "stoppedSplit": "تُصنف المهام المتوقفة ضمن المكتملة والأخطاء. تم فتح جميع التنزيلات.",
+    "invalidStatus": "فئة التنزيل غير صالحة. تم فتح جميع التنزيلات."
   }
 }

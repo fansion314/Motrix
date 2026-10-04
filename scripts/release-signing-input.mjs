@@ -20,7 +20,7 @@ const REPOSITORY_ROOT = path.resolve(
 )
 const SCHEMA_VERSION = 2
 const ELECTRON_BUILDER_VERSION = '26.15.7'
-const ELECTRON_VERSION = '44.4.5'
+const ELECTRON_VERSION = '44.5.0'
 const PLATFORMS = new Set(['darwin', 'win32'])
 const ARCHES = new Set(['arm64', 'x64'])
 
@@ -41,13 +41,13 @@ const TRUSTED_INPUT_SHA256 = Object.freeze({
   'scripts/sign-macos.mjs':
     '98bda5c77dce2a3e5d9c9a2f8211f4d5594d060bf9d2839326db50dc41f8c58b',
   'electron-builder.signing.json':
-    'da0d66babef56e80e725fd62b7b7b659571809d01e0f4383f28f6623a21962aa',
+    'd2905182ec98ea058e1384c024359e299f6077b195693dd528f2e6b72e742a19',
   'signing-build-resources/256x256.png':
     '044d3b64a14aa512ca41469372d1ad630557daaeb2cb4e709d34f2d3c57d4c3b',
   'signing-build-resources/background.tiff':
     'f15290fe1a059a6b262466445fd24a63eabf0e2a4f734f9812dfe8ac0b9609c1',
   'signing-build-resources/entitlements.mac.plist':
-    '38e56782c6c54555ff3c19b344ce8887e0689d935770a45208883e37f6aec500',
+    '7520c54bdda9880a65e607a1539269ec69d60d97e54da36879d6ea089fb219dd',
   'signing-build-resources/icon.icns':
     'f9ff86f32c2110b21d71a49a346f4186c4ef2cf1aed3884eca9704cb77fb4ed7',
   'signing-build-resources/icon.ico':
@@ -61,13 +61,13 @@ const TRUSTED_INPUT_SHA256 = Object.freeze({
   'signing-build-resources/torrent.ico':
     '7743ad382011e30236e91322164f0ebd20c283e634db44c36f314aa2abf2f5a8',
   'signing-policy/installer.nsh':
-    '779f44909b4ea67a564bb67976bebdf3c307332c1e970fa48ef04d4fcd3b469c',
+    '33874b474fb9ee173950babee212a9bb0efe4bb0c8ddee451593531129dee27a',
   'signing-tool/package.json':
     'b8ddd0e1bb90198d99628eb8b5b8c3c2b8cbda4a3aee48f118a36244467fac51',
   'signing-tool/package-lock.json':
-    '54d575e0b5d9ec9ebfdc4703cdcbd5c3a91dd51f0580df918875d7f3c4af8887',
+    '8fa0825cd7a7605cab5cfc4d77357b3f29452b12abe64e51851796d04406b1e6',
   'scripts/electron-package-size-budgets.json':
-    'eb71ed3a44c8b2f0c94bb30316e29cca7c939a63d2f2592f6a1080cd5335180a',
+    '331910aee89b894acb3587387763f05f0a9179290a88cf6ad7ced1d9560bb9c7',
   'scripts/electron-package-utils.mjs':
     '9d408f9edc91182be5d5aed39f2c5a5d20f5523e08d9c08e630c23c66302daa8',
   'scripts/before-build-use-staged-dependencies.mjs':

@@ -519,7 +519,7 @@
         },
         "natType": {
           "open": "開放型",
-          "fullcone": "Full Cone",
+          "fullcone": "完全錐形",
           "restricted": "受限型",
           "port-restricted": "連接埠受限型",
           "symmetric": "對稱型",
@@ -958,6 +958,18 @@
         "downloadEta": "下載剩餘時間",
         "avgDownloadProgress": "平均下載進度",
         "processingTasks": "處理中任務"
+      },
+      "completionShutdown": {
+        "more": "更多下載操作",
+        "enable": "全部下載完成後關機",
+        "disable": "取消下載完成後關機",
+        "waiting": "等待全部下載完成",
+        "countdown": "將在 {{seconds}} 秒後關機",
+        "detail": "僅本次有效。暫停或失敗的任務會阻止關機，做種將在關機時結束。",
+        "unavailable": "目前環境不支援自動關機，或未取得系統權限。",
+        "failed": "無法完成關機準備或請求關機，未強制關閉電腦。",
+        "preparing": "正在準備關機…",
+        "requested": "已請求系統關機"
       }
     }
   },
@@ -1801,6 +1813,7 @@
           "chrome": "Chrome",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "安裝擴充功能",
           "development": "開發版"
@@ -1946,7 +1959,40 @@
         "binaryPath": "自訂 FFmpeg 路徑",
         "browse": "瀏覽…",
         "download": {
-          "action": "下載 FFmpeg"
+          "action": "下載 FFmpeg",
+          "verifyInstall": "下載並驗證",
+          "manual": "FFmpeg 手冊",
+          "installing": "正在驗證…",
+          "installed": "已驗證並安裝。",
+          "failed": "下載或驗證失敗，已保留原有安裝。",
+          "disclosure": "使用 Motrix 專案簽章驗證，未採用 Authenticode 簽章。Windows 仍可能顯示安全提示。",
+          "projectDisclosure": "Motrix 組建 · GPL。驗證後安裝至 Motrix 資料目錄。",
+          "macDisclosure": "驗證 Developer ID 簽章及公證，保留系統安全保護。",
+          "progress": "FFmpeg 下載進度",
+          "bytes": "{{received}} / {{total}} 位元組",
+          "directory": "安裝目錄：{{path}}",
+          "detectionRefreshFailed": "無法更新 FFmpeg 偵測結果，請再次點擊「重新整理」。",
+          "restartPluginHint": "請重新啟動 Motrix，讓已啟用的外掛程式偵測到此次安裝。",
+          "phases": {
+            "idle": "準備下載",
+            "metadata": "正在檢查正式發布…",
+            "downloading": "正在下載 FFmpeg…",
+            "verifying": "正在驗證發布簽章…",
+            "extracting": "正在驗證並解壓縮檔案…",
+            "systemTrust": "正在檢查 macOS 簽章與公證…",
+            "installing": "正在安裝 FFmpeg…",
+            "installed": "已驗證並安裝。",
+            "failed": "安裝失敗。"
+          },
+          "errors": {
+            "unavailable": "暫時沒有完整且發布後不可修改的正式版本。",
+            "unsupported": "目前平台不支援一鍵安裝。",
+            "busy": "另一項 FFmpeg 安裝正在進行。",
+            "download": "下載失敗或逾時，請檢查網路後重試。",
+            "verification": "簽章、壓縮檔結構或檔案完整性檢查未通過。",
+            "install": "無法安裝檔案，請檢查資料目錄的權限及剩餘空間。",
+            "systemTrust": "macOS 拒絕了簽章身分或公證憑據，未略過系統安全檢查。"
+          }
         },
         "detection": {
           "readyTitle": "FFmpeg {{version}}",
@@ -2848,5 +2894,17 @@
       "eib": "EiB"
     },
     "perSecond": "{{value}}/秒"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "mo:// 協定已停用，請改用 motrix://。",
+    "deprecatedCommand": "此連結操作已停用，請使用 Motrix 內的操作控制項。",
+    "unsupportedCommand": "不支援此連結命令。",
+    "unsupportedParameters": "此連結包含不支援的參數，未開啟相關內容或執行變更。",
+    "invalidLink": "此 Motrix 連結無效。",
+    "invalidSource": "連結必須包含一個有效的 HTTP、HTTPS、FTP 或 Magnet 位址。",
+    "waitingMerged": "等待中的任務現已歸入活動任務，已開啟活動任務清單。",
+    "stoppedSplit": "已停止的任務現按已完成和錯誤分類，已開啟全部下載。",
+    "invalidStatus": "下載分類無效，已開啟全部下載。"
   }
 }

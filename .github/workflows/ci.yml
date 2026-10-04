@@ -32,7 +32,7 @@ jobs:
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
-          version: 12.6.0
+          version: 12.8.1
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -183,6 +183,7 @@ jobs:
           src/main/bridge/native-messaging-extensions.test.ts
           src/main/bridge/snap-environment.test.ts
           tests/scripts/assemble-release-artifacts.test.ts
+          tests/scripts/app-deep-link-registration.test.ts
           tests/scripts/appimage-artifact.test.ts
           tests/scripts/before-pack-verify.test.ts
           tests/scripts/compose-server.test.ts
@@ -220,6 +221,17 @@ jobs:
 
       - name: Type-check (root)
         run: pnpm exec tsc --noEmit
+
+      - name: Verified FFmpeg installation contracts
+        run: >-
+          pnpm exec vitest run
+          src/core/ffmpeg/verified-install.test.ts
+          src/core/plugin/capabilities/ffmpeg.test.ts
+          src/main/plugin/ffmpeg-fetch-electron.test.ts
+          src/main/plugin/ffmpeg-macos-trust.test.ts
+          src/main/plugin/ffmpeg-probe-managed.test.ts
+          src/main/plugin/ffmpeg-probe-electron.test.ts
+          src/renderer/routes/settings/cards/integration/media-tools-section.test.tsx
 
       - name: Tests (root)
         # Temporarily non-blocking. Known pre-existing failures (unrelated to
@@ -385,7 +397,7 @@ jobs:
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
-          version: 12.6.0
+          version: 12.8.1
           run_install: false
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0

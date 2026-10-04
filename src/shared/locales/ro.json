@@ -1215,6 +1215,18 @@
         "sortBy": "Sortează după",
         "taskActions": "Mai multe",
         "title": "Vizualizare listă"
+      },
+      "completionShutdown": {
+        "more": "Mai multe acțiuni de descărcare",
+        "enable": "Oprește după toate descărcările",
+        "disable": "Anulează oprirea după descărcări",
+        "waiting": "Se așteaptă finalizarea descărcărilor",
+        "countdown": "Oprire în {{seconds}} secunde",
+        "detail": "Se aplică o singură dată. Sarcinile întrerupte sau eșuate împiedică oprirea. Partajarea se încheie la oprire.",
+        "unavailable": "Oprirea automată nu este disponibilă sau permisiunea a fost refuzată.",
+        "failed": "Nu s-a putut pregăti sau solicita oprirea. Oprirea nu a fost forțată.",
+        "preparing": "Se pregătește oprirea…",
+        "requested": "Oprire solicitată"
       }
     },
     "trackers": {
@@ -2240,6 +2252,7 @@
           "development": "Dezvoltare",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Instalează"
         },
@@ -2397,7 +2410,40 @@
           "usingSource": "Se folosește {{source}}"
         },
         "download": {
-          "action": "Descarcă FFmpeg"
+          "action": "Descarcă FFmpeg",
+          "verifyInstall": "Descarcă și verifică",
+          "manual": "Manual FFmpeg",
+          "installing": "Se verifică…",
+          "installed": "Verificat și instalat.",
+          "failed": "Descărcarea sau verificarea a eșuat. Instalarea anterioară a fost păstrată.",
+          "disclosure": "Se verifică semnătura proiectului Motrix, nu Authenticode. Windows poate afișa în continuare avertismente.",
+          "projectDisclosure": "Compilare Motrix · GPL. Verificată și instalată în directorul de date Motrix.",
+          "macDisclosure": "Se verifică Developer ID și notarizarea. Protecțiile sistemului rămân active.",
+          "progress": "Progresul descărcării FFmpeg",
+          "bytes": "{{received}} / {{total}} octeți",
+          "directory": "Director de instalare: {{path}}",
+          "detectionRefreshFailed": "Detectarea FFmpeg nu a putut fi reîmprospătată. Apasă din nou Reîmprospătare.",
+          "restartPluginHint": "Repornește Motrix pentru ca extensiile active să detecteze instalarea.",
+          "phases": {
+            "idle": "Pregătit pentru descărcare",
+            "metadata": "Se verifică versiunea oficială…",
+            "downloading": "Se descarcă FFmpeg…",
+            "verifying": "Se verifică semnătura versiunii…",
+            "extracting": "Se verifică și se extrag fișierele…",
+            "systemTrust": "Se verifică semnarea și notarizarea macOS…",
+            "installing": "Se instalează FFmpeg…",
+            "installed": "Verificat și instalat.",
+            "failed": "Instalarea a eșuat."
+          },
+          "errors": {
+            "unavailable": "Nu este încă disponibilă o versiune oficială completă și imuabilă.",
+            "unsupported": "Instalarea cu un clic nu este acceptată pe această platformă.",
+            "busy": "O altă instalare FFmpeg este deja în curs.",
+            "download": "Descărcarea a eșuat sau a expirat. Verifică rețeaua și încearcă din nou.",
+            "verification": "Verificarea semnăturii, a structurii pachetului sau a integrității fișierelor a eșuat.",
+            "install": "Fișierele nu au putut fi instalate. Verifică permisiunile și spațiul liber din directorul de date.",
+            "systemTrust": "macOS a respins identitatea de semnare sau notarizarea. Verificările de securitate ale sistemului nu au fost ocolite."
+          }
         },
         "ffmpegRequired": "Această descărcare necesită FFmpeg. Configurează-l în Setări → Integrare → Instrumente media, salvează, apoi încearcă din nou.",
         "notDetected": "FFmpeg nu a fost detectat",
@@ -2814,53 +2860,53 @@
       "syncing": "Se sincronizează…",
       "unavailable": "Starea sincronizării nu poate fi citită. Verifică conexiunea și încearcă din nou.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Detaliile actualizării",
+        "scope": "Aceste trackere implicite sunt adăugate la sarcinile BitTorrent publice noi. Descărcările existente își păstrează trackerele actuale.",
+        "sources": "Starea surselor",
+        "candidates": "Candidați",
+        "history": "Istoricul actualizărilor",
+        "disabled": "Dezactivat",
+        "noSources": "Nu există surse activate",
+        "attention": "Trackere: {{count}} · Surse care necesită atenție: {{failed}}",
+        "summary": "Trackere: {{count}} · Ultima actualizare reușită: {{time}}",
+        "lastAttempt": "Ultima verificare",
+        "nextCheck": "Următoarea verificare",
+        "autoOff": "Actualizările automate sunt dezactivate",
+        "enginePending": "Salvat; se așteaptă aplicarea trackerelor implicite în motorul de descărcare.",
+        "sourceResult": "Adrese: {{count}} · Ultima reușită: {{time}}",
+        "retryAt": "Următoarea încercare: {{time}}",
+        "evidence": "Verificările conexiunii indică disponibilitatea, dar nu garantează prezența partenerilor sau viteza de descărcare.",
+        "firstSeen": "Prima detectare: {{time}}",
+        "noCandidates": "Nu există candidați corespunzători",
+        "showMore": "Arată mai multe",
+        "run": "Surse reușite: {{success}} · Eșuate: {{failed}} · Selectate: +{{added}} / −{{removed}}",
+        "noHistory": "Nu există istoric al actualizărilor",
+        "retry": "Reîncearcă sursele eșuate",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "La zi",
+          "cached": "Se folosește ultimul cache reușit",
+          "expired": "Cache-ul a expirat",
+          "pending": "Încă neverificat",
+          "failed": "Nu există cache utilizabil"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "Conexiunea a eșuat. Cache-ul anterior este păstrat timp de cel mult 7 zile.",
+          "http": "Sursa a returnat o eroare HTTP.",
+          "invalid": "Răspunsul nu este o listă validă de trackere.",
+          "limit": "Sursa a depășit limita de dimensiune sau de număr de adrese.",
+          "missing-cache": "Sursa a returnat 304 fără un cache utilizabil."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Selectat",
+          "capacity": "Rezervă",
+          "blacklisted": "Pe lista de blocare",
+          "unsupported": "Protocol neacceptat",
+          "cooldown": "Eșecuri repetate ale conexiunii"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Finalizat",
+          "partial": "Finalizat parțial",
+          "failed": "Eșuat"
         }
       }
     }
@@ -2892,5 +2938,17 @@
       "eib": "EiO"
     },
     "perSecond": "{{value}}/s"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "Protocolul mo:// a fost retras. Folosiți motrix://.",
+    "deprecatedCommand": "Această acțiune prin link a fost retrasă. Folosiți comenzile din Motrix.",
+    "unsupportedCommand": "Această comandă a linkului nu este acceptată.",
+    "unsupportedParameters": "Linkul conține parametri neacceptați. Nimic nu a fost deschis sau modificat.",
+    "invalidLink": "Acest link Motrix nu este valid.",
+    "invalidSource": "Linkul trebuie să conțină o singură adresă HTTP, HTTPS, FTP sau Magnet validă.",
+    "waitingMerged": "Sarcinile în așteptare apar acum în Active. Această vizualizare a fost deschisă.",
+    "stoppedSplit": "Sarcinile oprite sunt grupate în Finalizate și Erori. Au fost deschise toate descărcările.",
+    "invalidStatus": "Categoria nu este validă. Au fost deschise toate descărcările."
   }
 }

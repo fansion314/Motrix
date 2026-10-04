@@ -1,8 +1,10 @@
 import { CopyButton } from '@renderer/components/desktop-kit/copy-button'
+import { MiddleEllipsis } from '@renderer/components/desktop-kit/middle-ellipsis'
 import {
   CheckIcon,
   ChevronRightIcon,
   EditIcon,
+  HelpIcon,
   InstallIcon,
   RefreshIcon,
   SecurityWarningIcon,
@@ -25,11 +27,15 @@ import {
   FormMessage,
 } from '@renderer/components/ui/form'
 import { Input } from '@renderer/components/ui/input'
+import { Progress } from '@renderer/components/ui/progress'
+import { Spinner } from '@renderer/components/ui/spinner'
+import { useFfmpegInstall } from '@renderer/hooks/use-ffmpeg-install'
+import { formatProgressPercent } from '@renderer/lib/format'
 import { transport } from '@renderer/lib/transport'
 import { cn } from '@renderer/lib/utils'
-import { EXTERNAL_URLS } from '@shared/external-urls'
+import { EXTERNAL_URLS, getFfmpegManualUrl } from '@shared/external-urls'
 import { Queries } from '@shared/protocol/queries'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import type { IntegrationFormValues } from './integration-dialog'
@@ -67,15 +73,48 @@ function candidateStateVariant(state: CandidateStateUI) {
 }
 
 export function MediaToolsSection() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const form = useFormContext<IntegrationFormValues>()
   const [detection, setDetection] = useState<FfmpegDetectionResultUI | null>(
     null
   )
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [customPathEditing, setCustomPathEditing] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState(false)
+  const downloadProgressId = useId()
+  const {
+    status: installStatus,
+    installing,
+    install: installFfmpeg,
+  } = useFfmpegInstall()
+  const [installResult, setInstallResult] = useState<
+    'installed' | 'failed' | null
+  >(null)
+  const [installError, setInstallError] = useState<string | null>(null)
+  const [detectionRefreshFailed, setDetectionRefreshFailed] = useState(false)
+  const canInstall = ['darwin', 'linux', 'win32'].includes(transport.platform)
+  const visibleResult =
+    installResult ?? (installStatus?.phase === 'failed' ? 'failed' : null)
+  const visibleError = installError ?? installStatus?.error
   const pathError = form.formState.errors.media?.ffmpegBinaryPath
   const editingPath = customPathEditing || Boolean(pathError)
+  const installPhase =
+    installing &&
+    installStatus &&
+    !['idle', 'installed', 'failed'].includes(installStatus.phase)
+      ? installStatus.phase
+      : null
+  const downloadProgress =
+    installPhase === 'downloading' && installStatus?.percent != null
+      ? formatProgressPercent(installStatus.percent)
+      : undefined
+  const installLabel = installing
+    ? t(
+        installPhase
+          ? `settings.integration.media.download.phases.${installPhase}`
+          : 'settings.integration.media.download.installing'
+      )
+    : t('settings.integration.media.download.verifyInstall')
 
   useEffect(() => {
     let cancelled = false
@@ -92,10 +131,31 @@ export function MediaToolsSection() {
   }, [])
 
   const refresh = async () => {
-    const r = (await transport.invoke(
-      Queries.GetFfmpegDetection
-    )) as FfmpegDetectionResultUI
-    setDetection(r)
+    try {
+      const r = (await transport.invoke(
+        Queries.GetFfmpegDetection
+      )) as FfmpegDetectionResultUI
+      setDetection(r)
+      setDetectionRefreshFailed(false)
+    } catch {
+      // Detection is independent of the already committed installation result.
+      setDetectionRefreshFailed(true)
+    }
+  }
+
+  const install = async () => {
+    setInstallResult(null)
+    setInstallError(null)
+    try {
+      const result = await installFfmpeg()
+      if (!result) return
+      setInstallResult(result.ok ? 'installed' : 'failed')
+      if (!result.ok) setInstallError(result.error)
+      if (result.ok) await refresh()
+    } catch {
+      setInstallResult('failed')
+      setInstallError('download')
+    }
   }
 
   const activeCandidate = detection?.candidates.find(
@@ -112,14 +172,22 @@ export function MediaToolsSection() {
         version: detection.active.version,
       })
     : hasUntrustedCandidate
-      ? t('settings.integration.media.detection.untrustedTitle')
+      ? t(
+          transport.platform === 'win32'
+            ? 'settings.integration.media.download.failed'
+            : 'settings.integration.media.detection.untrustedTitle'
+        )
       : t('settings.integration.media.detection.unavailableTitle')
   const activeDescription = detection?.active
     ? t('settings.integration.media.detection.usingSource', {
         source: activeSource,
       })
     : hasUntrustedCandidate
-      ? t('settings.integration.media.detection.untrustedDesc')
+      ? t(
+          transport.platform === 'win32'
+            ? 'settings.integration.media.download.disclosure'
+            : 'settings.integration.media.detection.untrustedDesc'
+        )
       : t('settings.integration.media.detection.unavailableDesc')
   const candidates = detection?.candidates ?? []
   const editableCandidates: FfmpegDetectionResultUI['candidates'] =
@@ -127,6 +195,14 @@ export function MediaToolsSection() {
       ? candidates
       : [{ kind: 'manual', path: null, state: 'unconfigured' }, ...candidates]
   const candidateCount = candidates.length
+  const showInstallControls =
+    canInstall && Boolean(installPrompt || installing || visibleResult)
+  const showInstallAction = showInstallControls && visibleResult !== 'installed'
+  const directoryLabel = installStatus?.directory
+    ? t('settings.integration.media.download.directory', { path: '\0' }).split(
+        '\0'
+      )
+    : null
 
   return (
     <div className="space-y-4">
@@ -151,11 +227,11 @@ export function MediaToolsSection() {
             <Button
               render={
                 <a
-                  href={EXTERNAL_URLS.github.ffmpegStaticReleases}
+                  href={getFfmpegManualUrl(i18n.language)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={t('settings.integration.media.download.action')}
-                  title={t('settings.integration.media.download.action')}
+                  aria-label={t('settings.integration.media.download.manual')}
+                  title={t('settings.integration.media.download.manual')}
                   // biome-ignore lint/a11y/noRedundantRoles: Base UI Button applies button semantics unless this rendered anchor explicitly overrides them.
                   role="link"
                 />
@@ -164,11 +240,51 @@ export function MediaToolsSection() {
               size="icon-sm"
               variant="ghost"
             >
-              <InstallIcon
-                className="size-4 text-muted-foreground"
-                aria-hidden
-              />
+              <HelpIcon className="size-4 text-muted-foreground" aria-hidden />
             </Button>
+            {canInstall ? (
+              !showInstallAction && (
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  disabled={installing}
+                  aria-label={t('settings.integration.media.download.action')}
+                  onClick={() => {
+                    setInstallPrompt(true)
+                    setInstallResult(null)
+                    setInstallError(null)
+                  }}
+                >
+                  <InstallIcon
+                    className="size-4 text-muted-foreground"
+                    aria-hidden
+                  />
+                </Button>
+              )
+            ) : (
+              <Button
+                render={
+                  <a
+                    href={EXTERNAL_URLS.github.ffmpegStaticReleases}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t('settings.integration.media.download.action')}
+                    title={t('settings.integration.media.download.action')}
+                    // biome-ignore lint/a11y/noRedundantRoles: Base UI Button applies button semantics unless this rendered anchor explicitly overrides them.
+                    role="link"
+                  />
+                }
+                nativeButton={false}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <InstallIcon
+                  className="size-4 text-muted-foreground"
+                  aria-hidden
+                />
+              </Button>
+            )}
             <Button
               type="button"
               size="icon-sm"
@@ -181,11 +297,150 @@ export function MediaToolsSection() {
           </div>
         </div>
 
-        {transport.platform !== 'web' && (
-          <p className="text-xs text-muted-foreground">
-            {t('settings.integration.media.applyHint')}
-          </p>
+        {showInstallControls && (
+          <div className="space-y-2 border-t border-border pt-2 text-xs text-muted-foreground">
+            {!installing && visibleResult !== 'installed' && (
+              <p className="leading-normal">
+                {t('settings.integration.media.download.projectDisclosure')}
+                {transport.platform === 'win32' && (
+                  <> {t('settings.integration.media.download.disclosure')}</>
+                )}
+                {transport.platform === 'darwin' && (
+                  <> {t('settings.integration.media.download.macDisclosure')}</>
+                )}
+              </p>
+            )}
+            {showInstallAction && (
+              <Button
+                data-testid="ffmpeg-install-action"
+                type="button"
+                size="sm"
+                className={cn(
+                  'relative min-h-7 h-auto! max-w-full overflow-hidden rounded-md! px-2 py-1 text-xs shadow-none transition-colors motion-reduce:transition-none',
+                  installing && 'disabled:opacity-100'
+                )}
+                aria-label={
+                  downloadProgress === undefined
+                    ? installLabel
+                    : `${installLabel} ${downloadProgress}%`
+                }
+                aria-busy={installing || undefined}
+                title={
+                  installPhase === 'downloading' &&
+                  installStatus &&
+                  installStatus.bytesTotal > 0
+                    ? t('settings.integration.media.download.bytes', {
+                        received: installStatus.bytesReceived.toLocaleString(),
+                        total: installStatus.bytesTotal.toLocaleString(),
+                      })
+                    : undefined
+                }
+                aria-describedby={
+                  installPhase === 'downloading'
+                    ? downloadProgressId
+                    : undefined
+                }
+                disabled={installing}
+                onClick={install}
+              >
+                {downloadProgress !== undefined && (
+                  <span
+                    data-slot="ffmpeg-download-fill"
+                    className="pointer-events-none absolute inset-0 origin-left bg-primary-foreground/20 transition-transform duration-200 ease-linear motion-reduce:transition-none"
+                    style={{ transform: `scaleX(${downloadProgress / 100})` }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="relative inline-flex items-center justify-center gap-1.5">
+                  {installing && downloadProgress === undefined ? (
+                    <Spinner
+                      className="size-3.5 motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <InstallIcon className="size-3.5" aria-hidden="true" />
+                  )}
+                  <span className="whitespace-normal tabular-nums">
+                    {downloadProgress === undefined
+                      ? installLabel
+                      : `${downloadProgress}%`}
+                  </span>
+                </span>
+              </Button>
+            )}
+            {installing && (
+              <p className="sr-only" role="status">
+                {installLabel}
+              </p>
+            )}
+            {installPhase === 'downloading' && installStatus && (
+              <Progress
+                id={downloadProgressId}
+                className="sr-only absolute! h-px w-px"
+                value={downloadProgress}
+                aria-label={t('settings.integration.media.download.progress')}
+              />
+            )}
+            {visibleResult && (
+              <p role="status">
+                {t(`settings.integration.media.download.${visibleResult}`)}
+                {visibleError && (
+                  <span>
+                    {' '}
+                    {t(
+                      `settings.integration.media.download.errors.${visibleError}`
+                    )}
+                  </span>
+                )}
+                {visibleResult === 'installed' && (
+                  <span>
+                    {' '}
+                    {t('settings.integration.media.download.restartPluginHint')}
+                  </span>
+                )}
+              </p>
+            )}
+            {installStatus?.directory && (
+              <div
+                data-testid="ffmpeg-installed-directory"
+                className="flex min-w-0 items-center gap-1.5"
+              >
+                <span className="shrink-0">{directoryLabel?.[0]}</span>
+                <MiddleEllipsis
+                  text={installStatus.directory}
+                  className="flex-1"
+                />
+                {directoryLabel?.[1] && (
+                  <span className="shrink-0">{directoryLabel[1]}</span>
+                )}
+                <CopyButton
+                  content={installStatus.directory}
+                  iconPosition="end"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={t(
+                    'settings.integration.media.detection.copyManagedPath'
+                  )}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                />
+              </div>
+            )}
+            {detectionRefreshFailed && (
+              <p role="alert">
+                {t(
+                  'settings.integration.media.download.detectionRefreshFailed'
+                )}
+              </p>
+            )}
+          </div>
         )}
+
+        {transport.platform !== 'web' &&
+          (detailsOpen || Boolean(pathError)) && (
+            <p className="text-xs text-muted-foreground">
+              {t('settings.integration.media.applyHint')}
+            </p>
+          )}
 
         <Collapsible
           open={detailsOpen || Boolean(pathError)}
@@ -223,7 +478,7 @@ export function MediaToolsSection() {
           </div>
           <CollapsibleContent className="mt-2">
             <div className="overflow-hidden rounded-md border border-border bg-background/70 text-xs mb-1">
-              <div className="grid grid-cols-[10rem_minmax(0,1fr)_7rem] gap-2 border-b border-border px-3 py-2 font-medium text-muted-foreground">
+              <div className="grid grid-cols-[9rem_minmax(0,1fr)_5rem] gap-3 border-b border-border px-3 py-2 font-medium text-muted-foreground">
                 <span>{t('settings.integration.media.detection.source')}</span>
                 <span>
                   {t('settings.integration.media.detection.location')}
@@ -236,9 +491,9 @@ export function MediaToolsSection() {
                 <div
                   key={c.kind}
                   data-testid={`candidate-row-${c.kind}`}
-                  className="grid min-h-11 grid-cols-[10rem_minmax(0,1fr)_7rem] items-center gap-2 border-b border-border px-3 py-2 last:border-b-0"
+                  className="grid min-h-11 grid-cols-[9rem_minmax(0,1fr)_5rem] items-center gap-3 border-b border-border px-3 py-2 last:border-b-0"
                 >
-                  <span className="font-medium text-foreground">
+                  <span className="min-w-0 break-all font-medium text-foreground">
                     {t(`settings.integration.media.candidateKind.${c.kind}`)}
                   </span>
                   {c.kind === 'manual' ? (
@@ -253,6 +508,7 @@ export function MediaToolsSection() {
                                 {...field}
                                 autoFocus
                                 data-testid="media-binary-path-input"
+                                title={field.value || undefined}
                                 aria-label={t(
                                   'settings.integration.media.binaryPath'
                                 )}
@@ -275,15 +531,16 @@ export function MediaToolsSection() {
                                 }}
                               />
                             </FormControl>
+                          ) : field.value ? (
+                            <MiddleEllipsis
+                              text={field.value}
+                              className="text-muted-foreground"
+                            />
                           ) : (
-                            <span
-                              className="min-w-0 flex-1 truncate font-mono text-muted-foreground"
-                              title={field.value || undefined}
-                            >
-                              {field.value ||
-                                t(
-                                  'settings.integration.media.detection.notConfigured'
-                                )}
+                            <span className="text-muted-foreground">
+                              {t(
+                                'settings.integration.media.detection.notConfigured'
+                              )}
                             </span>
                           )}
                           <Button
@@ -321,13 +578,10 @@ export function MediaToolsSection() {
                     />
                   ) : c.kind === 'userData' && c.path ? (
                     <div className="grid h-7 min-w-0 grid-cols-[minmax(0,1fr)_1.5rem] items-center gap-1">
-                      <span
-                        dir="ltr"
-                        title={c.path}
-                        className="min-w-0 truncate font-mono text-muted-foreground"
-                      >
-                        {c.path}
-                      </span>
+                      <MiddleEllipsis
+                        text={c.path}
+                        className="text-muted-foreground"
+                      />
                       <CopyButton
                         content={c.path}
                         iconPosition="end"
@@ -343,13 +597,20 @@ export function MediaToolsSection() {
                       />
                     </div>
                   ) : (
-                    <span
-                      className="truncate font-mono text-muted-foreground"
-                      title={c.path ?? undefined}
-                    >
-                      {c.path ??
-                        t('settings.integration.media.detection.notConfigured')}
-                    </span>
+                    <div className="min-w-0">
+                      {c.path ? (
+                        <MiddleEllipsis
+                          text={c.path}
+                          className="text-muted-foreground"
+                        />
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {t(
+                            'settings.integration.media.detection.notConfigured'
+                          )}
+                        </span>
+                      )}
+                    </div>
                   )}
                   <Badge
                     variant={candidateStateVariant(c.state)}

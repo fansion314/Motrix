@@ -1,4 +1,3 @@
-import { useCompactHeader } from '@renderer/components/desktop-kit/hooks/use-compact-header'
 import { PanelShell } from '@renderer/components/desktop-kit/panel/panel-shell'
 import { Button } from '@renderer/components/ui/button'
 import { Skeleton } from '@renderer/components/ui/skeleton'
@@ -33,6 +32,7 @@ import {
   taskMatchesTab,
 } from './filter'
 import { GlobalStatsBar } from './global-stats-bar'
+import { resolveInspectorInset } from './inspector-inset'
 import { StatusTitleMenu } from './status-title-menu'
 import { useDownloadsSelection } from './store'
 import { TaskInspectorDrawer } from './task-inspector-drawer'
@@ -110,7 +110,6 @@ function TaskListStaleBanner({ onRetry }: { onRetry(): void }) {
 }
 
 export function DownloadsPage() {
-  const compact = useCompactHeader()
   const { filter: rawFilter } = useParams<{ filter: string }>()
   const navigate = useNavigate()
   const location = useLocation()
@@ -287,6 +286,71 @@ export function DownloadsPage() {
   ])
 
   const [container, setContainer] = useState<HTMLElement | null>(null)
+  const taskListKey = `${filter}:${serializeTypeParam(types)}`
+
+  // The inspector drawer overlays the page root without resizing the list, so
+  // the list must reserve scroll space for the band the drawer covers;
+  // otherwise rows in that band (typically the active ones, sorted last) can
+  // never scroll above the drawer's top edge.
+  const inspectorVisible = useDownloadsView((state) => state.inspectorVisible)
+  const inspectorSnap = useDownloadsView((state) => state.inspectorSnap)
+  const committedIds = useDownloadsSelection(
+    (state) => state.committedSelectedIds
+  )
+  // Mirror useTaskInspectorState's open condition so scroll space is only
+  // reserved while the drawer actually overlays the page.
+  const inspectorOpen = useMemo(
+    () =>
+      inspectorVisible &&
+      tasks.some(
+        (task) => committedIds.has(task.id) && isTaskAvailable(task.status)
+      ),
+    [committedIds, inspectorVisible, tasks]
+  )
+  const [inspectorMetrics, setInspectorMetrics] = useState({
+    page: 0,
+    footer: 0,
+    grid: 0,
+  })
+  // biome-ignore lint/correctness/useExhaustiveDependencies: rebind when loading/empty states or the keyed task panel replace the observed elements without resizing the page root
+  useEffect(() => {
+    if (!container) return
+    const footerElement = container.querySelector<HTMLElement>(
+      '[data-slot="panel-shell-footer"]'
+    )
+    const gridElement = container.querySelector<HTMLElement>(
+      '[data-downloads-grid]'
+    )
+    const measure = () => {
+      const page = container.getBoundingClientRect().height
+      const footer = footerElement?.getBoundingClientRect().height ?? 0
+      const grid = gridElement?.getBoundingClientRect().height ?? 0
+      setInspectorMetrics((previous) =>
+        previous.page === page &&
+        previous.footer === footer &&
+        previous.grid === grid
+          ? previous
+          : { page, footer, grid }
+      )
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(container)
+    // Header animations and footer content can resize the grid after the
+    // bounded page root has stopped resizing.
+    if (footerElement) observer.observe(footerElement)
+    if (gridElement) observer.observe(gridElement)
+    return () => observer.disconnect()
+  }, [container, status, hasReadySnapshot, filtered.length, taskListKey])
+  const inspectorInset = resolveInspectorInset({
+    pageHeight: inspectorMetrics.page,
+    footerHeight: inspectorMetrics.footer,
+    gridHeight: inspectorMetrics.grid,
+    snap: inspectorSnap,
+    open: inspectorOpen,
+  })
+
   const taskList =
     status === 'loading' && !hasReadySnapshot ? (
       <TaskListSkeleton />
@@ -294,13 +358,14 @@ export function DownloadsPage() {
       <TaskListUnavailable onRetry={() => void retry()} />
     ) : (
       <TaskListPanel
-        key={`${filter}:${serializeTypeParam(types)}`}
+        key={taskListKey}
         tasks={filtered}
         hasAnyTasks={counts.all > 0}
         selection={useDownloadsSelection}
         filter={filter}
         search={query}
         onClearSearch={() => onQueryChange('')}
+        bottomInset={inspectorInset}
       />
     )
 
@@ -332,7 +397,7 @@ export function DownloadsPage() {
             />
           }
           actionsPosition="end"
-          actionsDraggable={compact}
+          actionsDraggable
           headerClassName="compact-header:py-1"
           actionsClassName="min-w-0 flex-1"
           footer={<GlobalStatsBar />}

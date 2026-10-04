@@ -107,6 +107,8 @@ const REDIRECT_SAFE_HEADERS = new Set([
   'cache-control',
   'pragma',
   'range',
+  // aria2 forwards a task's custom Referer unchanged across redirect origins.
+  'referer',
   'user-agent',
   'want-digest',
 ])
@@ -765,11 +767,10 @@ function probeHeaders(
   if (!Object.hasOwn(result, 'want-digest')) {
     result['want-digest'] = ARIA2_WANT_DIGEST
   }
-  // Metadata-eligible aria2 tasks carry the same empty custom fields. Their
-  // presence suppresses aria2's process-wide CookieStorage and AuthConfig
-  // factories without replacing an explicit task credential.
+  // Mirror the empty Cookie field that suppresses aria2's CookieStorage.
+  // Neither client synthesizes Authorization; aria2 disables ambient auth
+  // through task options, and explicit task headers are preserved above.
   if (!Object.hasOwn(result, 'cookie')) result.cookie = ''
-  if (!Object.hasOwn(result, 'authorization')) result.authorization = ''
   return result
 }
 

@@ -1203,6 +1203,18 @@
         "sortBy": "Sorter etter",
         "taskActions": "Mer",
         "title": "Listevisning"
+      },
+      "completionShutdown": {
+        "more": "Flere nedlastingshandlinger",
+        "enable": "Slå av når alle nedlastinger er ferdige",
+        "disable": "Avbryt avslåing etter nedlastinger",
+        "waiting": "Venter på at alle nedlastinger blir ferdige",
+        "countdown": "Slår av om {{seconds}} sekunder",
+        "detail": "Gjelder én gang. Pausede eller mislykkede oppgaver hindrer avslåing. Seeding avsluttes når maskinen slås av.",
+        "unavailable": "Automatisk avslåing er utilgjengelig eller tillatelse ble avslått.",
+        "failed": "Kunne ikke forberede eller be om avslåing. Ingen tvungen avslåing ble utført.",
+        "preparing": "Forbereder avslåing…",
+        "requested": "Avslåing forespurt"
       }
     },
     "trackers": {
@@ -2221,6 +2233,7 @@
           "development": "Utvikling",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Installer"
         },
@@ -2377,7 +2390,40 @@
           "usingSource": "Bruker {{source}}"
         },
         "download": {
-          "action": "Last ned FFmpeg"
+          "action": "Last ned FFmpeg",
+          "verifyInstall": "Last ned og kontroller",
+          "manual": "FFmpeg-håndbok",
+          "installing": "Kontrollerer…",
+          "installed": "Kontrollert og installert.",
+          "failed": "Nedlasting eller kontroll mislyktes. Den forrige installasjonen ble beholdt.",
+          "disclosure": "Motrix-prosjektsignaturen verifiseres, ikke Authenticode. Windows kan fortsatt vise advarsler.",
+          "projectDisclosure": "Motrix-bygg · GPL. Verifiseres og installeres i Motrix’ datamappe.",
+          "macDisclosure": "Developer ID og notarisering kontrolleres. Systembeskyttelsen forblir aktiv.",
+          "progress": "Fremdrift for FFmpeg-nedlasting",
+          "bytes": "{{received}} / {{total}} byte",
+          "directory": "Installasjonsmappe: {{path}}",
+          "detectionRefreshFailed": "Kunne ikke oppdatere FFmpeg-gjenkjenningen. Klikk på Oppdater igjen.",
+          "restartPluginHint": "Start Motrix på nytt slik at aktive programtillegg oppdager installasjonen.",
+          "phases": {
+            "idle": "Klar til å laste ned",
+            "metadata": "Kontrollerer den offisielle utgivelsen…",
+            "downloading": "Laster ned FFmpeg…",
+            "verifying": "Kontrollerer utgivelsens signatur…",
+            "extracting": "Kontrollerer og pakker ut filer…",
+            "systemTrust": "Kontrollerer macOS-signering og notarisering…",
+            "installing": "Installerer FFmpeg…",
+            "installed": "Kontrollert og installert.",
+            "failed": "Installasjonen mislyktes."
+          },
+          "errors": {
+            "unavailable": "Ingen fullstendig, uforanderlig offisiell utgivelse er tilgjengelig ennå.",
+            "unsupported": "Installasjon med ett klikk støttes ikke på denne plattformen.",
+            "busy": "En annen FFmpeg-installasjon pågår allerede.",
+            "download": "Nedlastingen mislyktes eller tok for lang tid. Kontroller nettverket og prøv igjen.",
+            "verification": "Kontroll av signaturen, pakkestrukturen eller filintegriteten mislyktes.",
+            "install": "Kunne ikke installere filene. Kontroller tilgangsrettigheter og ledig plass i datamappen.",
+            "systemTrust": "macOS avviste signeringsidentiteten eller notariseringen. Systemets sikkerhetskontroller ble ikke omgått."
+          }
         },
         "ffmpegRequired": "Denne nedlastingen krever FFmpeg. Konfigurer det under Innstillinger → Integrasjon → Medieverktøy, lagre og prøv igjen.",
         "notDetected": "FFmpeg ble ikke funnet",
@@ -2792,53 +2838,53 @@
       "syncing": "Synkroniserer…",
       "unavailable": "Kan ikke lese synkroniseringsstatus. Kontroller tilkoblingen og prøv igjen.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Detaljer om oppdateringen",
+        "scope": "Disse standardtrackerne legges til i nye offentlige BitTorrent-oppgaver. Eksisterende nedlastinger beholder sine nåværende trackere.",
+        "sources": "Kildestatus",
+        "candidates": "Kandidater",
+        "history": "Oppdateringshistorikk",
+        "disabled": "Deaktivert",
+        "noSources": "Ingen aktiverte kilder",
+        "attention": "{{count}} trackere · {{failed}} kilder krever oppmerksomhet",
+        "summary": "{{count}} trackere · Siste vellykkede oppdatering: {{time}}",
+        "lastAttempt": "Siste kontroll",
+        "nextCheck": "Neste kontroll",
+        "autoOff": "Automatiske oppdateringer er av",
+        "enginePending": "Lagret; venter på å ta i bruk standardtrackerne i nedlastingsmotoren.",
+        "sourceResult": "{{count}} adresser · Sist vellykket: {{time}}",
+        "retryAt": "Neste forsøk: {{time}}",
+        "evidence": "Tilkoblingskontroller viser tilgjengelighet, men garanterer verken noder eller nedlastingshastighet.",
+        "firstSeen": "Først oppdaget: {{time}}",
+        "noCandidates": "Ingen samsvarende kandidater",
+        "showMore": "Vis mer",
+        "run": "{{success}} kilder lyktes · {{failed}} mislyktes · +{{added}} / −{{removed}} valgte",
+        "noHistory": "Ingen oppdateringshistorikk",
+        "retry": "Prøv mislykkede kilder på nytt",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "Oppdatert",
+          "cached": "Bruker siste vellykkede hurtigbuffer",
+          "expired": "Hurtigbufferen er utløpt",
+          "pending": "Ikke kontrollert ennå",
+          "failed": "Ingen brukbar hurtigbuffer"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "Tilkoblingen mislyktes. Den forrige hurtigbufferen beholdes i opptil 7 dager.",
+          "http": "Kilden returnerte en HTTP-feil.",
+          "invalid": "Svaret er ikke en gyldig trackerliste.",
+          "limit": "Kilden overskred grensen for størrelse eller antall adresser.",
+          "missing-cache": "Kilden returnerte 304 uten en brukbar hurtigbuffer."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Valgt",
+          "capacity": "Reservekandidat",
+          "blacklisted": "På blokkeringslisten",
+          "unsupported": "Protokollen støttes ikke",
+          "cooldown": "Gjentatte tilkoblingsfeil"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Fullført",
+          "partial": "Delvis fullført",
+          "failed": "Mislyktes"
         }
       }
     }
@@ -2870,5 +2916,17 @@
       "eib": "EiB"
     },
     "perSecond": "{{value}}/s"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "Protokollen mo:// er avviklet. Bruk motrix://.",
+    "deprecatedCommand": "Denne lenkehandlingen er avviklet. Bruk kontrollene i Motrix.",
+    "unsupportedCommand": "Denne lenkekommandoen støttes ikke.",
+    "unsupportedParameters": "Lenken inneholder parametere som ikke støttes. Ingenting ble åpnet eller endret.",
+    "invalidLink": "Denne Motrix-lenken er ugyldig.",
+    "invalidSource": "Lenken må inneholde én gyldig HTTP-, HTTPS-, FTP- eller Magnet-adresse.",
+    "waitingMerged": "Ventende oppgaver vises nå under Aktive. Denne visningen er åpnet.",
+    "stoppedSplit": "Stoppede oppgaver er gruppert under Fullførte og Feil. Alle nedlastinger er åpnet.",
+    "invalidStatus": "Ugyldig nedlastingskategori. Alle nedlastinger er åpnet."
   }
 }

@@ -138,7 +138,7 @@ import type { AppNotification } from '@shared/types/notification'
 import { getHiddenNotificationKinds } from '@shared/types/notification'
 import type { AppSettings } from '@shared/types/settings'
 import type { DownloadTask } from '@shared/types/task'
-import { TaskType } from '@shared/types/task'
+import { TaskStatus, TaskType } from '@shared/types/task'
 import type { TaskOccurrence } from '@shared/types/task-occurrence'
 import {
   app,
@@ -154,7 +154,6 @@ import { BridgeManager } from './bridge/bridge-manager'
 import { isPackagedLinuxFlatpak } from './bridge/flatpak-environment'
 import { resolvePackagedLinuxSnapEnvironment } from './bridge/snap-environment'
 import { CliToolService } from './cli/cli-tool-service'
-import { resolveExecutable } from './cli/shell-environment'
 import { CommandRegistry } from './commands/command-registry'
 import { ContextStore } from './commands/context-store'
 import { registerAllCommands } from './commands/definitions'
@@ -187,6 +186,7 @@ import { createOsNotificationBridge } from './notifications/os-bridge'
 import { DisclaimerGate } from './onboarding/disclaimer-gate'
 import { setupAppImageIntegration } from './platform/appimage-integration-host'
 import { syncAutoLaunch } from './platform/auto-launch'
+import { setupCompletionShutdown } from './platform/completion-shutdown'
 import { resolveDefaultSaveDirOptions } from './platform/default-save-dir'
 import { resolveDesktopBackgroundPolicy } from './platform/desktop-background-policy'
 import { resolveDistributionContext } from './platform/distribution-context'
@@ -207,6 +207,7 @@ import {
 } from './plugin/ffmpeg-detect-electron'
 import { resolvePluginHostLanguage } from './plugin/host-language'
 import { resolvePluginsDir } from './plugin/plugins-dir'
+import { resolveVerifiedFfmpeg } from './plugin/verified-ffmpeg-electron'
 import { createMainProxyApplier } from './proxy/wiring'
 import { QuitController } from './quit/quit-controller'
 import {
@@ -728,8 +729,36 @@ function hookAddTaskCloseReset(win: BrowserWindow) {
   })
 }
 
+let protocolNoticeActive = false
+
 const protocolManager = createProtocolManager({
-  getWindow: () => windowManager?.get('main') ?? null,
+  onShowMain: () => windowManager?.show('main'),
+  onNavigate: (route) => {
+    if (!windowManager) return
+    windowManager.show('main')
+    const win = windowManager.get('main')
+    if (!win || win.isDestroyed()) return
+    dispatchWhenReady(win, Events.NavigateTo, route)
+  },
+  onNotice: (notice) => {
+    // Native feedback also works before the renderer subscribes. Coalesce
+    // repeated external clicks while a notice is already on screen.
+    if (protocolNoticeActive) return
+    protocolNoticeActive = true
+    runShellAsyncWork('protocol notice', async () => {
+      try {
+        if (!mainProcessWork.isAccepting()) return
+        windowManager?.show('main')
+        await dialog.showMessageBox({
+          type: 'info',
+          title: i18n.t('protocol.title'),
+          message: i18n.t(`protocol.${notice}`),
+        })
+      } finally {
+        protocolNoticeActive = false
+      }
+    })
+  },
   settingsManager,
   torrentParser,
   // In an AppImage, appimage-integration owns the scheme defaults; don't let
@@ -2509,7 +2538,7 @@ async function initializeMainProcess(): Promise<void> {
           platform: process.platform,
           envPath: resolveElectronFfmpegEnvPath(),
         },
-        (candidate) => resolveExecutable(candidate, process.env)
+        (candidate) => resolveVerifiedFfmpeg(platform.userDataDir, candidate)
       )
     const segmentAria2Client = new Aria2SegmentClient(rpcClient, adapter)
     segmentClient = segmentAria2Client
@@ -2679,7 +2708,7 @@ async function initializeMainProcess(): Promise<void> {
   })
   const disposeNotificationIpc = registerNotificationIpc({
     notificationCenter,
-    trackAsyncWork: (operation) => mainProcessWork.run(operation),
+    trackAsyncWork: (operation) => mainProcessWork.run(operation, false),
   })
 
   // The main window can mount before the full IPC ingress is ready. The
@@ -2782,7 +2811,7 @@ async function initializeMainProcess(): Promise<void> {
     taskSpeedHistoryStore,
     taskInspectorActivityRuntime: activeTaskInspectorActivityQuery,
     waitForTasksReady: () => mainProcessWork.waitForStartup(),
-    trackAsyncWork: (operation) => mainProcessWork.run(operation),
+    trackAsyncWork: (operation) => mainProcessWork.run(operation, false),
     supervisor,
     settingsManager,
     natManager,
@@ -2800,7 +2829,34 @@ async function initializeMainProcess(): Promise<void> {
     speedLimitController,
     updateManager,
   })
+  const disposeCompletionShutdown = setupCompletionShutdown({
+    getMainWindow: () => windowManager.get('main') ?? null,
+    showMainWindow: () => windowManager.show('main'),
+    eventBus,
+    getTasks: () => taskManager.getAll(),
+    isReady: () =>
+      mainProcessWork.isAccepting() &&
+      supervisor.getState() === EngineState.Ready &&
+      rpcClient.isConnected(),
+    waitForReady: () => mainProcessWork.waitForStartup(),
+    prepare: () => mainProcessWork.prepareForPowerAction(),
+    save: async () => {
+      // Check the engine too: an in-flight or external add may not yet have a parent row.
+      const stats = await adapter.getGlobalStats()
+      const seeding = taskManager
+        .getAll()
+        .filter((task) => task.status === TaskStatus.Seeding).length
+      if (stats.waitingTasks > 0 || stats.activeTasks > seeding)
+        throw new Error('Engine still has unfinished downloads')
+      await sessionManager.save()
+    },
+    broadcast: (state) =>
+      windowManager.broadcast(Events.CompletionShutdownChanged, state),
+    translate: (key, params) => i18n.t(key, params),
+    logError: (err) => log.warn({ err }, 'completion shutdown failed'),
+  })
   disposeIpcIngress = () => {
+    disposeCompletionShutdown()
     disposeCommandHandlers()
     disposeQueryHandlers()
     disposeNotificationIpc()
@@ -2816,6 +2872,7 @@ async function initializeMainProcess(): Promise<void> {
   })
 
   setupPowerManager(eventBus)
+
   // menuManager is assigned and install()ed above — non-null by this point
   const activeMenuManager = menuManager as MenuManager
   trayHandle = setupTray({

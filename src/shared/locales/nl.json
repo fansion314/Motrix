@@ -1203,6 +1203,18 @@
         "sortBy": "Sorteren op",
         "taskActions": "Meer",
         "title": "Lijstweergave"
+      },
+      "completionShutdown": {
+        "more": "Meer downloadacties",
+        "enable": "Afsluiten na alle downloads",
+        "disable": "Afsluiten na downloads annuleren",
+        "waiting": "Wachten totdat alle downloads klaar zijn",
+        "countdown": "Afsluiten over {{seconds}} seconden",
+        "detail": "Eenmalig. Gepauzeerde of mislukte taken voorkomen afsluiten. Seeden stopt bij het afsluiten.",
+        "unavailable": "Automatisch afsluiten is niet beschikbaar of toestemming is geweigerd.",
+        "failed": "Afsluiten kon niet worden voorbereid of aangevraagd. Afsluiten is niet geforceerd.",
+        "preparing": "Afsluiten voorbereiden…",
+        "requested": "Afsluiten aangevraagd"
       }
     },
     "trackers": {
@@ -2221,6 +2233,7 @@
           "development": "Ontwikkeling",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Installeren"
         },
@@ -2377,7 +2390,40 @@
           "usingSource": "{{source}} wordt gebruikt"
         },
         "download": {
-          "action": "FFmpeg downloaden"
+          "action": "FFmpeg downloaden",
+          "verifyInstall": "Downloaden en verifiëren",
+          "manual": "FFmpeg-handleiding",
+          "installing": "Verifiëren…",
+          "installed": "Geverifieerd en geïnstalleerd.",
+          "failed": "Downloaden of verifiëren is mislukt. De vorige installatie is behouden.",
+          "disclosure": "De Motrix-projecthandtekening wordt gecontroleerd, niet Authenticode. Windows kan waarschuwingen blijven tonen.",
+          "projectDisclosure": "Motrix-build · GPL. Wordt geverifieerd en geïnstalleerd in de gegevensmap van Motrix.",
+          "macDisclosure": "Developer ID en notarisatie worden gecontroleerd. Systeembeveiliging blijft ingeschakeld.",
+          "progress": "Downloadvoortgang van FFmpeg",
+          "bytes": "{{received}} / {{total}} bytes",
+          "directory": "Installatiemap: {{path}}",
+          "detectionRefreshFailed": "De FFmpeg-detectie kon niet worden vernieuwd. Klik opnieuw op Vernieuwen.",
+          "restartPluginHint": "Start Motrix opnieuw zodat actieve plugins de installatie detecteren.",
+          "phases": {
+            "idle": "Klaar om te downloaden",
+            "metadata": "Officiële release controleren…",
+            "downloading": "FFmpeg downloaden…",
+            "verifying": "Handtekening van de release verifiëren…",
+            "extracting": "Bestanden controleren en uitpakken…",
+            "systemTrust": "macOS-handtekening en notarisatie controleren…",
+            "installing": "FFmpeg installeren…",
+            "installed": "Geverifieerd en geïnstalleerd.",
+            "failed": "Installatie mislukt."
+          },
+          "errors": {
+            "unavailable": "Er is nog geen volledige, onveranderlijke officiële release beschikbaar.",
+            "unsupported": "Installatie met één klik wordt niet ondersteund op dit platform.",
+            "busy": "Er wordt al een andere FFmpeg-installatie uitgevoerd.",
+            "download": "De download is mislukt of verlopen. Controleer het netwerk en probeer het opnieuw.",
+            "verification": "De controle van de handtekening, pakketstructuur of bestandsintegriteit is mislukt.",
+            "install": "Bestanden konden niet worden geïnstalleerd. Controleer de rechten en vrije ruimte in de gegevensmap.",
+            "systemTrust": "macOS heeft de ondertekeningsidentiteit of notarisatie afgewezen. Systeembeveiligingscontroles zijn niet omzeild."
+          }
         },
         "ffmpegRequired": "Deze download vereist FFmpeg. Configureer het via Instellingen → Integratie → Mediahulpmiddelen, sla op en probeer het opnieuw.",
         "notDetected": "FFmpeg niet gedetecteerd",
@@ -2792,53 +2838,53 @@
       "syncing": "Synchroniseren…",
       "unavailable": "De synchronisatiestatus kan niet worden gelezen. Controleer je verbinding en probeer het opnieuw.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Details van de update",
+        "scope": "Deze standaardtrackers worden toegevoegd aan nieuwe openbare BitTorrent-taken. Bestaande downloads behouden hun huidige trackers.",
+        "sources": "Status van bronnen",
+        "candidates": "Kandidaten",
+        "history": "Updategeschiedenis",
+        "disabled": "Uitgeschakeld",
+        "noSources": "Geen ingeschakelde bronnen",
+        "attention": "{{count}} trackers · {{failed}} bronnen hebben aandacht nodig",
+        "summary": "{{count}} trackers · Laatste geslaagde update: {{time}}",
+        "lastAttempt": "Laatste controle",
+        "nextCheck": "Volgende controle",
+        "autoOff": "Automatische updates uitgeschakeld",
+        "enginePending": "Opgeslagen; wacht op het toepassen van de standaardtrackers op de downloadengine.",
+        "sourceResult": "{{count}} adressen · Laatst geslaagd: {{time}}",
+        "retryAt": "Volgende poging: {{time}}",
+        "evidence": "Verbindingscontroles tonen de bereikbaarheid aan, maar garanderen geen peers of downloadsnelheid.",
+        "firstSeen": "Voor het eerst gezien: {{time}}",
+        "noCandidates": "Geen overeenkomende kandidaten",
+        "showMore": "Meer tonen",
+        "run": "{{success}} bronnen geslaagd · {{failed}} mislukt · +{{added}} / −{{removed}} geselecteerd",
+        "noHistory": "Geen updategeschiedenis",
+        "retry": "Mislukte bronnen opnieuw proberen",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "Bijgewerkt",
+          "cached": "Laatste geslaagde cache wordt gebruikt",
+          "expired": "Cache verlopen",
+          "pending": "Nog niet gecontroleerd",
+          "failed": "Geen bruikbare cache"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "Verbinding mislukt. De vorige cache wordt maximaal 7 dagen bewaard.",
+          "http": "De bron gaf een HTTP-fout terug.",
+          "invalid": "Het antwoord is geen geldige trackerlijst.",
+          "limit": "De bron overschreed de limiet voor de grootte of het aantal adressen.",
+          "missing-cache": "De bron gaf 304 terug zonder bruikbare cache."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Geselecteerd",
+          "capacity": "Reservekandidaat",
+          "blacklisted": "Op de blokkeerlijst",
+          "unsupported": "Niet-ondersteund protocol",
+          "cooldown": "Herhaalde verbindingsfouten"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Voltooid",
+          "partial": "Gedeeltelijk voltooid",
+          "failed": "Mislukt"
         }
       }
     }
@@ -2870,5 +2916,17 @@
       "eib": "EiB"
     },
     "perSecond": "{{value}}/s"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "Het protocol mo:// is vervallen. Gebruik motrix://.",
+    "deprecatedCommand": "Deze linkactie is vervallen. Gebruik de bediening in Motrix.",
+    "unsupportedCommand": "Deze linkopdracht wordt niet ondersteund.",
+    "unsupportedParameters": "De link bevat niet-ondersteunde parameters. Er is niets geopend of gewijzigd.",
+    "invalidLink": "Deze Motrix-link is ongeldig.",
+    "invalidSource": "De link moet één geldig HTTP-, HTTPS-, FTP- of Magnet-adres bevatten.",
+    "waitingMerged": "Wachtende taken staan nu onder Actief. Deze weergave is geopend.",
+    "stoppedSplit": "Gestopte taken staan onder Voltooid en Fouten. Alle downloads zijn geopend.",
+    "invalidStatus": "Deze categorie is ongeldig. Alle downloads zijn geopend."
   }
 }

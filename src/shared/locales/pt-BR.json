@@ -982,6 +982,18 @@
         "downloadEta": "Tempo restante do download",
         "avgDownloadProgress": "Progresso médio dos downloads",
         "processingTasks": "Processando"
+      },
+      "completionShutdown": {
+        "more": "Mais ações de download",
+        "enable": "Desligar após todos os downloads",
+        "disable": "Cancelar desligamento após os downloads",
+        "waiting": "Aguardando a conclusão dos downloads",
+        "countdown": "Desligando em {{seconds}} segundos",
+        "detail": "Válido uma vez. Tarefas pausadas ou com falha impedem o desligamento. O compartilhamento termina ao desligar.",
+        "unavailable": "O desligamento automático está indisponível ou a permissão foi negada.",
+        "failed": "Não foi possível preparar ou solicitar o desligamento. Nenhum desligamento foi forçado.",
+        "preparing": "Preparando para desligar…",
+        "requested": "Desligamento solicitado"
       }
     }
   },
@@ -1829,6 +1841,7 @@
           "chrome": "Chrome",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Instalar",
           "development": "Desenvolvimento"
@@ -1974,7 +1987,40 @@
         "binaryPath": "Caminho personalizado do FFmpeg",
         "browse": "Procurar…",
         "download": {
-          "action": "Baixar FFmpeg"
+          "action": "Baixar FFmpeg",
+          "verifyInstall": "Baixar e verificar",
+          "manual": "Manual do FFmpeg",
+          "installing": "Verificando…",
+          "installed": "Verificado e instalado.",
+          "failed": "O download ou a verificação falhou. A instalação anterior foi mantida.",
+          "disclosure": "A assinatura do projeto Motrix é verificada, não Authenticode. O Windows ainda pode exibir avisos.",
+          "projectDisclosure": "Compilação Motrix · GPL. Verificada e instalada na pasta de dados do Motrix.",
+          "macDisclosure": "Developer ID e notarização são verificados. As proteções do sistema permanecem ativadas.",
+          "progress": "Progresso do download do FFmpeg",
+          "bytes": "{{received}} / {{total}} bytes",
+          "directory": "Diretório de instalação: {{path}}",
+          "detectionRefreshFailed": "Não foi possível atualizar a detecção do FFmpeg. Clique em Atualizar novamente.",
+          "restartPluginHint": "Reinicie o Motrix para que os plugins ativos detectem a instalação.",
+          "phases": {
+            "idle": "Pronto para baixar",
+            "metadata": "Verificando a versão oficial…",
+            "downloading": "Baixando FFmpeg…",
+            "verifying": "Verificando a assinatura da versão…",
+            "extracting": "Verificando e extraindo arquivos…",
+            "systemTrust": "Verificando a assinatura e a notarização do macOS…",
+            "installing": "Instalando FFmpeg…",
+            "installed": "Verificado e instalado.",
+            "failed": "A instalação falhou."
+          },
+          "errors": {
+            "unavailable": "Ainda não há uma versão oficial completa e imutável disponível.",
+            "unsupported": "A instalação com um clique não é compatível com esta plataforma.",
+            "busy": "Outra instalação do FFmpeg já está em andamento.",
+            "download": "O download falhou ou excedeu o tempo limite. Verifique a rede e tente novamente.",
+            "verification": "A verificação da assinatura, da estrutura do pacote ou da integridade dos arquivos falhou.",
+            "install": "Não foi possível instalar os arquivos. Verifique as permissões e o espaço livre no diretório de dados.",
+            "systemTrust": "O macOS rejeitou a identidade de assinatura ou a notarização. As verificações de segurança do sistema não foram contornadas."
+          }
         },
         "detection": {
           "readyTitle": "FFmpeg {{version}}",
@@ -2223,53 +2269,53 @@
       "failed": "Sincronização incompleta. Verifique a rede ou as fontes e tente novamente.",
       "unavailable": "Não foi possível ler o estado da sincronização. Verifique a conexão e tente novamente.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Detalhes da atualização",
+        "scope": "Estes valores padrão complementam novas tarefas públicas de BitTorrent. Os downloads existentes mantêm os rastreadores atuais.",
+        "sources": "Estado das fontes",
+        "candidates": "Candidatos",
+        "history": "Histórico de atualizações",
+        "disabled": "Desativado",
+        "noSources": "Nenhuma fonte ativada",
+        "attention": "{{count}} rastreadores · {{failed}} fontes precisam de atenção",
+        "summary": "{{count}} rastreadores · Última atualização bem-sucedida: {{time}}",
+        "lastAttempt": "Última verificação",
+        "nextCheck": "Próxima verificação",
+        "autoOff": "Atualizações automáticas desativadas",
+        "enginePending": "Salvo; aguardando a aplicação dos valores padrão ao mecanismo de download.",
+        "sourceResult": "{{count}} endereços · Última consulta bem-sucedida: {{time}}",
+        "retryAt": "Próxima tentativa: {{time}}",
+        "evidence": "As verificações de conexão indicam a acessibilidade, mas não garantem a presença de pares nem a velocidade de download.",
+        "firstSeen": "Primeira detecção: {{time}}",
+        "noCandidates": "Nenhum candidato correspondente",
+        "showMore": "Mostrar mais",
+        "run": "{{success}} fontes atualizadas · {{failed}} com falha · +{{added}} / −{{removed}} selecionados",
+        "noHistory": "Nenhum histórico de atualizações",
+        "retry": "Tentar novamente as fontes com falha",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "Atualizado",
+          "cached": "Usando o cache da última atualização bem-sucedida",
+          "expired": "Cache expirado",
+          "pending": "Ainda não verificado",
+          "failed": "Nenhum cache utilizável"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "A conexão falhou. O cache anterior é mantido por até 7 dias.",
+          "http": "A fonte retornou um erro HTTP.",
+          "invalid": "A resposta não é uma lista válida de rastreadores.",
+          "limit": "A fonte excedeu o limite de tamanho ou de endereços.",
+          "missing-cache": "A fonte retornou 304 sem um cache utilizável."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Selecionado",
+          "capacity": "De reserva",
+          "blacklisted": "Na lista de bloqueio",
+          "unsupported": "Protocolo não compatível",
+          "cooldown": "Falhas de conexão repetidas"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Concluído",
+          "partial": "Concluído parcialmente",
+          "failed": "Falhou"
         }
       }
     }
@@ -2892,5 +2938,17 @@
       "eib": "EiB"
     },
     "perSecond": "{{value}}/s"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "O protocolo mo:// foi descontinuado. Use motrix://.",
+    "deprecatedCommand": "Esta ação por link foi descontinuada. Use os controles do Motrix.",
+    "unsupportedCommand": "Este comando de link não é compatível.",
+    "unsupportedParameters": "O link contém parâmetros incompatíveis. Nada foi aberto ou alterado.",
+    "invalidLink": "Este link do Motrix é inválido.",
+    "invalidSource": "O link deve conter um único endereço HTTP, HTTPS, FTP ou Magnet válido.",
+    "waitingMerged": "As tarefas em espera agora aparecem em Ativas. Essa visualização foi aberta.",
+    "stoppedSplit": "As tarefas paradas são agrupadas em Concluídas e Erros. Todos os downloads foram abertos.",
+    "invalidStatus": "A categoria é inválida. Todos os downloads foram abertos."
   }
 }

@@ -1203,6 +1203,18 @@
         "sortBy": "Ταξινόμηση κατά",
         "taskActions": "Περισσότερα",
         "title": "Προβολή λίστας"
+      },
+      "completionShutdown": {
+        "more": "Περισσότερες ενέργειες λήψης",
+        "enable": "Τερματισμός μετά από όλες τις λήψεις",
+        "disable": "Ακύρωση τερματισμού μετά τις λήψεις",
+        "waiting": "Αναμονή ολοκλήρωσης όλων των λήψεων",
+        "countdown": "Τερματισμός σε {{seconds}} δευτερόλεπτα",
+        "detail": "Ισχύει μία φορά. Εργασίες σε παύση ή αποτυχημένες εμποδίζουν τον τερματισμό. Ο διαμοιρασμός σταματά με τον τερματισμό.",
+        "unavailable": "Ο αυτόματος τερματισμός δεν είναι διαθέσιμος ή η άδεια απορρίφθηκε.",
+        "failed": "Δεν ήταν δυνατή η προετοιμασία ή η αίτηση τερματισμού. Δεν έγινε αναγκαστικός τερματισμός.",
+        "preparing": "Προετοιμασία τερματισμού…",
+        "requested": "Ζητήθηκε τερματισμός"
       }
     },
     "trackers": {
@@ -2221,6 +2233,7 @@
           "development": "Ανάπτυξη",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Εγκατάσταση"
         },
@@ -2377,7 +2390,40 @@
           "usingSource": "Χρησιμοποιείται: {{source}}"
         },
         "download": {
-          "action": "Λήψη FFmpeg"
+          "action": "Λήψη FFmpeg",
+          "verifyInstall": "Λήψη και επαλήθευση",
+          "manual": "Εγχειρίδιο FFmpeg",
+          "installing": "Επαλήθευση…",
+          "installed": "Η επαλήθευση και η εγκατάσταση ολοκληρώθηκαν.",
+          "failed": "Η λήψη ή η επαλήθευση απέτυχε. Η προηγούμενη εγκατάσταση διατηρήθηκε.",
+          "disclosure": "Ελέγχεται η υπογραφή του έργου Motrix, όχι Authenticode. Τα Windows μπορεί να εμφανίζουν προειδοποιήσεις.",
+          "projectDisclosure": "Έκδοση Motrix · GPL. Ελέγχεται και εγκαθίσταται στον φάκελο δεδομένων του Motrix.",
+          "macDisclosure": "Ελέγχονται Developer ID και επικύρωση Apple. Η προστασία του συστήματος παραμένει ενεργή.",
+          "progress": "Πρόοδος λήψης FFmpeg",
+          "bytes": "{{received}} / {{total}} byte",
+          "directory": "Φάκελος εγκατάστασης: {{path}}",
+          "detectionRefreshFailed": "Δεν ήταν δυνατή η ανανέωση της ανίχνευσης FFmpeg. Πατήστε ξανά Ανανέωση.",
+          "restartPluginHint": "Επανεκκινήστε το Motrix ώστε τα ενεργά πρόσθετα να εντοπίσουν την εγκατάσταση.",
+          "phases": {
+            "idle": "Έτοιμο για λήψη",
+            "metadata": "Έλεγχος επίσημης έκδοσης…",
+            "downloading": "Λήψη FFmpeg…",
+            "verifying": "Επαλήθευση υπογραφής έκδοσης…",
+            "extracting": "Επαλήθευση και αποσυμπίεση αρχείων…",
+            "systemTrust": "Έλεγχος υπογραφής και επικύρωσης macOS…",
+            "installing": "Εγκατάσταση FFmpeg…",
+            "installed": "Επαληθεύτηκε και εγκαταστάθηκε.",
+            "failed": "Η εγκατάσταση απέτυχε."
+          },
+          "errors": {
+            "unavailable": "Δεν υπάρχει ακόμη πλήρης και αμετάβλητη επίσημη έκδοση.",
+            "unsupported": "Η εγκατάσταση με ένα κλικ δεν υποστηρίζεται σε αυτήν την πλατφόρμα.",
+            "busy": "Μια άλλη εγκατάσταση FFmpeg βρίσκεται ήδη σε εξέλιξη.",
+            "download": "Η λήψη απέτυχε ή έληξε το χρονικό όριο. Ελέγξτε το δίκτυο και δοκιμάστε ξανά.",
+            "verification": "Η επαλήθευση της υπογραφής, της δομής του πακέτου ή της ακεραιότητας των αρχείων απέτυχε.",
+            "install": "Δεν ήταν δυνατή η εγκατάσταση των αρχείων. Ελέγξτε τα δικαιώματα και τον ελεύθερο χώρο στον φάκελο δεδομένων.",
+            "systemTrust": "Το macOS απέρριψε την ταυτότητα υπογραφής ή την επικύρωση. Οι έλεγχοι ασφαλείας του συστήματος δεν παρακάμφθηκαν."
+          }
         },
         "ffmpegRequired": "Αυτή η λήψη απαιτεί FFmpeg. Ρυθμίστε το στην ενότητα Ρυθμίσεις → Ενσωμάτωση → Εργαλεία πολυμέσων, αποθηκεύστε και δοκιμάστε ξανά.",
         "notDetected": "Δεν εντοπίστηκε το FFmpeg",
@@ -2792,53 +2838,53 @@
       "syncing": "Συγχρονισμός…",
       "unavailable": "Δεν είναι δυνατή η ανάγνωση της κατάστασης συγχρονισμού. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Λεπτομέρειες ενημέρωσης",
+        "scope": "Αυτές οι προεπιλογές συμπληρώνουν τις νέες δημόσιες εργασίες BitTorrent. Οι υπάρχουσες λήψεις διατηρούν τους τρέχοντες trackers τους.",
+        "sources": "Κατάσταση πηγών",
+        "candidates": "Υποψήφιοι trackers",
+        "history": "Ιστορικό ενημερώσεων",
+        "disabled": "Απενεργοποιημένο",
+        "noSources": "Δεν υπάρχουν ενεργοποιημένες πηγές",
+        "attention": "{{count}} trackers · {{failed}} πηγές χρειάζονται προσοχή",
+        "summary": "{{count}} trackers · Τελευταία επιτυχής ενημέρωση: {{time}}",
+        "lastAttempt": "Τελευταίος έλεγχος",
+        "nextCheck": "Επόμενος έλεγχος",
+        "autoOff": "Οι αυτόματες ενημερώσεις είναι απενεργοποιημένες",
+        "enginePending": "Αποθηκεύτηκε· αναμονή για εφαρμογή των προεπιλογών στη μηχανή λήψεων.",
+        "sourceResult": "{{count}} διευθύνσεις · Τελευταία επιτυχία: {{time}}",
+        "retryAt": "Επόμενη προσπάθεια: {{time}}",
+        "evidence": "Οι έλεγχοι σύνδεσης δείχνουν τη διαθεσιμότητα, αλλά δεν εγγυώνται την παρουσία ομότιμων ή την ταχύτητα λήψης.",
+        "firstSeen": "Πρώτη εμφάνιση: {{time}}",
+        "noCandidates": "Δεν υπάρχουν υποψήφιοι trackers που ταιριάζουν",
+        "showMore": "Εμφάνιση περισσότερων",
+        "run": "{{success}} πηγές πέτυχαν · {{failed}} απέτυχαν · +{{added}} / −{{removed}} επιλεγμένοι",
+        "noHistory": "Δεν υπάρχει ιστορικό ενημερώσεων",
+        "retry": "Επανάληψη για τις πηγές που απέτυχαν",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "Ενημερωμένο",
+          "cached": "Χρήση της τελευταίας επιτυχούς προσωρινής αποθήκευσης",
+          "expired": "Η προσωρινή αποθήκευση έληξε",
+          "pending": "Δεν έχει ελεγχθεί ακόμη",
+          "failed": "Δεν υπάρχει χρησιμοποιήσιμη προσωρινή αποθήκευση"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "Η σύνδεση απέτυχε. Η προηγούμενη προσωρινή αποθήκευση διατηρείται για έως 7 ημέρες.",
+          "http": "Η πηγή επέστρεψε σφάλμα HTTP.",
+          "invalid": "Η απόκριση δεν είναι έγκυρη λίστα trackers.",
+          "limit": "Η πηγή υπερέβη το όριο μεγέθους ή πλήθους διευθύνσεων.",
+          "missing-cache": "Η πηγή επέστρεψε 304 χωρίς χρησιμοποιήσιμη προσωρινή αποθήκευση."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Επιλεγμένος",
+          "capacity": "Εφεδρικός",
+          "blacklisted": "Στη λίστα αποκλεισμού",
+          "unsupported": "Μη υποστηριζόμενο πρωτόκολλο",
+          "cooldown": "Επαναλαμβανόμενες αποτυχίες σύνδεσης"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Ολοκληρώθηκε",
+          "partial": "Ολοκληρώθηκε μερικώς",
+          "failed": "Απέτυχε"
         }
       }
     }
@@ -2870,5 +2916,17 @@
       "eib": "EiB"
     },
     "perSecond": "{{value}}/s"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "Το πρωτόκολλο mo:// καταργήθηκε. Χρησιμοποιήστε motrix://.",
+    "deprecatedCommand": "Αυτή η ενέργεια συνδέσμου καταργήθηκε. Χρησιμοποιήστε τα στοιχεία ελέγχου του Motrix.",
+    "unsupportedCommand": "Αυτή η εντολή συνδέσμου δεν υποστηρίζεται.",
+    "unsupportedParameters": "Ο σύνδεσμος περιέχει μη υποστηριζόμενες παραμέτρους. Δεν ανοίχτηκε ούτε άλλαξε τίποτα.",
+    "invalidLink": "Μη έγκυρος σύνδεσμος Motrix.",
+    "invalidSource": "Ο σύνδεσμος πρέπει να περιέχει μία έγκυρη διεύθυνση HTTP, HTTPS, FTP ή Magnet.",
+    "waitingMerged": "Οι εργασίες σε αναμονή εμφανίζονται πλέον στις Ενεργές. Άνοιξε αυτή η προβολή.",
+    "stoppedSplit": "Οι σταματημένες εργασίες χωρίζονται σε Ολοκληρωμένες και Σφάλματα. Άνοιξαν όλες οι λήψεις.",
+    "invalidStatus": "Μη έγκυρη κατηγορία. Άνοιξαν όλες οι λήψεις."
   }
 }

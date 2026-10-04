@@ -970,6 +970,18 @@
         "downloadEta": "İndirme için kalan süre",
         "avgDownloadProgress": "Ortalama indirme ilerlemesi",
         "processingTasks": "İşleniyor"
+      },
+      "completionShutdown": {
+        "more": "Diğer indirme işlemleri",
+        "enable": "Tüm indirmeler bitince bilgisayarı kapat",
+        "disable": "İndirme sonrası kapatmayı iptal et",
+        "waiting": "Tüm indirmelerin bitmesi bekleniyor",
+        "countdown": "{{seconds}} saniye sonra kapatılacak",
+        "detail": "Yalnızca bir kez uygulanır. Duraklatılmış veya başarısız görevler kapatmayı engeller. Paylaşım, bilgisayar kapatılınca sona erer.",
+        "unavailable": "Otomatik kapatma kullanılamıyor veya izin reddedildi.",
+        "failed": "Kapatma hazırlanamadı veya istenemedi. Bilgisayar zorla kapatılmadı.",
+        "preparing": "Kapatmaya hazırlanıyor…",
+        "requested": "Kapatma istendi"
       }
     }
   },
@@ -1815,6 +1827,7 @@
           "chrome": "Chrome",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Yükle",
           "development": "Geliştirme"
@@ -1960,7 +1973,40 @@
         "binaryPath": "Özel FFmpeg yolu",
         "browse": "Göz at…",
         "download": {
-          "action": "FFmpeg’i indir"
+          "action": "FFmpeg’i indir",
+          "verifyInstall": "İndir ve doğrula",
+          "manual": "FFmpeg kılavuzu",
+          "installing": "Doğrulanıyor…",
+          "installed": "Doğrulandı ve yüklendi.",
+          "failed": "İndirme veya doğrulama başarısız. Önceki kurulum korundu.",
+          "disclosure": "Authenticode değil, Motrix proje imzası doğrulanır. Windows uyarıları görünmeye devam edebilir.",
+          "projectDisclosure": "Motrix derlemesi · GPL. Doğrulanıp Motrix veri dizinine kurulur.",
+          "macDisclosure": "Developer ID ve Apple noter onayı kontrol edilir. Sistem korumaları açık kalır.",
+          "progress": "FFmpeg indirme ilerlemesi",
+          "bytes": "{{received}} / {{total}} bayt",
+          "directory": "Kurulum dizini: {{path}}",
+          "detectionRefreshFailed": "FFmpeg algılama durumu yenilenemedi. Yenile’ye tekrar tıklayın.",
+          "restartPluginHint": "Etkin eklentilerin kurulumu algılaması için Motrix’i yeniden başlatın.",
+          "phases": {
+            "idle": "İndirmeye hazır",
+            "metadata": "Resmi sürüm denetleniyor…",
+            "downloading": "FFmpeg indiriliyor…",
+            "verifying": "Sürüm imzası doğrulanıyor…",
+            "extracting": "Dosyalar doğrulanıp çıkarılıyor…",
+            "systemTrust": "macOS imzası ve noter onayı denetleniyor…",
+            "installing": "FFmpeg kuruluyor…",
+            "installed": "Doğrulandı ve kuruldu.",
+            "failed": "Kurulum başarısız."
+          },
+          "errors": {
+            "unavailable": "Henüz eksiksiz ve değiştirilemez bir resmi sürüm yok.",
+            "unsupported": "Bu platformda tek tıklamayla kurulum desteklenmiyor.",
+            "busy": "Başka bir FFmpeg kurulumu zaten devam ediyor.",
+            "download": "İndirme başarısız oldu veya zaman aşımına uğradı. Ağı denetleyip tekrar deneyin.",
+            "verification": "İmza, paket yapısı veya dosya bütünlüğü denetimi başarısız oldu.",
+            "install": "Dosyalar kurulamadı. Veri dizininin izinlerini ve boş alanını denetleyin.",
+            "systemTrust": "macOS, imzalama kimliğini veya noter onayını reddetti. Sistem güvenlik denetimleri aşılmadı."
+          }
         },
         "detection": {
           "readyTitle": "FFmpeg {{version}}",
@@ -2208,53 +2254,53 @@
       "failed": "Eşzamanlama tamamlanmadı. Ağınızı veya kaynakları kontrol edip tekrar deneyin.",
       "unavailable": "Eşzamanlama durumu okunamıyor. Bağlantınızı kontrol edip tekrar deneyin.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Güncelleme ayrıntıları",
+        "scope": "Bu varsayılan izleyiciler yeni herkese açık BitTorrent görevlerine eklenir. Mevcut indirmeler kendi izleyicilerini kullanmaya devam eder.",
+        "sources": "Kaynak durumu",
+        "candidates": "Adaylar",
+        "history": "Güncelleme geçmişi",
+        "disabled": "Devre dışı",
+        "noSources": "Etkin kaynak yok",
+        "attention": "{{count}} izleyici · {{failed}} kaynağın kontrol edilmesi gerekiyor",
+        "summary": "{{count}} izleyici · Son başarılı güncelleme: {{time}}",
+        "lastAttempt": "Son kontrol",
+        "nextCheck": "Sonraki kontrol",
+        "autoOff": "Otomatik güncellemeler kapalı",
+        "enginePending": "Kaydedildi; varsayılan izleyicilerin indirme motoruna uygulanması bekleniyor.",
+        "sourceResult": "{{count}} adres · Son başarı: {{time}}",
+        "retryAt": "Sonraki deneme: {{time}}",
+        "evidence": "Bağlantı kontrolleri erişilebilirliği gösterir; eşlerin varlığını veya indirme hızını garanti etmez.",
+        "firstSeen": "İlk görülme: {{time}}",
+        "noCandidates": "Eşleşen aday yok",
+        "showMore": "Daha fazla göster",
+        "run": "{{success}} kaynak başarılı · {{failed}} başarısız · seçilenler +{{added}} / −{{removed}}",
+        "noHistory": "Güncelleme geçmişi yok",
+        "retry": "Başarısız kaynakları yeniden dene",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "Güncel",
+          "cached": "Son başarılı önbellek kullanılıyor",
+          "expired": "Önbelleğin süresi doldu",
+          "pending": "Henüz kontrol edilmedi",
+          "failed": "Kullanılabilir önbellek yok"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "Bağlantı başarısız. Önceki önbellek en fazla 7 gün saklanır.",
+          "http": "Kaynak bir HTTP hatası döndürdü.",
+          "invalid": "Yanıt geçerli bir izleyici listesi değil.",
+          "limit": "Kaynak boyut veya adres sayısı sınırını aştı.",
+          "missing-cache": "Kaynak, kullanılabilir önbellek olmadan 304 yanıtı döndürdü."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Seçildi",
+          "capacity": "Yedek",
+          "blacklisted": "Engellenenler listesinde",
+          "unsupported": "Desteklenmeyen protokol",
+          "cooldown": "Tekrarlanan bağlantı hataları"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Tamamlandı",
+          "partial": "Kısmen tamamlandı",
+          "failed": "Başarısız"
         }
       }
     }
@@ -2870,5 +2916,17 @@
       "eib": "EiB"
     },
     "perSecond": "{{value}}/sn"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "mo:// protokolü kullanımdan kaldırıldı. motrix:// kullanın.",
+    "deprecatedCommand": "Bu bağlantı işlemi kaldırıldı. Motrix içindeki kontrolleri kullanın.",
+    "unsupportedCommand": "Bu bağlantı komutu desteklenmiyor.",
+    "unsupportedParameters": "Bağlantı desteklenmeyen parametreler içeriyor. Hiçbir şey açılmadı veya değiştirilmedi.",
+    "invalidLink": "Bu Motrix bağlantısı geçersiz.",
+    "invalidSource": "Bağlantı tek bir geçerli HTTP, HTTPS, FTP veya Magnet adresi içermelidir.",
+    "waitingMerged": "Bekleyen görevler artık Etkin altında gösteriliyor. Etkin görünümü açıldı.",
+    "stoppedSplit": "Durdurulan görevler Tamamlanan ve Hatalar altında gruplanır. Tüm indirmeler açıldı.",
+    "invalidStatus": "Geçersiz indirme kategorisi. Tüm indirmeler açıldı."
   }
 }

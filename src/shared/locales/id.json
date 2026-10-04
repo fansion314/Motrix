@@ -958,6 +958,18 @@
         "downloadEta": "Perkiraan sisa unduhan",
         "avgDownloadProgress": "Progres unduhan rata-rata",
         "processingTasks": "Memproses"
+      },
+      "completionShutdown": {
+        "more": "Tindakan unduhan lainnya",
+        "enable": "Matikan setelah semua unduhan selesai",
+        "disable": "Batalkan pematian setelah unduhan",
+        "waiting": "Menunggu semua unduhan selesai",
+        "countdown": "Mematikan dalam {{seconds}} detik",
+        "detail": "Berlaku sekali. Tugas yang dijeda atau gagal mencegah pematian. Seeding berakhir saat komputer dimatikan.",
+        "unavailable": "Pematian otomatis tidak tersedia atau izin ditolak.",
+        "failed": "Tidak dapat menyiapkan atau meminta pematian. Komputer tidak dimatikan secara paksa.",
+        "preparing": "Menyiapkan pematian…",
+        "requested": "Pematian diminta"
       }
     }
   },
@@ -1801,6 +1813,7 @@
           "chrome": "Chrome",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Pasang",
           "development": "Pengembangan"
@@ -1946,7 +1959,40 @@
         "binaryPath": "Jalur FFmpeg khusus",
         "browse": "Telusuri…",
         "download": {
-          "action": "Unduh FFmpeg"
+          "action": "Unduh FFmpeg",
+          "verifyInstall": "Unduh dan verifikasi",
+          "manual": "Panduan FFmpeg",
+          "installing": "Memverifikasi…",
+          "installed": "Berhasil diverifikasi dan dipasang.",
+          "failed": "Unduhan atau verifikasi gagal. Instalasi sebelumnya tetap dipertahankan.",
+          "disclosure": "Menggunakan verifikasi tanda tangan proyek Motrix, bukan Authenticode. Peringatan Windows mungkin tetap muncul.",
+          "projectDisclosure": "Build Motrix · GPL. Diverifikasi lalu dipasang di direktori data Motrix.",
+          "macDisclosure": "Developer ID dan notarisasi diperiksa. Perlindungan sistem tetap aktif.",
+          "progress": "Progres unduhan FFmpeg",
+          "bytes": "{{received}} / {{total}} byte",
+          "directory": "Direktori pemasangan: {{path}}",
+          "detectionRefreshFailed": "Deteksi FFmpeg tidak dapat diperbarui. Klik Segarkan lagi.",
+          "restartPluginHint": "Mulai ulang Motrix agar plugin aktif mendeteksi pemasangan.",
+          "phases": {
+            "idle": "Siap mengunduh",
+            "metadata": "Memeriksa rilis resmi…",
+            "downloading": "Mengunduh FFmpeg…",
+            "verifying": "Memverifikasi tanda tangan rilis…",
+            "extracting": "Memverifikasi dan mengekstrak berkas…",
+            "systemTrust": "Memeriksa tanda tangan dan notarisasi macOS…",
+            "installing": "Memasang FFmpeg…",
+            "installed": "Terverifikasi dan terpasang.",
+            "failed": "Pemasangan gagal."
+          },
+          "errors": {
+            "unavailable": "Belum tersedia rilis resmi yang lengkap dan tidak dapat diubah.",
+            "unsupported": "Pemasangan sekali klik tidak didukung di platform ini.",
+            "busy": "Pemasangan FFmpeg lain sedang berlangsung.",
+            "download": "Unduhan gagal atau waktu habis. Periksa jaringan dan coba lagi.",
+            "verification": "Pemeriksaan tanda tangan, struktur paket, atau integritas berkas gagal.",
+            "install": "Berkas tidak dapat dipasang. Periksa izin dan ruang kosong di direktori data.",
+            "systemTrust": "macOS menolak identitas penandatangan atau notarisasi. Pemeriksaan keamanan sistem tidak dilewati."
+          }
         },
         "detection": {
           "readyTitle": "FFmpeg {{version}}",
@@ -2193,53 +2239,53 @@
       "failed": "Sinkronisasi belum selesai. Periksa jaringan atau sumber, lalu coba lagi.",
       "unavailable": "Status sinkronisasi tidak dapat dibaca. Periksa koneksi dan coba lagi.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Detail pembaruan",
+        "scope": "Pelacak bawaan ini ditambahkan ke tugas BitTorrent publik yang baru. Unduhan yang sudah ada tetap menggunakan pelacak saat ini.",
+        "sources": "Status sumber",
+        "candidates": "Kandidat",
+        "history": "Riwayat pembaruan",
+        "disabled": "Nonaktif",
+        "noSources": "Tidak ada sumber yang diaktifkan",
+        "attention": "{{count}} pelacak · {{failed}} sumber perlu diperiksa",
+        "summary": "{{count}} pelacak · Pembaruan terakhir yang berhasil: {{time}}",
+        "lastAttempt": "Pemeriksaan terakhir",
+        "nextCheck": "Pemeriksaan berikutnya",
+        "autoOff": "Pembaruan otomatis nonaktif",
+        "enginePending": "Disimpan; menunggu penerapan pelacak bawaan ke mesin unduhan.",
+        "sourceResult": "{{count}} alamat · Terakhir berhasil: {{time}}",
+        "retryAt": "Percobaan berikutnya: {{time}}",
+        "evidence": "Pemeriksaan koneksi menunjukkan keterjangkauan, tetapi tidak menjamin adanya peer atau kecepatan unduhan.",
+        "firstSeen": "Pertama ditemukan: {{time}}",
+        "noCandidates": "Tidak ada kandidat yang cocok",
+        "showMore": "Tampilkan lebih banyak",
+        "run": "{{success}} sumber berhasil · {{failed}} gagal · pelacak terpilih +{{added}} / −{{removed}}",
+        "noHistory": "Belum ada riwayat pembaruan",
+        "retry": "Coba lagi sumber yang gagal",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "Terbaru",
+          "cached": "Menggunakan cache terakhir yang berhasil",
+          "expired": "Cache kedaluwarsa",
+          "pending": "Belum diperiksa",
+          "failed": "Tidak ada cache yang dapat digunakan"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "Koneksi gagal. Cache sebelumnya disimpan hingga 7 hari.",
+          "http": "Sumber mengembalikan kesalahan HTTP.",
+          "invalid": "Respons bukan daftar pelacak yang valid.",
+          "limit": "Sumber melebihi batas ukuran atau jumlah alamat.",
+          "missing-cache": "Sumber mengembalikan 304 tanpa cache yang dapat digunakan."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Terpilih",
+          "capacity": "Cadangan",
+          "blacklisted": "Diblokir",
+          "unsupported": "Protokol tidak didukung",
+          "cooldown": "Koneksi berulang kali gagal"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Selesai",
+          "partial": "Selesai sebagian",
+          "failed": "Gagal"
         }
       }
     }
@@ -2848,5 +2894,17 @@
       "eib": "EiB"
     },
     "perSecond": "{{value}}/dtk"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "Protokol mo:// telah dihentikan. Gunakan motrix://.",
+    "deprecatedCommand": "Tindakan tautan ini telah dihentikan. Gunakan kontrol di Motrix.",
+    "unsupportedCommand": "Perintah tautan ini tidak didukung.",
+    "unsupportedParameters": "Tautan berisi parameter yang tidak didukung. Tidak ada yang dibuka atau diubah.",
+    "invalidLink": "Tautan Motrix ini tidak valid.",
+    "invalidSource": "Tautan harus berisi satu alamat HTTP, HTTPS, FTP, atau Magnet yang valid.",
+    "waitingMerged": "Tugas menunggu kini ditampilkan di Aktif. Tampilan Aktif telah dibuka.",
+    "stoppedSplit": "Tugas yang dihentikan dikelompokkan ke Selesai dan Galat. Semua unduhan telah dibuka.",
+    "invalidStatus": "Kategori unduhan tidak valid. Semua unduhan telah dibuka."
   }
 }

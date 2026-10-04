@@ -1227,6 +1227,18 @@
         "sortBy": "Сортувати за",
         "taskActions": "Інші дії",
         "title": "Вигляд списку"
+      },
+      "completionShutdown": {
+        "more": "Інші дії із завантаженнями",
+        "enable": "Вимкнути після завершення всіх завантажень",
+        "disable": "Скасувати вимкнення після завантажень",
+        "waiting": "Очікування завершення всіх завантажень",
+        "countdown": "Вимкнення через {{seconds}} с",
+        "detail": "Діє один раз. Призупинені та невдалі завдання перешкоджають вимкненню. Роздача припиниться під час вимкнення.",
+        "unavailable": "Автовимкнення недоступне або в дозволі відмовлено.",
+        "failed": "Не вдалося підготувати або запросити вимкнення. Примусове вимкнення не виконувалося.",
+        "preparing": "Підготовка до вимкнення…",
+        "requested": "Вимкнення запитано"
       }
     },
     "trackers": {
@@ -2259,6 +2271,7 @@
           "development": "Розробка",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Встановити"
         },
@@ -2417,7 +2430,40 @@
           "usingSource": "Використовується {{source}}"
         },
         "download": {
-          "action": "Завантажити FFmpeg"
+          "action": "Завантажити FFmpeg",
+          "verifyInstall": "Завантажити й перевірити",
+          "manual": "Посібник FFmpeg",
+          "installing": "Перевірка…",
+          "installed": "Перевірено й установлено.",
+          "failed": "Не вдалося завантажити або перевірити файли. Попередню інсталяцію збережено.",
+          "disclosure": "Перевіряється підпис проєкту Motrix, не Authenticode. Windows може й надалі показувати попередження.",
+          "projectDisclosure": "Збірка Motrix · GPL. Перевіряється та встановлюється в каталог даних Motrix.",
+          "macDisclosure": "Перевіряються Developer ID і нотаріальне засвідчення. Захист системи залишається ввімкненим.",
+          "progress": "Перебіг завантаження FFmpeg",
+          "bytes": "{{received}} / {{total}} байтів",
+          "directory": "Каталог встановлення: {{path}}",
+          "detectionRefreshFailed": "Не вдалося оновити виявлення FFmpeg. Натисніть «Оновити» ще раз.",
+          "restartPluginHint": "Перезапустіть Motrix, щоб активні плагіни виявили встановлення.",
+          "phases": {
+            "idle": "Готово до завантаження",
+            "metadata": "Перевірка офіційного випуску…",
+            "downloading": "Завантаження FFmpeg…",
+            "verifying": "Перевірка підпису випуску…",
+            "extracting": "Перевірка та розпакування файлів…",
+            "systemTrust": "Перевірка підпису й нотаріального засвідчення macOS…",
+            "installing": "Встановлення FFmpeg…",
+            "installed": "Перевірено та встановлено.",
+            "failed": "Встановлення не вдалося."
+          },
+          "errors": {
+            "unavailable": "Повний і незмінний офіційний випуск ще недоступний.",
+            "unsupported": "Встановлення одним натисканням не підтримується на цій платформі.",
+            "busy": "Інше встановлення FFmpeg вже триває.",
+            "download": "Завантаження не вдалося або час очікування минув. Перевірте мережу та повторіть спробу.",
+            "verification": "Перевірка підпису, структури пакунка або цілісності файлів не пройдена.",
+            "install": "Не вдалося встановити файли. Перевірте права доступу й вільне місце в каталозі даних.",
+            "systemTrust": "macOS відхилила ідентифікатор підпису або нотаріальне засвідчення. Перевірки безпеки системи не обходилися."
+          }
         },
         "ffmpegRequired": "Для цього завантаження потрібен FFmpeg. Налаштуйте його в розділі «Налаштування → Інтеграція → Медіаінструменти», збережіть і спробуйте ще раз.",
         "notDetected": "FFmpeg не виявлено",
@@ -2836,53 +2882,53 @@
       "syncing": "Синхронізація…",
       "unavailable": "Не вдалося прочитати стан синхронізації. Перевірте з'єднання та спробуйте ще раз.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Подробиці оновлення",
+        "scope": "Ці типові трекери додаються до нових публічних завдань BitTorrent. Поточні завантаження зберігають свої трекери.",
+        "sources": "Стан джерел",
+        "candidates": "Кандидати",
+        "history": "Історія оновлень",
+        "disabled": "Вимкнено",
+        "noSources": "Немає ввімкнених джерел",
+        "attention": "Трекерів: {{count}} · Джерел, що потребують уваги: {{failed}}",
+        "summary": "Трекерів: {{count}} · Останнє успішне оновлення: {{time}}",
+        "lastAttempt": "Остання перевірка",
+        "nextCheck": "Наступна перевірка",
+        "autoOff": "Автоматичні оновлення вимкнено",
+        "enginePending": "Збережено; очікується застосування типових значень до рушія завантажень.",
+        "sourceResult": "Адрес: {{count}} · Останнє успішне отримання: {{time}}",
+        "retryAt": "Наступна спроба: {{time}}",
+        "evidence": "Перевірки з’єднання підтверджують доступність, але не гарантують наявності пірів або швидкості завантаження.",
+        "firstSeen": "Уперше виявлено: {{time}}",
+        "noCandidates": "Немає відповідних кандидатів",
+        "showMore": "Показати ще",
+        "run": "Успішних джерел: {{success}} · Із помилками: {{failed}} · Вибрано: +{{added}} / −{{removed}}",
+        "noHistory": "Немає історії оновлень",
+        "retry": "Повторити для джерел із помилками",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "Актуально",
+          "cached": "Використовується кеш останнього успішного оновлення",
+          "expired": "Термін дії кешу минув",
+          "pending": "Ще не перевірено",
+          "failed": "Немає придатного кешу"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "Не вдалося з’єднатися. Попередній кеш зберігається до 7 днів.",
+          "http": "Джерело повернуло помилку HTTP.",
+          "invalid": "Відповідь не містить коректного списку трекерів.",
+          "limit": "Джерело перевищило обмеження розміру або кількості адрес.",
+          "missing-cache": "Джерело повернуло код 304, але придатного кешу немає."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Вибрано",
+          "capacity": "У резерві",
+          "blacklisted": "У списку блокування",
+          "unsupported": "Непідтримуваний протокол",
+          "cooldown": "Повторні помилки з’єднання"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Завершено",
+          "partial": "Завершено частково",
+          "failed": "Помилка"
         }
       }
     }
@@ -2914,5 +2960,17 @@
       "eib": "ЕіБ"
     },
     "perSecond": "{{value}}/с"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "Протокол mo:// більше не підтримується. Використовуйте motrix://.",
+    "deprecatedCommand": "Ця дія за посиланням більше не підтримується. Використовуйте елементи керування Motrix.",
+    "unsupportedCommand": "Ця команда посилання не підтримується.",
+    "unsupportedParameters": "Посилання містить непідтримувані параметри. Нічого не відкрито й не змінено.",
+    "invalidLink": "Недійсне посилання Motrix.",
+    "invalidSource": "Посилання має містити одну дійсну адресу HTTP, HTTPS, FTP або Magnet.",
+    "waitingMerged": "Завдання в очікуванні тепер містяться в активних. Відкрито активні завдання.",
+    "stoppedSplit": "Зупинені завдання розділено на завершені та помилки. Відкрито всі завантаження.",
+    "invalidStatus": "Недійсна категорія. Відкрито всі завантаження."
   }
 }

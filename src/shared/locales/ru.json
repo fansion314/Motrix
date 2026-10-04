@@ -994,6 +994,18 @@
         "downloadEta": "До конца загрузки",
         "avgDownloadProgress": "Средний прогресс загрузки",
         "processingTasks": "Обработка"
+      },
+      "completionShutdown": {
+        "more": "Другие действия с загрузками",
+        "enable": "Выключить после завершения всех загрузок",
+        "disable": "Отменить выключение после загрузок",
+        "waiting": "Ожидание завершения всех загрузок",
+        "countdown": "Выключение через {{seconds}} сек.",
+        "detail": "Действует один раз. Приостановленные и неудачные задачи препятствуют выключению. Раздача прекратится при выключении.",
+        "unavailable": "Автовыключение недоступно или в разрешении отказано.",
+        "failed": "Не удалось подготовить или запросить выключение. Принудительное выключение не выполнялось.",
+        "preparing": "Подготовка к выключению…",
+        "requested": "Выключение запрошено"
       }
     }
   },
@@ -1843,6 +1855,7 @@
           "chrome": "Chrome",
           "edge": "Microsoft Edge",
           "firefox": "Firefox",
+          "safari": "Safari",
           "github": "GitHub",
           "store": "Установить",
           "development": "Разработка"
@@ -1988,7 +2001,40 @@
         "binaryPath": "Свой путь к FFmpeg",
         "browse": "Обзор…",
         "download": {
-          "action": "Скачать FFmpeg"
+          "action": "Скачать FFmpeg",
+          "verifyInstall": "Скачать и проверить",
+          "manual": "Руководство FFmpeg",
+          "installing": "Проверка…",
+          "installed": "Проверено и установлено.",
+          "failed": "Не удалось скачать или проверить файлы. Предыдущая установка сохранена.",
+          "disclosure": "Проверяется подпись проекта Motrix, не Authenticode. Windows может по-прежнему показывать предупреждения.",
+          "projectDisclosure": "Сборка Motrix · GPL. Проверяется и устанавливается в каталог данных Motrix.",
+          "macDisclosure": "Проверяются Developer ID и нотариальное заверение. Защита системы остаётся включённой.",
+          "progress": "Ход загрузки FFmpeg",
+          "bytes": "{{received}} / {{total}} байт",
+          "directory": "Каталог установки: {{path}}",
+          "detectionRefreshFailed": "Не удалось обновить обнаружение FFmpeg. Нажмите «Обновить» ещё раз.",
+          "restartPluginHint": "Перезапустите Motrix, чтобы активные плагины обнаружили установку.",
+          "phases": {
+            "idle": "Готово к загрузке",
+            "metadata": "Проверка официального выпуска…",
+            "downloading": "Загрузка FFmpeg…",
+            "verifying": "Проверка подписи выпуска…",
+            "extracting": "Проверка и распаковка файлов…",
+            "systemTrust": "Проверка подписи и нотариального заверения macOS…",
+            "installing": "Установка FFmpeg…",
+            "installed": "Проверено и установлено.",
+            "failed": "Установка не удалась."
+          },
+          "errors": {
+            "unavailable": "Полный и неизменяемый официальный выпуск пока недоступен.",
+            "unsupported": "Установка одним нажатием не поддерживается на этой платформе.",
+            "busy": "Другая установка FFmpeg уже выполняется.",
+            "download": "Загрузка не удалась или истекло время ожидания. Проверьте сеть и повторите попытку.",
+            "verification": "Проверка подписи, структуры пакета или целостности файлов не пройдена.",
+            "install": "Не удалось установить файлы. Проверьте права доступа и свободное место в каталоге данных.",
+            "systemTrust": "macOS отклонила удостоверение подписи или нотариальное заверение. Проверки безопасности системы не обходились."
+          }
         },
         "detection": {
           "readyTitle": "FFmpeg {{version}}",
@@ -2238,53 +2284,53 @@
       "failed": "Синхронизация не завершена. Проверьте сеть или источники и повторите попытку.",
       "unavailable": "Не удалось получить статус синхронизации. Проверьте подключение и повторите попытку.",
       "details": {
-        "title": "Update details",
-        "scope": "These defaults supplement new public BitTorrent tasks. Existing downloads keep their current trackers.",
-        "sources": "Source status",
-        "candidates": "Candidates",
-        "history": "Update history",
-        "disabled": "Disabled",
-        "noSources": "No enabled sources",
-        "attention": "{{count}} trackers · {{failed}} sources need attention",
-        "summary": "{{count}} trackers · Last successful update: {{time}}",
-        "lastAttempt": "Last check",
-        "nextCheck": "Next check",
-        "autoOff": "Automatic updates off",
-        "enginePending": "Saved; waiting to apply defaults to the download engine.",
-        "sourceResult": "{{count}} addresses · Last success: {{time}}",
-        "retryAt": "Next retry: {{time}}",
-        "evidence": "Connection checks are evidence of reachability, not a guarantee of peers or download speed.",
-        "firstSeen": "First seen: {{time}}",
-        "noCandidates": "No matching candidates",
-        "showMore": "Show more",
-        "run": "{{success}} sources succeeded · {{failed}} failed · +{{added}} / −{{removed}} selected",
-        "noHistory": "No update history",
-        "retry": "Retry failed sources",
+        "title": "Подробности обновления",
+        "scope": "Эти трекеры по умолчанию добавляются в новые публичные задачи BitTorrent. Текущие загрузки сохраняют свои трекеры.",
+        "sources": "Состояние источников",
+        "candidates": "Кандидаты",
+        "history": "История обновлений",
+        "disabled": "Отключено",
+        "noSources": "Нет включённых источников",
+        "attention": "Трекеров: {{count}} · Источников, требующих внимания: {{failed}}",
+        "summary": "Трекеров: {{count}} · Последнее успешное обновление: {{time}}",
+        "lastAttempt": "Последняя проверка",
+        "nextCheck": "Следующая проверка",
+        "autoOff": "Автоматические обновления отключены",
+        "enginePending": "Сохранено; ожидается применение значений по умолчанию к движку загрузок.",
+        "sourceResult": "Адресов: {{count}} · Последнее успешное получение: {{time}}",
+        "retryAt": "Следующая попытка: {{time}}",
+        "evidence": "Проверки подключения подтверждают доступность, но не гарантируют наличие пиров или скорость загрузки.",
+        "firstSeen": "Впервые обнаружен: {{time}}",
+        "noCandidates": "Нет подходящих кандидатов",
+        "showMore": "Показать ещё",
+        "run": "Успешных источников: {{success}} · С ошибками: {{failed}} · Выбрано: +{{added}} / −{{removed}}",
+        "noHistory": "Нет истории обновлений",
+        "retry": "Повторить для источников с ошибками",
         "state": {
-          "fresh": "Up to date",
-          "cached": "Using last successful cache",
-          "expired": "Cache expired",
-          "pending": "Not checked yet",
-          "failed": "No usable cache"
+          "fresh": "Актуально",
+          "cached": "Используется кэш последнего успешного обновления",
+          "expired": "Срок действия кэша истёк",
+          "pending": "Ещё не проверено",
+          "failed": "Нет пригодного кэша"
         },
         "failure": {
-          "network": "Connection failed. The previous cache is retained for up to 7 days.",
-          "http": "The source returned an HTTP error.",
-          "invalid": "The response is not a valid tracker list.",
-          "limit": "The source exceeded the size or address limit.",
-          "missing-cache": "The source returned 304 without a usable cache."
+          "network": "Не удалось подключиться. Предыдущий кэш хранится до 7 дней.",
+          "http": "Источник вернул ошибку HTTP.",
+          "invalid": "Ответ не содержит корректного списка трекеров.",
+          "limit": "Источник превысил ограничение размера или количества адресов.",
+          "missing-cache": "Источник вернул код 304, но пригодного кэша нет."
         },
         "reason": {
-          "selected": "Selected",
-          "capacity": "Reserve",
-          "blacklisted": "Blacklisted",
-          "unsupported": "Unsupported protocol",
-          "cooldown": "Repeated connection failures"
+          "selected": "Выбран",
+          "capacity": "В резерве",
+          "blacklisted": "В чёрном списке",
+          "unsupported": "Неподдерживаемый протокол",
+          "cooldown": "Повторные ошибки подключения"
         },
         "outcome": {
-          "success": "Completed",
-          "partial": "Partially completed",
-          "failed": "Failed"
+          "success": "Завершено",
+          "partial": "Завершено частично",
+          "failed": "Ошибка"
         }
       }
     }
@@ -2914,5 +2960,17 @@
       "eib": "ЭиБ"
     },
     "perSecond": "{{value}}/с"
+  },
+  "protocol": {
+    "title": "Motrix",
+    "deprecatedScheme": "Протокол mo:// больше не поддерживается. Используйте motrix://.",
+    "deprecatedCommand": "Это действие по ссылке больше не поддерживается. Используйте элементы управления Motrix.",
+    "unsupportedCommand": "Эта команда ссылки не поддерживается.",
+    "unsupportedParameters": "Ссылка содержит неподдерживаемые параметры. Ничего не открыто и не изменено.",
+    "invalidLink": "Недопустимая ссылка Motrix.",
+    "invalidSource": "Ссылка должна содержать один допустимый адрес HTTP, HTTPS, FTP или Magnet.",
+    "waitingMerged": "Ожидающие задачи теперь находятся в активных. Открыт список активных задач.",
+    "stoppedSplit": "Остановленные задачи разделены на завершённые и ошибки. Открыты все загрузки.",
+    "invalidStatus": "Недопустимая категория. Открыты все загрузки."
   }
 }

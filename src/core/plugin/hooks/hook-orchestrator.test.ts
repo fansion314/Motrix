@@ -254,6 +254,34 @@ describe('HookOrchestrator', () => {
     )
   })
 
+  it('does not count security cancellation as a plugin failure or change the enabled preference', async () => {
+    const { host } = makeMockHost([
+      {
+        id: 'revoked',
+        role: 'resolve',
+        hooks: ['beforeCreate'],
+        handler: () => {
+          throw new Error('bridge disposed')
+        },
+      },
+    ])
+    host.isSecurityRestricted = () => true
+    const breaker = { success: vi.fn(), failure: vi.fn(), isOpen: () => false }
+    const orchestrator = new HookOrchestrator({
+      host,
+      breaker,
+      hookTimeoutMs: TIMEOUTS,
+      ...ORCH_OPTS_BASE,
+    })
+    const result = await orchestrator.runBeforeCreateHttp(
+      makeBeforeCreateDto(),
+      'task-1'
+    )
+    expect(result.aborted).toBe(true)
+    expect(breaker.failure).not.toHaveBeenCalled()
+    expect(host.disable).not.toHaveBeenCalled()
+  })
+
   it('discovers an inactive registry candidate and activates it on Hook demand', async () => {
     const plugin: FixturePlugin = {
       id: 'idle-plugin',
@@ -366,6 +394,31 @@ describe('HookOrchestrator', () => {
       ).toBe('https://example.com/')
       expect(result.contributors.uris).toBe('plugin-resolve')
       expect(result.contributors.headers).toContain('plugin-enrich')
+    })
+
+    it('keeps hook results and engine dispatch usable when diagnostic logging fails', async () => {
+      const createLog = vi.fn(() => {
+        throw new Error('log destination unavailable')
+      })
+      const orch = new HookOrchestrator({
+        host,
+        createLog,
+        hookTimeoutMs: TIMEOUTS,
+        ...ORCH_OPTS_BASE,
+      })
+      const result = await orch.runBeforeCreateHttp(
+        makeBeforeCreateDto(),
+        'task-1'
+      )
+      if (result.aborted) throw new Error('expected non-aborted result')
+      expect(result.final.uris).toEqual(['https://cdn.example.com/file.zip'])
+      expect(() =>
+        result.recordEngineDispatch?.({
+          uris: result.final.uris,
+          saveDir: '/downloads',
+        })
+      ).not.toThrow()
+      expect(createLog).toHaveBeenCalled()
     })
 
     it('passes each accepted patch into the next plugin working context', async () => {

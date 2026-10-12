@@ -1,6 +1,7 @@
 import { builtinModules, createRequire } from 'node:module'
 import path from 'node:path'
 import { defineConfig } from 'vite'
+import { PRODUCTION_OUTPUT } from './scripts/vite-production-output'
 
 const require = createRequire(import.meta.url)
 const pkg = require('./package.json') as {
@@ -24,9 +25,12 @@ function isExternal(id: string): boolean {
 }
 
 export default defineConfig({
+  publicDir: false,
   build: {
     outDir: 'dist/server',
     emptyOutDir: true,
+    minify: 'oxc',
+    sourcemap: false,
     target: 'node22',
     ssr: true,
     lib: {
@@ -39,6 +43,9 @@ export default defineConfig({
     rollupOptions: {
       external: isExternal,
       output: {
+        ...PRODUCTION_OUTPUT,
+        // Preserve the names used in diagnostics by the previously unminified host.
+        keepNames: true,
         entryFileNames: '[name].mjs',
         chunkFileNames: 'chunks/[name]-[hash].mjs',
       },

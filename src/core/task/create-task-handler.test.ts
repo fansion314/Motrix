@@ -765,7 +765,9 @@ describe('handleCreateTask', () => {
       | undefined
     expect(dispatchFields?.gid).toMatch(/^[0-9a-f]{16}$/)
     expect(dispatchFields).not.toHaveProperty('params')
-    expect(dispatchFields).not.toHaveProperty('uris')
+    expect(dispatchFields).toHaveProperty('uris', [
+      'https://example.com/file.zip?token=[redacted]',
+    ])
     expect(dispatchFields).not.toHaveProperty('headers')
     expect(dispatchFields).not.toHaveProperty('proxy')
     expect(dispatchFields).not.toHaveProperty('extraEngineOptions')
@@ -2552,6 +2554,48 @@ describe('handleCreateTask plugin-hook chain (Plan C / T15)', () => {
     expect(deps.persist).not.toHaveBeenCalled()
     expect(deps.add).toHaveBeenCalledOnce()
   })
+
+  it.each(['persistence', 'engine'])(
+    'rejects revocation during %s after a hook has returned',
+    async (boundary) => {
+      let revoked = false
+      const staged = {
+        ...makeStaged(),
+        hasPolicyChecks: true,
+        assertPolicyCurrent: () => {
+          if (revoked) throw new Error('security revoked')
+        },
+      }
+      const deps = makeDeps()
+      const persistTaskWithPluginMetadata = vi.fn(async () => {
+        if (boundary === 'persistence') revoked = true
+      })
+      if (boundary === 'engine') {
+        const addUri = deps.addUri.getMockImplementation() as (
+          ...args: unknown[]
+        ) => Promise<string>
+        deps.addUri.mockImplementation(async (...args) => {
+          const result = await addUri(...args)
+          revoked = true
+          return result
+        })
+      }
+      await expect(
+        handleCreateTask(httpRequest(), {
+          ...deps,
+          orchestrator: makeOrchestrator(makeChainCommit({ staged })),
+          persistTaskWithPluginMetadata,
+          rollbackTaskCreation: vi.fn(async () => undefined),
+        })
+      ).rejects.toThrow('security revoked')
+      expect(persistTaskWithPluginMetadata).toHaveBeenCalledOnce()
+      if (boundary === 'persistence') expect(deps.addUri).not.toHaveBeenCalled()
+      else expect(deps.addUri).toHaveBeenCalledOnce()
+      expect(deps.forceRemove).toHaveBeenCalledOnce()
+      expect(deps.removeDownloadResult).toHaveBeenCalledOnce()
+      expect(deps.add).not.toHaveBeenCalled()
+    }
+  )
 
   it('fails closed when metadata is staged without an atomic boundary', async () => {
     const staged = makeStaged([

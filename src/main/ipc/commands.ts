@@ -14,6 +14,7 @@ import { getLogger } from '@core/logger'
 import { publishEngineRestartRequired } from '@core/notifications/engine-restart-required'
 import type { NotificationCenter } from '@core/notifications/notification-center'
 import type { CapabilityHost } from '@core/plugin/capabilities/interface'
+import { ManualMediaMerge } from '@core/plugin/commands/manual-media-merge'
 import type { GrantsManager } from '@core/plugin/grants/grants-manager'
 import type { HookAuditLog } from '@core/plugin/hooks/audit-log'
 import type { HookOrchestrator } from '@core/plugin/hooks/hook-orchestrator'
@@ -30,6 +31,7 @@ import {
 } from '@core/plugin/install/registry-expectation'
 import type { SourceInput } from '@core/plugin/install/source-resolver'
 import { downloadUrlMoext } from '@core/plugin/install/url-fetcher'
+import { PluginEngineVersionTooOld } from '@core/plugin/manifest/errors'
 import type { PluginRegistry } from '@core/plugin/plugin-registry'
 import type { RegistryClient } from '@core/plugin/registry/registry-client'
 import { downloadRegistryMoext } from '@core/plugin/registry/registry-fetcher'
@@ -109,7 +111,9 @@ import {
   taskIdsPayloadSchema,
 } from '@shared/schemas/bulk-task-command'
 import { closeCurrentWindowSchema } from '@shared/schemas/close-current-window'
+import { filePickerOptionsSchema } from '@shared/schemas/file-picker'
 import { moveTasksPayloadSchema } from '@shared/schemas/move-tasks'
+import { PluginLogVerboseRequestSchema } from '@shared/schemas/plugin-logs'
 import { checkPluginUpdatesPayloadSchema } from '@shared/schemas/plugin-update'
 import { REGISTRY_PLUGIN_ID_RE } from '@shared/schemas/registry'
 import { removeTaskPayloadSchema } from '@shared/schemas/remove-task'
@@ -123,6 +127,7 @@ import {
   type CliInstallRequest,
 } from '@shared/types/cli-tool'
 import { EngineRecoveryAction, EngineState } from '@shared/types/engine'
+import type { PluginInstallCompatibilityFailure } from '@shared/types/plugin-install'
 import type { ProxySettings } from '@shared/types/settings'
 import type { DownloadTask } from '@shared/types/task'
 import { TaskStatus } from '@shared/types/task'
@@ -652,7 +657,69 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     runWork: ctx.trackAsyncWork,
   })
 
+  const manualMediaMerge = new ManualMediaMerge({
+    createLog: (pluginId) => capabilityHost.createLog(pluginId),
+    registry: pluginRegistry,
+    host: pluginHost,
+    tasks: taskManager,
+    runWork: ctx.trackAsyncWork,
+  })
+
   return {
+    [Commands.GetMediaMergeState]: async () => manualMediaMerge.state(),
+    [Commands.GetMediaMergeSelection]: async (value: unknown) =>
+      manualMediaMerge.selection(value),
+    [Commands.StartMediaMerge]: async (value: unknown) =>
+      manualMediaMerge.start(value),
+    [Commands.GetMediaMergeJob]: async (value: unknown) =>
+      manualMediaMerge.get(value),
+    [Commands.CancelMediaMerge]: async (value: unknown) =>
+      manualMediaMerge.cancel(value),
+    [Commands.PickFile]: async (sender: WebContents, value: unknown) => {
+      const params = filePickerOptionsSchema.parse(value)
+      if (saveDirPickersInFlight.has(sender)) return null
+      saveDirPickersInFlight.add(sender)
+      try {
+        const parent = BrowserWindow.fromWebContents(sender)
+        if (params.kind === 'save') {
+          const options = {
+            defaultPath: params.defaultPath,
+            filters: params.extensions?.length
+              ? [
+                  {
+                    name: i18n.t('directoryPicker.files'),
+                    extensions: params.extensions,
+                  },
+                ]
+              : undefined,
+          }
+          const result =
+            parent && !parent.isDestroyed()
+              ? await dialog.showSaveDialog(parent, options)
+              : await dialog.showSaveDialog(options)
+          return result.canceled ? null : (result.filePath ?? null)
+        }
+        const options: OpenDialogOptions = {
+          properties: ['openFile'],
+          defaultPath: params.defaultPath,
+          filters: params.extensions?.length
+            ? [
+                {
+                  name: i18n.t('directoryPicker.files'),
+                  extensions: params.extensions,
+                },
+              ]
+            : undefined,
+        }
+        const result =
+          parent && !parent.isDestroyed()
+            ? await dialog.showOpenDialog(parent, options)
+            : await dialog.showOpenDialog(options)
+        return result.canceled ? null : (result.filePaths[0] ?? null)
+      } finally {
+        saveDirPickersInFlight.delete(sender)
+      }
+    },
     [Commands.InstallCliTool]: async (payload: unknown) =>
       cliToolService.install(
         cliInstallRequestSchema.parse(payload) as CliInstallRequest
@@ -1483,6 +1550,7 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     [Commands.RevealInFolder]: createRevealInFolderHandler({
       shell,
       getTask: (taskId) => taskManager.getById(taskId),
+      getMediaMergeJob: (jobId) => manualMediaMerge.get(jobId),
     }),
     [Commands.OpenTaskFile]: createOpenTaskFileHandler({
       shell,
@@ -1567,6 +1635,7 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     }),
 
     [Commands.EnablePlugin]: async (id: string) => {
+      pluginRegistry.assertSecurityAllowed?.(id)
       pluginStateStore.setEnabled(id, true)
       // Sync the in-memory IndexedPlugin.state so Queries.ListPlugins and
       // downstream gating (PluginHost.activate, ActivationDispatcher,
@@ -1669,53 +1738,66 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     },
 
     [Commands.InstallPlugin]: async (payload: unknown) => {
-      const parsed = installPluginPayloadSchema.parse(payload)
-      let moextPath: string
-      let expect: RegistryExpectation | undefined
-      if (parsed.sourceType === 'registry') {
-        const entry = await registryClient.get(parsed.pluginId, hostVersion)
-        if (!entry) {
-          throw new AppError(
-            ErrorCode.PluginManifestInvalid,
-            'plugin.install.registry_entry_missing'
+      try {
+        const parsed = installPluginPayloadSchema.parse(payload)
+        let moextPath: string
+        let expect: RegistryExpectation | undefined
+        if (parsed.sourceType === 'registry') {
+          const entry = await registryClient.get(parsed.pluginId, hostVersion)
+          if (!entry) {
+            throw new AppError(
+              ErrorCode.PluginManifestInvalid,
+              'plugin.install.registry_entry_missing'
+            )
+          }
+          // The UI disables the button; main still enforces the gate
+          // (viewable-but-not-installable is a contract, not a style).
+          if (!entry.compatible) {
+            throw new PluginEngineVersionTooOld(
+              entry.engines.motrix,
+              hostVersion
+            )
+          }
+          moextPath = path.join(
+            userDataDir,
+            'plugin-downloads',
+            `registry-${parsed.pluginId}-${Date.now()}.moext`
           )
+          await downloadRegistryMoext(entry, moextPath)
+          expect = buildRegistryExpectation(entry)
+        } else {
+          moextPath = await materializeMoext(parsed)
         }
-        // The UI disables the button; main still enforces the gate
-        // (viewable-but-not-installable is a contract, not a style).
-        if (!entry.compatible) {
-          throw new AppError(
-            ErrorCode.PluginManifestInvalid,
-            'plugin.install.registry_incompatible'
-          )
-        }
-        moextPath = path.join(
-          userDataDir,
-          'plugin-downloads',
-          `registry-${parsed.pluginId}-${Date.now()}.moext`
+        const result = await pluginInstaller.stage(
+          moextPath,
+          toSourceInput(parsed),
+          { expect, runtimeHost: pluginHost }
         )
-        await downloadRegistryMoext(entry, moextPath)
-        expect = buildRegistryExpectation(entry)
-      } else {
-        moextPath = await materializeMoext(parsed)
+        if (result.committed && result.pluginId) {
+          eventBus.emit(Events.PluginInstalled, { pluginId: result.pluginId })
+        } else {
+          eventBus.emit(Events.PluginInstallConsentRequested, {
+            stagingId: result.stagingId,
+            consent: result.consent,
+          })
+        }
+        return result
+      } catch (error) {
+        if (error instanceof PluginEngineVersionTooOld) {
+          return {
+            incompatible: {
+              required: error.required,
+              hostVersion: error.hostVersion,
+            },
+          } satisfies PluginInstallCompatibilityFailure
+        }
+        throw error
       }
-      const result = await pluginInstaller.stage(
-        moextPath,
-        toSourceInput(parsed),
-        { expect, runtimeHost: pluginHost }
-      )
-      if (result.committed && result.pluginId) {
-        eventBus.emit(Events.PluginInstalled, { pluginId: result.pluginId })
-      } else {
-        eventBus.emit(Events.PluginInstallConsentRequested, {
-          stagingId: result.stagingId,
-          consent: result.consent,
-        })
-      }
-      return result
     },
 
     [Commands.CheckPluginUpdates]: async (payload: unknown) => {
       const parsed = checkPluginUpdatesPayloadSchema.parse(payload)
+      await pluginHost.refreshSecurityPolicy?.(parsed?.force)
       if (parsed?.force) await registryClient.refresh()
       const entries = await registryClient.list(hostVersion)
       return scanForUpdates(pluginRegistry.list(), entries)
@@ -1837,11 +1919,9 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     },
 
     [Commands.SetPluginLogVerbose]: async (payload: unknown) => {
-      const parsed = z
-        .object({ pluginId: z.string().min(1), verbose: z.boolean() })
-        .parse(payload)
+      const parsed = PluginLogVerboseRequestSchema.parse(payload)
       capabilityHost.setLogVerbose(parsed.pluginId, parsed.verbose)
-      return { ok: true }
+      return capabilityHost.getLogState(parsed.pluginId)
     },
   }
 }
@@ -1888,6 +1968,7 @@ export function registerCommandHandlers(ctx: CommandContext): () => void {
       channel === Commands.MinimizeCurrentWindow ||
       channel === Commands.ToggleMaximizeCurrentWindow ||
       channel === Commands.PickSaveDir ||
+      channel === Commands.PickFile ||
       channel === Commands.ResizeWindow ||
       channel === Commands.UpdateMenuContext
     ) {

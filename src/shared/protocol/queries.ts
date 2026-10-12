@@ -1,4 +1,9 @@
 export const Queries = {
+  GetLegacyImportNavigation: 'query:getLegacyImportNavigation',
+  GetLegacyBtActivationAvailability: 'query:getLegacyBtActivationAvailability',
+  DiscoverLegacyImport: 'query:discoverLegacyImport',
+  ScanLegacyImport: 'query:scanLegacyImport',
+  GetLegacyImportRun: 'query:getLegacyImportRun',
   GetCompletionShutdown: 'query:getCompletionShutdown',
   GetDownloadsSettingsDraft: 'query:getDownloadsSettingsDraft',
   GetDisclaimerState: 'query:getDisclaimerState',
@@ -28,6 +33,7 @@ export const Queries = {
   ListPluginGrants: 'query:listPluginGrants',
   GetPluginCommandGraph: 'query:getPluginCommandGraph',
   GetPluginLogs: 'query:getPluginLogs',
+  GetPluginLogState: 'query:getPluginLogState',
   // Remote plugin registry (dl.motrix.app) — read-side directory queries.
   // Entries come back annotated with a `compatible` host-version flag.
   // Contract: .claude/rules/plugin-registry.md.
@@ -63,6 +69,7 @@ export const Queries = {
   // Save directory allowlist (web degradation, electron returns unrestricted)
   ListAllowedSaveDirs: 'query:listAllowedSaveDirs',
   ListServerDirectories: 'query:listServerDirectories',
+  ValidateServerFile: 'query:validateServerFile',
   ValidateServerDirectory: 'query:validateServerDirectory',
   // GeoIP
   GetGeoIPStatus: 'query:getGeoIPStatus',

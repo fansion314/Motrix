@@ -139,7 +139,8 @@ export interface CreateTaskDeps {
    */
   persistTaskWithPluginMetadata?: (
     task: DownloadTask,
-    operations: readonly StagedMetadataOp[]
+    operations: readonly StagedMetadataOp[],
+    beforeCommit?: () => void
   ) => Promise<void>
   /** @deprecated Retained for legacy composition; never used for Hook commit. */
   db?: Database.Database
@@ -579,7 +580,11 @@ async function handleCreateTaskUnderAdmission(
   // incomplete suffix. BT uses its final output directory and no `out`;
   // parsed torrents additionally carry per-file output mappings. The adapter
   // is responsible for the aria2 wire shape.
+  let recordPluginEngineDispatch:
+    | ((params: CreateDownloadParams) => void)
+    | undefined
   let pluginMetadataOps: readonly StagedMetadataOp[] = []
+  let assertPluginPolicyCurrent: (() => void) | undefined
   let dispatchEngine: (reservedGid: string) => Promise<string>
   let directReplay: DirectReplayRecipe | null = null
   let canonicalUris = deriveUris(req)
@@ -598,6 +603,7 @@ async function handleCreateTaskUnderAdmission(
         {
           method: 'createDownload',
           uriCount: params.uris.length,
+          uris: params.uris,
           gid: reservedGid,
           saveDir: params.saveDir,
           filename: params.filename,
@@ -605,6 +611,7 @@ async function handleCreateTaskUnderAdmission(
         },
         'dispatching to engine'
       )
+      recordPluginEngineDispatch?.(params)
       return deps.adapter.createDownload(params)
     }
 
@@ -765,6 +772,7 @@ async function handleCreateTaskUnderAdmission(
         {
           taskId,
           aborted: result.aborted === true,
+          rewrittenUris: result.aborted ? undefined : result.final.uris,
           rewrittenUriCount: result.aborted
             ? undefined
             : result.final.uris.length,
@@ -783,6 +791,11 @@ async function handleCreateTaskUnderAdmission(
           ErrorCode.PluginRuntimeFault,
           `plugin chain aborted: ${result.reason}`
         )
+      }
+      recordPluginEngineDispatch = result.recordEngineDispatch
+      if (result.staged.hasPolicyChecks) {
+        assertPluginPolicyCurrent = () => result.staged.assertPolicyCurrent()
+        assertPluginPolicyCurrent()
       }
       // Apply merged outputs back to the create params. mergeChain is
       // well-defined for the slot keys we care about; absent keys keep
@@ -818,6 +831,7 @@ async function handleCreateTaskUnderAdmission(
         uriContributor: result.contributors.uris,
         finalHeaderCount: result.final.headers.length,
       })
+      assertPluginPolicyCurrent?.()
       pluginMetadataOps =
         typeof result.staged.allMetadataOps === 'function'
           ? result.staged.allMetadataOps()
@@ -854,6 +868,7 @@ async function handleCreateTaskUnderAdmission(
       await pickHttpName(uriBasename(params.uris[0]) ?? 'download')
     }
 
+    assertPluginPolicyCurrent?.()
     // Probe only after mux has declined the URL and the plugin chain has
     // accepted and finalized its URI/header/proxy outputs. An aborted or
     // rewritten request must never probe the stale user-supplied target.
@@ -894,6 +909,7 @@ async function handleCreateTaskUnderAdmission(
     // future retry can be reconstructed from TaskInstance. Paths and URIs are
     // already canonical fields on the instance; modifier VALUES remain
     // engine-call-only so credentials never enter motrix.db.
+    assertPluginPolicyCurrent?.()
     directReplay = buildDirectReplayRecipe(
       params,
       ambientMetadataProfile === null
@@ -927,6 +943,7 @@ async function handleCreateTaskUnderAdmission(
         )
       }
     }
+    assertPluginPolicyCurrent?.()
     canonicalUris = [...params.uris]
     dispatchEngine = dispatchCreateDownload(params)
   } else if (req.payload.kind === 'torrent-base64') {
@@ -1084,6 +1101,15 @@ async function handleCreateTaskUnderAdmission(
     deps.taskManager.reserveEngineTaskId(gid)
 
     const persistParent = async (): Promise<void> => {
+      assertPluginPolicyCurrent?.()
+      if (assertPluginPolicyCurrent && deps.persistTaskWithPluginMetadata) {
+        await deps.persistTaskWithPluginMetadata(
+          task,
+          pluginMetadataOps,
+          assertPluginPolicyCurrent
+        )
+        return
+      }
       if (pluginMetadataOps.length > 0) {
         await deps.persistTaskWithPluginMetadata?.(task, pluginMetadataOps)
         return
@@ -1093,7 +1119,8 @@ async function handleCreateTaskUnderAdmission(
     const hasDurableIntent = Boolean(
       deps.persistTask ||
         deps.parentTaskCreated ||
-        (pluginMetadataOps.length > 0 && deps.persistTaskWithPluginMetadata)
+        ((pluginMetadataOps.length > 0 || assertPluginPolicyCurrent) &&
+          deps.persistTaskWithPluginMetadata)
     )
     const rollbackDurableIntent = async (): Promise<boolean> => {
       if (!hasDurableIntent) return true
@@ -1147,7 +1174,9 @@ async function handleCreateTaskUnderAdmission(
         deps.assertEngineReady?.()
         assertAppliedProxyCurrent?.()
       }
+      assertPluginPolicyCurrent?.()
       const actualGid = await dispatchEngine(gid)
+      assertPluginPolicyCurrent?.()
       if (actualGid.toLowerCase() !== gid.toLowerCase()) {
         throw new Error(
           `Engine returned gid ${actualGid} instead of reserved gid ${gid}`

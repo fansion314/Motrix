@@ -10,12 +10,18 @@ import type { CapabilityHost } from '../capabilities/interface'
 import type { GrantsManager } from '../grants/grants-manager'
 import { ffmpegSatisfies } from '../install/ffmpeg-semver'
 import { readMoextEntry } from '../install/moext-reader'
+import { loadOfficialPackage } from '../install/official-package'
 import { resolveInsidePluginDir } from '../manifest/path-safety'
 import type { PluginRegistry } from '../plugin-registry'
+import type { PluginSecurityService } from '../security/security-service'
 import type { PluginStateStore } from '../state/plugin-state-store'
 import { verifyBuiltinSignature } from '../update/signature'
 import type { HookName } from './bridge-protocol'
-import { CapabilityBridge, type HookContextArgs } from './capability-bridge'
+import {
+  CapabilityBridge,
+  type HookContextArgs,
+  type ManualMergeContext,
+} from './capability-bridge'
 import {
   type PluginCallChain,
   PluginLane,
@@ -60,7 +66,11 @@ export interface PluginPolicyLease {
   release(): void
 }
 
-export type PluginUnavailableReason = 'disabled' | 'uninstalled' | 'quarantined'
+export type PluginUnavailableReason =
+  | 'disabled'
+  | 'uninstalled'
+  | 'quarantined'
+  | 'security_revoked'
 
 export type PluginUnavailableHandler = (
   pluginId: string,
@@ -69,6 +79,8 @@ export type PluginUnavailableHandler = (
 ) => Promise<number>
 
 export interface PluginHostOptions {
+  security?: PluginSecurityService
+  onSecurityChanged?: () => void
   registry: PluginRegistry
   stateStore: PluginStateStore
   capabilityHost: CapabilityHost
@@ -167,6 +179,8 @@ export class PluginHost {
   private idleTimer?: NodeJS.Timeout
   private unsubscribeLocale: () => void = () => {}
   private shuttingDown = false
+  private unsubscribeSecurity: () => void = () => {}
+  private readonly securityStops = new Map<string, Promise<void>>()
 
   constructor(private readonly opts: PluginHostOptions) {
     this.maxActivePlugins = opts.maxActivePlugins ?? DEFAULT_MAX_ACTIVE_PLUGINS
@@ -180,6 +194,8 @@ export class PluginHost {
     this.unsubscribeLocale = this.opts.capabilityHost.onLocaleChange((lang) => {
       this.broadcastLocaleChange(lang)
     })
+    this.unsubscribeSecurity =
+      opts.security?.subscribe(() => this.enforceSecurityPolicy()) ?? (() => {})
   }
 
   private broadcastLocaleChange(_lang: string): void {
@@ -255,7 +271,10 @@ export class PluginHost {
     pluginId: string,
     commandId: string,
     args: unknown,
-    options: { callChain?: PluginCallChain } = {}
+    options: {
+      callChain?: PluginCallChain
+      mediaMerge?: ManualMergeContext
+    } = {}
   ): Promise<unknown> {
     return this.laneFor(pluginId).run(
       () => {
@@ -267,6 +286,15 @@ export class PluginHost {
           )
         }
         a.lastActivityAt = Date.now()
+        if (options.mediaMerge) {
+          return a.bridge.callMediaMerge(commandId, args, {
+            ...options.mediaMerge,
+            signal: AbortSignal.any([
+              options.mediaMerge.signal,
+              a.admissionAbort.signal,
+            ]),
+          })
+        }
         return raceWithAdmissionAbort(
           a.bridge.callPlugin(commandId, args),
           a.admissionAbort.signal,
@@ -281,6 +309,7 @@ export class PluginHost {
     pluginId: string,
     options: { waitForDeactivation?: boolean } = {}
   ): Promise<void> {
+    this.opts.registry.assertSecurityAllowed?.(pluginId)
     if (this.shuttingDown) {
       throw new AppError(
         ErrorCode.PluginRuntimeFault,
@@ -376,6 +405,12 @@ export class PluginHost {
         `plugin ${pluginId} is disabled`
       )
     }
+    await this.awaitActivation(
+      pluginId,
+      attempt,
+      this.opts.registry.recordSecurityAdmission?.(pluginId) ??
+        Promise.resolve()
+    )
     const policyGeneration = this.policyGenerationFor(pluginId)
     if (this.active.size >= this.maxActivePlugins) {
       throw new AppError(
@@ -436,7 +471,34 @@ export class PluginHost {
     }
 
     let bundleSource: string
-    if (indexed.overlay) {
+    if (indexed.official) {
+      const archive = await this.awaitActivation(
+        pluginId,
+        attempt,
+        loadOfficialPackage(
+          indexed.rootDir,
+          indexed.official,
+          this.opts.signingPubkeys
+        )
+      )
+      const entryBytes = await this.awaitActivation(
+        pluginId,
+        attempt,
+        readMoextEntry(archive.bytes, indexed.manifest.main)
+      )
+      if (!entryBytes) {
+        throw new AppError(
+          ErrorCode.PluginManifestInvalid,
+          'plugin.install.official_signature_invalid'
+        )
+      }
+      this.assertExecutableDigest(
+        pluginId,
+        indexed.executableDigest,
+        entryBytes
+      )
+      bundleSource = entryBytes.toString('utf8')
+    } else if (indexed.overlay) {
       // Firefox packed-XPI model (2026-07-18 design §4): a builtin
       // hot-update overlay's EXECUTED CODE comes from the signature-verified
       // bundle.moext, never the separately-tamperable extracted tree — an
@@ -699,6 +761,12 @@ export class PluginHost {
     await attempt?.promise.catch(() => undefined)
     const active = this.active.get(pluginId)
     if (!active) return
+    if (this.opts.registry.securityDecision?.(pluginId)) {
+      active.admissionAbort.abort()
+      await this.teardownActive(pluginId, active, true)
+      await this.laneFor(pluginId).drain()
+      return
+    }
     const lane = this.laneFor(pluginId)
     const drained = await lane.drainWithin(this.deactivateBudgetMs)
     if (!drained) {
@@ -731,6 +799,8 @@ export class PluginHost {
     active: Active,
     forced: boolean
   ): Promise<void> {
+    // A revoked guest must not run its own cleanup or issue more capabilities.
+    if (forced) await this.disposeActiveBridge(pluginId, active, true)
     // 1. Run worker-side deactivate handlers (budget enforced by bridge).
     if (!forced) {
       try {
@@ -773,11 +843,12 @@ export class PluginHost {
 
   private async disposeActiveBridge(
     pluginId: string,
-    active: Active
+    active: Active,
+    force = false
   ): Promise<void> {
     if (!active.disposeNeedsBackstop) {
       try {
-        await active.bridge.dispose()
+        await active.bridge.dispose(force)
         return
       } catch (error) {
         active.disposeNeedsBackstop = true
@@ -833,6 +904,7 @@ export class PluginHost {
     pluginId: string,
     attempt: ActivationAttempt
   ): void {
+    this.opts.registry.assertSecurityAllowed?.(pluginId)
     if (!this.isActivationCurrent(pluginId, attempt)) {
       throw this.activationSupersededError(pluginId)
     }
@@ -1025,6 +1097,26 @@ export class PluginHost {
     return this.policyBarriers.has(pluginId)
   }
 
+  isSecurityRestricted(pluginId: string): boolean {
+    return !!this.opts.registry.securityDecision?.(pluginId)
+  }
+
+  /** A returned hook result remains subject to revocation until committed. */
+  capturePolicyCheck(pluginId: string): () => void {
+    const generation = this.policyGenerationFor(pluginId)
+    const check = () => {
+      this.opts.registry.assertSecurityAllowed?.(pluginId)
+      if (
+        this.policyBarriers.has(pluginId) ||
+        this.policyGenerationFor(pluginId) !== generation
+      ) {
+        throw laneAdmissionClosed(pluginId)
+      }
+    }
+    check()
+    return check
+  }
+
   /**
    * Registers an invocation-scoped policy lease. Policy mutation aborts every
    * registered lease before waiting for the plugin lane or worker teardown.
@@ -1033,6 +1125,7 @@ export class PluginHost {
     pluginId: string,
     expectedGeneration: number
   ): PluginPolicyLease {
+    this.opts.registry.assertSecurityAllowed?.(pluginId)
     if (
       this.policyBarriers.has(pluginId) ||
       this.policyGenerationFor(pluginId) !== expectedGeneration
@@ -1155,6 +1248,8 @@ export class PluginHost {
 
   async shutdown(): Promise<void> {
     this.shuttingDown = true
+    this.unsubscribeSecurity()
+    await this.opts.security?.stop()
     this.unsubscribeLocale()
     if (this.idleTimer) clearInterval(this.idleTimer)
     const pluginIds = new Set([
@@ -1195,6 +1290,7 @@ export class PluginHost {
   }
 
   private activeForUse(pluginId: string): Active | undefined {
+    if (this.opts.registry.securityDecision?.(pluginId)) return undefined
     if (this.quiescing.has(pluginId) || this.policyBarriers.has(pluginId)) {
       return undefined
     }
@@ -1236,6 +1332,51 @@ export class PluginHost {
       this.policyBarriers.delete(pluginId)
       if (!this.shuttingDown) this.laneFor(pluginId).reopen()
     }
+  }
+
+  /** Called on signed-policy refresh; closes all affected lanes before awaiting IO. */
+  enforceSecurityPolicy(): Promise<void> {
+    const operations: Promise<void>[] = []
+    for (const plugin of this.opts.registry.list()) {
+      if (!plugin.security || plugin.security.reason === 'pending') continue
+      const existing = this.securityStops.get(plugin.id)
+      if (existing) {
+        operations.push(existing)
+        continue
+      }
+      this.opts.registry.bumpPolicyGeneration(plugin.id)
+      this.laneFor(plugin.id).close()
+      this.abortPolicyAdmission(plugin.id)
+      const active = this.active.get(plugin.id)
+      const termination = active
+        ? this.disposeActiveBridge(plugin.id, active, true)
+        : Promise.resolve()
+      void termination.catch(() => undefined)
+      const operation = this.applyPolicyMutation(plugin.id, async () => {
+        await termination
+        // An installer may have already replaced the affected identity while
+        // this mutation waited for its lane. Never terminalize its fixed successor.
+        const decision = this.opts.registry.securityDecision(plugin.id)
+        if (decision && decision.advisoryIds.length > 0) {
+          await this.pluginUnavailable(plugin.id, 'security_revoked')
+        }
+      }).finally(() => {
+        this.securityStops.delete(plugin.id)
+        this.opts.onSecurityChanged?.()
+      })
+      this.securityStops.set(plugin.id, operation)
+      operations.push(operation)
+    }
+    this.opts.onSecurityChanged?.()
+    return Promise.all(operations).then(() => undefined)
+  }
+
+  notifySecurityWake(): void {
+    this.opts.security?.notifyWake()
+  }
+
+  refreshSecurityPolicy(force = false): Promise<void> {
+    return this.opts.security?.refresh(force) ?? Promise.resolve()
   }
 }
 

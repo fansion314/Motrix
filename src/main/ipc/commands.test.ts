@@ -4,6 +4,7 @@ import path from 'node:path'
 import { NOOP_TASK_ACTIVITY_RECORDER } from '@core/activity'
 import { Aria2Adapter } from '@core/engine/aria2/aria2-adapter'
 import { EventBus } from '@core/events/event-bus'
+import { PluginEngineVersionTooOld } from '@core/plugin/manifest/errors'
 import { AppliedDownloadProxyPolicy } from '@core/proxy/applied-download-proxy-policy'
 import { SettingsManager } from '@core/settings/settings-manager'
 import { ErrorCode } from '@shared/errors'
@@ -73,6 +74,7 @@ const ipcHandleMock = vi.fn()
 const ipcRemoveHandlerMock = vi.fn()
 const openExternalMock = vi.fn()
 const showOpenDialogMock = vi.fn()
+const showSaveDialogMock = vi.fn()
 vi.mock('electron', () => ({
   BrowserWindow: {
     fromWebContents: (...args: unknown[]) => fromWebContentsMock(...args),
@@ -83,6 +85,7 @@ vi.mock('electron', () => ({
   },
   dialog: {
     showMessageBox: vi.fn(),
+    showSaveDialog: (...args: unknown[]) => showSaveDialogMock(...args),
     showOpenDialog: (...args: unknown[]) => showOpenDialogMock(...args),
   },
   shell: {
@@ -298,6 +301,54 @@ function fakeCtx() {
 }
 
 describe('buildCommandHandlers', () => {
+  it('returns the exact media-merge version requirement before downloading or requesting consent', async () => {
+    const ctx = {
+      ...fakeCtx(),
+      hostVersion: '2.0.0-beta.46',
+      registryClient: {
+        get: vi.fn().mockResolvedValue({
+          compatible: false,
+          engines: { motrix: '>=2.0.0-beta.47 <3.0.0' },
+        }),
+      },
+    }
+    const handlers = buildCommandHandlers(ctx as unknown as CommandContext)
+    await expect(
+      handlers[Commands.InstallPlugin]?.({
+        sourceType: 'registry',
+        pluginId: 'motrix.media-merge',
+      })
+    ).resolves.toEqual({
+      incompatible: {
+        required: '>=2.0.0-beta.47 <3.0.0',
+        hostVersion: '2.0.0-beta.46',
+      },
+    })
+    expect(ctx.pluginInstaller.stage).not.toHaveBeenCalled()
+    expect(ctx.eventBus.emit).not.toHaveBeenCalled()
+  })
+
+  it('preserves version details for a local package without requesting consent', async () => {
+    const ctx = fakeCtx()
+    ctx.pluginInstaller.stage.mockRejectedValueOnce(
+      new PluginEngineVersionTooOld('>=2.0.0-beta.47 <3.0.0', '2.0.0-beta.46')
+    )
+    const handlers = buildCommandHandlers(ctx as unknown as CommandContext)
+    await expect(
+      handlers[Commands.InstallPlugin]?.({
+        sourceType: 'local',
+        absPath: '/tmp/fixture.moext',
+        fileHash: 'a'.repeat(64),
+      })
+    ).resolves.toEqual({
+      incompatible: {
+        required: '>=2.0.0-beta.47 <3.0.0',
+        hostVersion: '2.0.0-beta.46',
+      },
+    })
+    expect(ctx.eventBus.emit).not.toHaveBeenCalled()
+  })
+
   it('installs FFmpeg only from the fixed service with no renderer-supplied URLs or keys', async () => {
     const ctx = fakeCtx()
     const handlers = buildCommandHandlers(ctx as unknown as CommandContext)
@@ -371,14 +422,6 @@ describe('buildCommandHandlers', () => {
       'test.plugin',
       ctx.pluginHost
     )
-  })
-
-  it('returns a map keyed by Commands channels', () => {
-    // @ts-expect-error — fake ctx is partial; handler map keys are what we care about
-    const handlers = buildCommandHandlers(fakeCtx())
-    expect(handlers[Commands.ParseTorrent]).toBeInstanceOf(Function)
-    expect(handlers[Commands.AddTorrentTask]).toBeInstanceOf(Function)
-    expect(handlers[Commands.AddMagnetTask]).toBeInstanceOf(Function)
   })
 
   it('routes RetryTasks for unresolved magnet metadata to MagnetTracker', async () => {
@@ -1070,6 +1113,51 @@ describe('buildCommandHandlers', () => {
       })
     ).rejects.toThrow('non-main window')
     expect(ctx.contextStore.merge).not.toHaveBeenCalled()
+  })
+
+  it('uses parented native file dialogs and validates generic picker options', async () => {
+    showOpenDialogMock.mockReset()
+    showSaveDialogMock.mockReset()
+    const sender = {} as never
+    const parent = { isDestroyed: () => false }
+    fromWebContentsMock.mockReturnValue(parent)
+    showOpenDialogMock.mockResolvedValueOnce({
+      canceled: false,
+      filePaths: ['/media/video.mp4'],
+    })
+    showSaveDialogMock
+      .mockResolvedValueOnce({ canceled: false, filePath: '/media/merged.mkv' })
+      .mockResolvedValueOnce({ canceled: true })
+    // @ts-expect-error partial ctx
+    const handlers = buildCommandHandlers(fakeCtx())
+    await expect(
+      handlers[Commands.PickFile]?.(sender, { kind: 'open' })
+    ).resolves.toBe('/media/video.mp4')
+    expect(showOpenDialogMock).toHaveBeenCalledWith(
+      parent,
+      expect.objectContaining({ properties: ['openFile'] })
+    )
+    await expect(
+      handlers[Commands.PickFile]?.(sender, {
+        kind: 'save',
+        extensions: ['mp4', 'mkv'],
+      })
+    ).resolves.toBe('/media/merged.mkv')
+    expect(showSaveDialogMock).toHaveBeenCalledWith(
+      parent,
+      expect.objectContaining({
+        filters: [{ name: expect.any(String), extensions: ['mp4', 'mkv'] }],
+      })
+    )
+    await expect(
+      handlers[Commands.PickFile]?.(sender, { kind: 'save' })
+    ).resolves.toBeNull()
+    await expect(
+      handlers[Commands.PickFile]?.(sender, {
+        kind: 'open',
+        extensions: ['../invalid'],
+      })
+    ).rejects.toThrow()
   })
 
   it('returns a picked save directory and handles cancellation', async () => {
@@ -2876,4 +2964,79 @@ describe('host-owned task directory history', () => {
     )
     finish({ ok: true, value: { favorites: [], recent: [] } })
   })
+})
+
+describe('manual media merge logging', () => {
+  it('uses the existing plugin log capability for preparation failures', async () => {
+    const ctx = fakeCtx()
+    const error = vi.fn()
+    const createLog = vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error }))
+    const pluginId = 'test.merger'
+    const handlers = buildCommandHandlers({
+      ...ctx,
+      pluginRegistry: {
+        list: () => [{ id: pluginId, name: 'Merger', enabled: true }],
+        get: () => ({
+          manifest: {
+            permissions: ['ffmpeg'],
+            contributes: {
+              commands: [{ id: `${pluginId}.mergeStreams`, public: true }],
+            },
+          },
+        }),
+      },
+      capabilityHost: { createLog },
+    } as unknown as CommandContext)
+    await expect(
+      handlers[Commands.StartMediaMerge]?.({
+        pluginId,
+        videoInput: 'relative.mp4',
+        audioInput: '/media/audio.mp4',
+        output: '/media/merged.mp4',
+      })
+    ).rejects.toThrow('mediaMerge.absolutePaths')
+    expect(createLog).toHaveBeenCalledWith(pluginId)
+    expect(error).toHaveBeenCalledWith(
+      'Media merge failed',
+      expect.objectContaining({
+        event: 'media-merge.failed',
+        stage: 'preparing',
+        reason: 'mediaMerge.absolutePaths',
+      })
+    )
+  })
+})
+
+describe('plugin diagnostic mode command', () => {
+  it.each([true, false])(
+    'returns authoritative state after setting verbose=%s',
+    async (verbose) => {
+      const state = { verbose, expiresAt: verbose ? 3_610_000 : null }
+      const setLogVerbose = vi.fn()
+      const getLogState = vi.fn(() => state)
+      const handlers = buildCommandHandlers({
+        ...fakeCtx(),
+        capabilityHost: { setLogVerbose, getLogState },
+      } as unknown as CommandContext)
+      await expect(
+        handlers[Commands.SetPluginLogVerbose]?.({
+          pluginId: 'alice.demo',
+          verbose,
+        })
+      ).resolves.toEqual(state)
+      expect(setLogVerbose).toHaveBeenCalledWith('alice.demo', verbose)
+      expect(getLogState).toHaveBeenCalledWith('alice.demo')
+      setLogVerbose.mockClear()
+      for (const payload of [
+        null,
+        {},
+        { pluginId: 'alice.demo', verbose: 'true' },
+      ]) {
+        await expect(
+          handlers[Commands.SetPluginLogVerbose]?.(payload)
+        ).rejects.toThrow()
+      }
+      expect(setLogVerbose).not.toHaveBeenCalled()
+    }
+  )
 })

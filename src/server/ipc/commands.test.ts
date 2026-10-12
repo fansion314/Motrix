@@ -12,6 +12,7 @@ import type { GrantsManager } from '@core/plugin/grants/grants-manager'
 import type { ActivationDispatcher } from '@core/plugin/host/activation-dispatcher'
 import type { PluginHost } from '@core/plugin/host/plugin-host'
 import type { PluginInstaller } from '@core/plugin/install/plugin-installer'
+import { PluginEngineVersionTooOld } from '@core/plugin/manifest/errors'
 import type { PluginRegistry } from '@core/plugin/plugin-registry'
 import type { RegistryClient } from '@core/plugin/registry/registry-client'
 import type { PluginStateStore } from '@core/plugin/state/plugin-state-store'
@@ -1727,6 +1728,30 @@ describe('server plugin enable/disable commands', () => {
 })
 
 describe('server plugin lifecycle commands', () => {
+  it('returns compatibility details without emitting consent or installation events', async () => {
+    const ctx = makeFakeCtx()
+    ;(
+      ctx.pluginInstallService.stage as ReturnType<typeof vi.fn>
+    ).mockRejectedValueOnce(
+      new PluginEngineVersionTooOld('>=2.0.0-beta.47 <3.0.0', '2.0.0-beta.46')
+    )
+    const handlers = buildServerCommandHandlers(
+      ctx as Parameters<typeof buildServerCommandHandlers>[0]
+    )
+    await expect(
+      handlers[Commands.InstallPlugin]?.({
+        sourceType: 'registry',
+        pluginId: 'motrix.media-merge',
+      })
+    ).resolves.toEqual({
+      incompatible: {
+        required: '>=2.0.0-beta.47 <3.0.0',
+        hostVersion: '2.0.0-beta.46',
+      },
+    })
+    expect(ctx.eventBus.emit).not.toHaveBeenCalled()
+  })
+
   it('stages an install and publishes the consent request', async () => {
     const ctx = makeFakeCtx()
     ;(
@@ -1996,4 +2021,79 @@ describe('host-owned task directory history', () => {
     )
     finish({ ok: true, value: { favorites: [], recent: [] } })
   })
+})
+
+describe('manual media merge logging', () => {
+  it('uses the existing plugin log capability for preparation failures', async () => {
+    const ctx = makeFakeCtx()
+    const error = vi.fn()
+    const createLog = vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error }))
+    const pluginId = 'test.merger'
+    const handlers = buildServerCommandHandlers({
+      ...ctx,
+      pluginRegistry: {
+        list: () => [{ id: pluginId, name: 'Merger', enabled: true }],
+        get: () => ({
+          manifest: {
+            permissions: ['ffmpeg'],
+            contributes: {
+              commands: [{ id: `${pluginId}.mergeStreams`, public: true }],
+            },
+          },
+        }),
+      },
+      capabilityHost: { createLog },
+    } as unknown as ServerCommandContext)
+    await expect(
+      handlers[Commands.StartMediaMerge]?.({
+        pluginId,
+        videoInput: 'relative.mp4',
+        audioInput: '/media/audio.mp4',
+        output: '/media/merged.mp4',
+      })
+    ).rejects.toThrow('mediaMerge.absolutePaths')
+    expect(createLog).toHaveBeenCalledWith(pluginId)
+    expect(error).toHaveBeenCalledWith(
+      'Media merge failed',
+      expect.objectContaining({
+        event: 'media-merge.failed',
+        stage: 'preparing',
+        reason: 'mediaMerge.absolutePaths',
+      })
+    )
+  })
+})
+
+describe('plugin diagnostic mode command', () => {
+  it.each([true, false])(
+    'returns authoritative state after setting verbose=%s',
+    async (verbose) => {
+      const state = { verbose, expiresAt: verbose ? 3_610_000 : null }
+      const setLogVerbose = vi.fn()
+      const getLogState = vi.fn(() => state)
+      const handlers = buildServerCommandHandlers({
+        ...makeFakeCtx(),
+        capabilityHost: { setLogVerbose, getLogState },
+      } as unknown as ServerCommandContext)
+      await expect(
+        handlers[Commands.SetPluginLogVerbose]?.({
+          pluginId: 'alice.demo',
+          verbose,
+        })
+      ).resolves.toEqual(state)
+      expect(setLogVerbose).toHaveBeenCalledWith('alice.demo', verbose)
+      expect(getLogState).toHaveBeenCalledWith('alice.demo')
+      setLogVerbose.mockClear()
+      for (const payload of [
+        null,
+        {},
+        { pluginId: 'alice.demo', verbose: 'true' },
+      ]) {
+        await expect(
+          handlers[Commands.SetPluginLogVerbose]?.(payload)
+        ).rejects.toThrow()
+      }
+      expect(setLogVerbose).not.toHaveBeenCalled()
+    }
+  )
 })

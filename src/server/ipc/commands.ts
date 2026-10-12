@@ -1,3 +1,4 @@
+import path from 'node:path'
 import type { Aria2RpcClient } from '@core/engine/aria2/aria2-rpc-client'
 import type { DnsFallbackConsumer } from '@core/engine/aria2/dns-fallback'
 import { dnsModeToAsyncDns } from '@core/engine/aria2/dns-fallback'
@@ -11,6 +12,7 @@ import { getLogger } from '@core/logger'
 import { publishEngineRestartRequired } from '@core/notifications/engine-restart-required'
 import type { NotificationCenter } from '@core/notifications/notification-center'
 import type { CapabilityHost } from '@core/plugin/capabilities/interface'
+import { ManualMediaMerge } from '@core/plugin/commands/manual-media-merge'
 import { pluginSecretFields } from '@core/plugin/configuration-schema'
 import type { GrantsManager } from '@core/plugin/grants/grants-manager'
 import type { HookAuditLog } from '@core/plugin/hooks/audit-log'
@@ -18,6 +20,7 @@ import type { HookOrchestrator } from '@core/plugin/hooks/hook-orchestrator'
 import type { ActivationDispatcher } from '@core/plugin/host/activation-dispatcher'
 import type { PluginHost } from '@core/plugin/host/plugin-host'
 import type { PluginInstaller } from '@core/plugin/install/plugin-installer'
+import { PluginEngineVersionTooOld } from '@core/plugin/manifest/errors'
 import type { PluginRegistry } from '@core/plugin/plugin-registry'
 import type { RegistryClient } from '@core/plugin/registry/registry-client'
 import { scanForUpdates } from '@core/plugin/registry/update-scan'
@@ -87,6 +90,7 @@ import {
 } from '@shared/schemas/bulk-task-command'
 import { languagePreferenceSchema } from '@shared/schemas/locale'
 import { moveTasksPayloadSchema } from '@shared/schemas/move-tasks'
+import { PluginLogVerboseRequestSchema } from '@shared/schemas/plugin-logs'
 import { checkPluginUpdatesPayloadSchema } from '@shared/schemas/plugin-update'
 import { removeTaskPayloadSchema } from '@shared/schemas/remove-task'
 import {
@@ -94,6 +98,7 @@ import {
   taskTrackerEditSchema,
 } from '@shared/schemas/task-tracker'
 import { EngineRecoveryAction } from '@shared/types/engine'
+import type { PluginInstallCompatibilityFailure } from '@shared/types/plugin-install'
 import type { ProxySettings } from '@shared/types/settings'
 import type { DownloadTask } from '@shared/types/task'
 import { TaskStatus } from '@shared/types/task'
@@ -105,6 +110,7 @@ import type { ServerDownloadPathPolicy } from '../download-path-policy'
 import type { ServerPluginInstallService } from '../plugin/install-service'
 import type { createServerProxyApplier } from '../proxy/wiring'
 import type { ServerDirectoryService } from '../server-directory-service'
+import { unsupportedLegacyImportCommands } from './legacy-import'
 
 export interface ServerCommandContext {
   supervisor: EngineSupervisor
@@ -396,7 +402,26 @@ export function buildServerCommandHandlers(
       directoryPreferences.mutate({ action: 'recordRecent', path }),
   })
 
+  const manualMediaMerge = new ManualMediaMerge({
+    createLog: (pluginId) => capabilityHost.createLog(pluginId),
+    registry: pluginRegistry,
+    host: pluginHost,
+    tasks: taskManager,
+    authorizePath: (file) =>
+      ctx.serverDirectoryService.resolvePreferenceDirectory(path.dirname(file)),
+  })
+
   return {
+    [Commands.GetMediaMergeState]: async () => manualMediaMerge.state(),
+    [Commands.GetMediaMergeSelection]: async (value: unknown) =>
+      manualMediaMerge.selection(value),
+    [Commands.StartMediaMerge]: async (value: unknown) =>
+      manualMediaMerge.start(value),
+    [Commands.GetMediaMergeJob]: async (value: unknown) =>
+      manualMediaMerge.get(value),
+    [Commands.CancelMediaMerge]: async (value: unknown) =>
+      manualMediaMerge.cancel(value),
+    ...unsupportedLegacyImportCommands(),
     [Commands.InstallFfmpeg]: async (payload: unknown) => {
       z.undefined().parse(payload)
       return { ok: false, error: 'unsupported' }
@@ -939,6 +964,7 @@ export function buildServerCommandHandlers(
     },
 
     [Commands.EnablePlugin]: async (id: string) => {
+      pluginRegistry.assertSecurityAllowed?.(id)
       pluginStateStore.setEnabled(id, true)
       // Sync the in-memory IndexedPlugin.state so Queries.ListPlugins and
       // downstream gating (PluginHost.activate, ActivationDispatcher,
@@ -1018,6 +1044,7 @@ export function buildServerCommandHandlers(
 
     [Commands.CheckPluginUpdates]: async (payload: unknown) => {
       const parsed = checkPluginUpdatesPayloadSchema.parse(payload)
+      await pluginHost.refreshSecurityPolicy?.(parsed?.force)
       if (parsed?.force) await registryClient.refresh()
       const entries = await registryClient.list(hostVersion)
       return scanForUpdates(pluginRegistry.list(), entries).filter(
@@ -1026,16 +1053,28 @@ export function buildServerCommandHandlers(
     },
 
     [Commands.InstallPlugin]: async (payload: unknown) => {
-      const result = await pluginInstallService.stage(payload, pluginHost)
-      if (result.committed && result.pluginId) {
-        eventBus.emit(Events.PluginInstalled, { pluginId: result.pluginId })
-      } else {
-        eventBus.emit(Events.PluginInstallConsentRequested, {
-          stagingId: result.stagingId,
-          consent: result.consent,
-        })
+      try {
+        const result = await pluginInstallService.stage(payload, pluginHost)
+        if (result.committed && result.pluginId) {
+          eventBus.emit(Events.PluginInstalled, { pluginId: result.pluginId })
+        } else {
+          eventBus.emit(Events.PluginInstallConsentRequested, {
+            stagingId: result.stagingId,
+            consent: result.consent,
+          })
+        }
+        return result
+      } catch (error) {
+        if (error instanceof PluginEngineVersionTooOld) {
+          return {
+            incompatible: {
+              required: error.required,
+              hostVersion: error.hostVersion,
+            },
+          } satisfies PluginInstallCompatibilityFailure
+        }
+        throw error
       }
-      return result
     },
 
     [Commands.ConfirmPluginInstall]: async (payload: unknown) => {
@@ -1089,11 +1128,9 @@ export function buildServerCommandHandlers(
     },
 
     [Commands.SetPluginLogVerbose]: async (payload: unknown) => {
-      const parsed = z
-        .object({ pluginId: z.string().min(1), verbose: z.boolean() })
-        .parse(payload)
+      const parsed = PluginLogVerboseRequestSchema.parse(payload)
       capabilityHost.setLogVerbose(parsed.pluginId, parsed.verbose)
-      return { ok: true }
+      return capabilityHost.getLogState(parsed.pluginId)
     },
 
     [Commands.MarkNotificationRead]: async (id: string) =>

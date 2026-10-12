@@ -1,5 +1,6 @@
 import { access, rename, rm } from 'node:fs/promises'
 import type { EngineAdapter } from '@core/engine/engine-adapter'
+import { hasLegacyImport } from '@core/legacy-import/legacy-task-policy'
 import type { HookOrchestrator } from '@core/plugin/hooks/hook-orchestrator'
 import type { MotrixDatabase } from '@core/session/motrix-database'
 import { DownloadErrorCode, ErrorCode } from '@shared/errors'
@@ -129,6 +130,8 @@ export interface RecoveryDeps {
   fs: RecoveryFs
   activityRecorder: TaskActivityRecorder
   finalizeTask: (taskId: string) => Promise<void>
+  /** Defer ownership and completion to the journal before interpreting path existence. */
+  hasPendingFinalization?: (taskId: string) => Promise<boolean>
   /**
    * Persist a task and (when non-null) its terminal occurrence in a single
    * durable transaction — used INSTEAD OF `taskManager.persist` whenever a
@@ -204,6 +207,7 @@ export class TaskRecoveryServiceImpl implements TaskRecoveryService {
     // them would sit on the awaited startup path.
     const inFlightPublished = publishedTasks.filter(
       (t) =>
+        !hasLegacyImport(t) &&
         (taskId === undefined || t.id === taskId) &&
         (t.transitionPhase !== TransitionPhase.Idle ||
           t.status === TaskStatus.Finalizing ||
@@ -335,6 +339,18 @@ export class TaskRecoveryServiceImpl implements TaskRecoveryService {
     taskIdsByInfoHash: Map<string, Set<string>>,
     report: RecoveryReport
   ): Promise<void> {
+    if (
+      task.transitionPhase === TransitionPhase.Renaming &&
+      !isMediaKind(task.kind) &&
+      (await this.deps.hasPendingFinalization?.(task.id))
+    ) {
+      await this.deps.finalizeTask(task.id)
+      report.recovered.push({
+        taskId: task.id,
+        action: RecoveryAction.ResumeFromRename,
+      })
+      return
+    }
     const fsState = await this.inspectFs(task)
     const matchingGid = this.selectMatchingGid(
       task,

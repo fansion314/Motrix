@@ -27,6 +27,7 @@ import type {
   GrantsMap,
   InstallRecord,
   InstallRecordSource,
+  OfficialPackageProof,
 } from '@shared/types/plugin-install'
 import type { FfmpegDetection } from '../capabilities/ffmpeg-detect'
 import type { CapabilityHost } from '../capabilities/interface'
@@ -38,6 +39,7 @@ import { parseManifest } from '../manifest/parse'
 import { resolveInsidePluginDir } from '../manifest/path-safety'
 import type { PluginRegistry } from '../plugin-registry'
 import type { PluginExecutableIdentity } from '../post/delivery-types'
+import type { PluginSecurityService } from '../security/security-service'
 import type { PluginStateStore } from '../state/plugin-state-store'
 import { buildConsentPayload } from './consent-payload'
 import { ffmpegSatisfies } from './ffmpeg-semver'
@@ -48,6 +50,10 @@ import {
   writeInstallRecord,
 } from './install-record'
 import { extractLoadedMoext, loadMoext } from './moext-reader'
+import {
+  OFFICIAL_ARCHIVE_FILENAME,
+  verifyOfficialPackage,
+} from './official-package'
 import { computePublicCommandHashes } from './public-command-hash'
 import {
   assertMatchesRegistryExpectation,
@@ -101,11 +107,14 @@ export interface PluginInstallerRetentionSink {
 }
 
 export interface PluginInstallerOptions {
+  security?: PluginSecurityService
   pluginsDir: string
   registry: PluginRegistry
   stateStore: PluginStateStore
   capabilityHost: CapabilityHost
   hostVersion: string
+  /** Test seam; production always uses the pinned official signing keys. */
+  signingPubkeys?: readonly string[]
   /**
    * Optional Plan D dependency. Until Plan D lands, the installer falls
    * back to local hash computation only.
@@ -137,6 +146,7 @@ interface StagedInstall {
   archivePath: string
   archiveSha256: string
   previousRecord: InstallRecord | null
+  official?: OfficialPackageProof
   runtimeHost?: PluginRuntimeHostLike
 }
 
@@ -251,6 +261,15 @@ export class PluginInstaller {
     const extractedDir = path.join(stagingDir, 'tree')
     const archivePath = path.join(stagingDir, 'archive.moext')
     const loadedMoext = await loadMoext(moextPath)
+    const official =
+      options?.expect?.requiresOfficialSignature ||
+      options?.expect?.officialSignature
+        ? verifyOfficialPackage(
+            loadedMoext,
+            options.expect.officialSignature,
+            this.opts.signingPubkeys
+          )
+        : undefined
     const pinnedSha256 =
       sourceInput.type === 'local'
         ? sourceInput.fileHash
@@ -285,6 +304,7 @@ export class PluginInstaller {
     try {
       const result = parseManifest(manifestRaw, {
         hostVersion: this.opts.hostVersion,
+        official: official !== undefined,
       })
       parsedManifest = await resolveManifestForInstall(
         result.manifest as PluginManifest,
@@ -309,13 +329,40 @@ export class PluginInstaller {
       type: normalized.type,
       url: normalized.url,
       bundleSha256,
+      archiveSha256: loadedMoext.archiveSha256,
       recordedAt: Date.now(),
+    }
+    try {
+      await this.opts.security?.refreshIfStale()
+      this.opts.security?.assertAllowed({
+        pluginId: parsedManifest.id,
+        version: parsedManifest.version,
+        archiveSha256: loadedMoext.archiveSha256,
+      })
+    } catch (error) {
+      await rm(stagingDir, { recursive: true, force: true })
+      throw error
     }
     const finalDir = resolvePluginInstallDir(
       this.opts.pluginsDir,
       parsedManifest.id
     )
     const prev = await readInstallRecord(finalDir)
+
+    if (this.opts.registry.get(parsedManifest.id)?.origin === 'builtin') {
+      await rm(stagingDir, { recursive: true, force: true })
+      throw new AppError(
+        ErrorCode.PluginManifestInvalid,
+        'plugin.install.builtin_already_installed'
+      )
+    }
+    if (prev?.official && !official) {
+      await rm(stagingDir, { recursive: true, force: true })
+      throw new AppError(
+        ErrorCode.PluginManifestInvalid,
+        'plugin.install.official_signature_invalid'
+      )
+    }
 
     if (this.opts.serverAck) {
       const r = this.opts.serverAck(source, prev)
@@ -407,6 +454,7 @@ export class PluginInstaller {
       installedCalleeTitles,
       { ffmpegDetection }
     )
+    consent.trustSurface.notVerified = official === undefined
 
     // Locale/manifest resolution is complete. A pending consent transaction
     // only needs the protected archive, so do not retain a second extracted
@@ -423,6 +471,7 @@ export class PluginInstaller {
       archivePath,
       archiveSha256: loadedMoext.archiveSha256,
       previousRecord: prev,
+      official,
       runtimeHost: options?.runtimeHost,
     }
     this.pending.set(stagingId, staged)
@@ -473,6 +522,12 @@ export class PluginInstaller {
           staged.pluginId
         )
         const prev = await readInstallRecord(finalDir)
+        if (this.opts.registry.get(staged.pluginId)?.origin === 'builtin') {
+          throw new AppError(
+            ErrorCode.PluginManifestInvalid,
+            'plugin.install.builtin_already_installed'
+          )
+        }
         if (!sameInstallRecord(prev, staged.previousRecord)) {
           throw new AppError(
             ErrorCode.PluginManifestInvalid,
@@ -484,6 +539,7 @@ export class PluginInstaller {
           version: 1,
           pluginId: staged.pluginId,
           source: staged.source,
+          securityReviewed: !this.opts.security?.configured,
           grants,
           consentSnapshot: {
             permissions: staged.newManifest.permissions,
@@ -494,6 +550,7 @@ export class PluginInstaller {
             enginesMotrix: staged.newManifest.engines.motrix,
             hostPermissions: staged.newManifest.hostPermissions ?? [],
           },
+          ...(staged.official ? { official: staged.official } : {}),
         }
         const commitDir = path.join(
           this.opts.pluginsDir,
@@ -505,6 +562,11 @@ export class PluginInstaller {
         let supersededExecutable: PluginExecutableIdentity | undefined
 
         try {
+          this.opts.security?.assertAllowed({
+            pluginId: staged.pluginId,
+            version: staged.newManifest.version,
+            archiveSha256: staged.archiveSha256,
+          })
           // Never commit the long-lived staging tree: it was visible while the
           // consent dialog was open. Re-read through one file descriptor, verify
           // the staged archive digest, then extract those exact bytes into the
@@ -513,10 +575,24 @@ export class PluginInstaller {
           if (loadedMoext.archiveSha256 !== staged.archiveSha256) {
             throw new AppError(
               ErrorCode.PluginManifestInvalid,
-              'plugin.install.sha256_mismatch'
+              staged.official
+                ? 'plugin.install.official_signature_invalid'
+                : 'plugin.install.sha256_mismatch'
             )
           }
           await extractLoadedMoext(loadedMoext, commitDir)
+          if (staged.official) {
+            verifyOfficialPackage(
+              loadedMoext,
+              staged.official.signature,
+              this.opts.signingPubkeys
+            )
+            await writeFile(
+              path.join(commitDir, OFFICIAL_ARCHIVE_FILENAME),
+              loadedMoext.bytes,
+              { flag: 'wx', mode: 0o600 }
+            )
+          }
           await writeInstallRecord(commitDir, record)
           await mkdir(this.opts.pluginsDir, { recursive: true })
 
@@ -536,6 +612,20 @@ export class PluginInstaller {
 
           this.installCommandSchemas(staged.pluginId, staged.newManifest)
           await this.opts.registry.discover()
+          this.opts.security?.assertAllowed({
+            pluginId: staged.pluginId,
+            version: staged.newManifest.version,
+            archiveSha256: staged.archiveSha256,
+          })
+          if (
+            staged.official &&
+            !this.opts.registry.get(staged.pluginId)?.official
+          ) {
+            throw new AppError(
+              ErrorCode.PluginManifestInvalid,
+              'plugin.install.official_signature_invalid'
+            )
+          }
           if (supersededExecutable) {
             // Admission remains closed until this succeeds. If durable
             // terminalization fails, the catch below restores the old bundle

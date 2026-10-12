@@ -905,7 +905,7 @@ test('opens details by double click and keeps selection separate from inspector 
   const rows = grid.locator('[data-task-id]')
   const selected = grid.locator('[data-task-id][aria-selected="true"]')
   const drawer = mainWindow.getByRole('dialog', { name: 'Task Inspector' })
-  const more = mainWindow.getByRole('button', { name: 'More' })
+  const more = mainWindow.getByRole('button', { name: 'More', exact: true })
   const content = mainWindow.getByTestId('task-inspector-drawer-content')
   await expect(rows).toHaveCount(2)
   await expect(more).toBeEnabled()
@@ -1101,10 +1101,17 @@ test('marquee selection survives row feedback, data updates and blank-space drag
         elements.map((element) => element.getAttribute('data-task-id'))
       )
   const beforeScrollbar = await selectionAtTop()
-  const thumb = grid.locator(
-    '[data-slot="scroll-area-scrollbar"][data-orientation="vertical"] [data-slot="scroll-area-thumb"]'
+  const scrollbar = grid.locator(
+    '[data-slot="scroll-area-scrollbar"][data-orientation="vertical"]'
   )
+  const thumb = scrollbar.locator('[data-slot="scroll-area-thumb"]')
   await thumb.hover()
+  const headerBox = (await viewport.getByRole('row').first().boundingBox())!
+  const scrollbarBox = (await scrollbar.boundingBox())!
+  expect(scrollbarBox.y).toBeCloseTo(headerBox.y + headerBox.height, 0)
+  await grid.screenshot({
+    path: testInfo.outputPath('scrollbar-below-header.png'),
+  })
   const thumbBox = (await thumb.boundingBox())!
   await mainWindow.mouse.move(
     thumbBox.x + thumbBox.width / 2,
@@ -1727,10 +1734,13 @@ for (const compact of [false, true]) {
     await expect(title).toHaveCSS('font-size', compact ? '14px' : '24px')
     await expect
       .poll(
-        async () => (await mainWindow.locator('header').boundingBox())!.height
+        async () =>
+          (await mainWindow
+            .locator('[data-slot="panel-shell-header"]:visible')
+            .boundingBox())!.height
       )
       .toBe(compact ? 38 : 80)
-    for (const button of await toolbar.getByRole('button').all()) {
+    for (const button of await group.getByRole('button').all()) {
       await expect
         .poll(() =>
           button.evaluate((element) => {
@@ -1941,9 +1951,6 @@ test('context actions open files, select download files, reorder the queue and c
   await expect(
     mainWindow.getByRole('menuitem', { name: 'Move to Front', exact: true })
   ).toBeVisible()
-  await mainWindow.screenshot({
-    path: testInfo.outputPath('queue-submenu.png'),
-  })
   await mainWindow
     .getByRole('menuitem', { name: 'Move to Front', exact: true })
     .click()
@@ -2171,9 +2178,9 @@ for (const [locale, downloads, createdColumn] of [
     const createdHeader = list
       .getByRole('columnheader')
       .filter({ hasText: createdColumn })
-    // First click exposes the default descending state; the next reverses it.
+    await expect(createdHeader).toHaveAttribute('aria-sort', 'descending')
     await createdHeader.getByRole('button').click()
-    await createdHeader.getByRole('button').click()
+    await expect(createdHeader).toHaveAttribute('aria-sort', 'ascending')
     await expect(list.locator('[data-task-id]')).toHaveText([
       /History.bin/,
       /Yesterday.bin/,

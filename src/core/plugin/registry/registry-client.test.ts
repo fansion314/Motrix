@@ -85,6 +85,24 @@ describe('RegistryClient', () => {
     })
   }
 
+  it('annotates the media-merge beta requirement with the actual host version', async () => {
+    const body = structuredClone(fixture)
+    body.plugins[0].id = 'motrix.media-merge'
+    body.plugins[0].engines.motrix = '>=2.0.0-beta.47 <3.0.0'
+    const { impl } = makeFetch([{ status: 200, body }])
+    const client = makeClient(impl)
+    for (const [hostVersion, compatible] of [
+      ['2.0.0-beta.46', false],
+      ['2.0.0-beta.47', true],
+      ['2.0.0', true],
+      ['3.0.0', false],
+    ] as const) {
+      expect(await client.get('motrix.media-merge', hostVersion)).toMatchObject(
+        { hostVersion, compatible }
+      )
+    }
+  })
+
   it('rejects a legacy file envelope, fetches unconditionally, and overwrites in format 2', async () => {
     await writeFile(
       cachePath,
@@ -428,5 +446,20 @@ describe('RegistryClient', () => {
       (await client.get('example.archive-unpacker', '2.2.0'))?.compatible
     ).toBe(true)
     expect(await client.get('example.unknown', '2.2.0')).toBeNull()
+  })
+
+  it('marks a beta-gated listing incompatible on an earlier beta and compatible on stable', async () => {
+    const catalog = structuredClone(fixture)
+    const entry = catalog.plugins.find(
+      (plugin) => plugin.id === 'example.minimal'
+    )!
+    entry.engines.motrix = '>=2.0.0-beta.45 <3.0.0'
+    const { impl } = makeFetch([{ status: 200, body: catalog }])
+    const client = makeClient(impl)
+    expect((await client.get(entry.id, '2.0.0-beta.44'))?.compatible).toBe(
+      false
+    )
+    expect((await client.get(entry.id, '2.0.0-beta.45'))?.compatible).toBe(true)
+    expect((await client.get(entry.id, '2.0.0'))?.compatible).toBe(true)
   })
 })

@@ -25,6 +25,6 @@ pkgbase = motrix-electron-bin
 	noextract = motrix-electron-2.0.0beta.49-1-x86_64.pkg.tar.zst
 	options = !strip
 	source = https://github.com/fansion314/Motrix/releases/download/arch-v2.0.0-beta.49-1/motrix-electron-2.0.0beta.49-1-x86_64.pkg.tar.zst
-	sha256sums = SKIP
+	sha256sums = 0d7ded08fdfdd31edeb9c02710decc47dd6cca16c15c07f915b31e39e52d4a7a
 
 pkgname = motrix-electron-bin

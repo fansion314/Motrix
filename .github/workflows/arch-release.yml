@@ -45,8 +45,10 @@ jobs:
         shell: bash
         run: |
           [[ $ARCH_TAG =~ ^arch-v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?-[1-9][0-9]*$ ]]
-          test "$(git rev-parse "refs/tags/$ARCH_TAG^{commit}")" = "$(git rev-parse HEAD)"
-          git merge-base --is-ancestor HEAD origin/main
+          tag_commit=$(git -c safe.directory="$GITHUB_WORKSPACE" rev-parse "refs/tags/$ARCH_TAG^{commit}")
+          head_commit=$(git -c safe.directory="$GITHUB_WORKSPACE" rev-parse HEAD)
+          test "$tag_commit" = "$head_commit"
+          git -c safe.directory="$GITHUB_WORKSPACE" merge-base --is-ancestor HEAD origin/main
 
       - name: Validate tag and build the source PKGBUILD as an unprivileged user
         shell: bash

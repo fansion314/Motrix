@@ -4,6 +4,7 @@ import type {
 } from '@shared/schemas/app-settings'
 import type { ByteUnitPreference } from '@shared/schemas/byte-unit-system'
 import type { SidebarColor } from '@shared/schemas/sidebar-color'
+import type { SpeedLimitUnits } from '@shared/schemas/speed-limit-units'
 import type { TrayIconColor } from '@shared/schemas/tray-icon-color'
 import type { RunMode } from '../constants'
 import type { EnginePerformanceProfile } from '../constants/engine-performance-profiles'
@@ -223,12 +224,17 @@ export interface EngineSettings {
 export interface MotrixAppSettings {
   launchAtStartup: boolean
   showMainWindowAtLogin: boolean
+  /** Desktop main-window limits, applied when creating the window; 0 removes
+   * the application minimum for that dimension. */
+  mainWindowMinWidth: number
+  mainWindowMinHeight: number
   theme: 'system' | 'light' | 'dark'
   /** Desktop interface scale in percent. */
   uiScale: number
   sidebarColor: SidebarColor
   reduceMotion: boolean
   byteUnitSystem: ByteUnitPreference
+  speedLimitUnits: SpeedLimitUnits
   language: LanguagePreference
   directoryPreferences: DirectoryPreferences
   defaultSaveDir: string
@@ -309,5 +315,6 @@ export interface ProxySettings {
     download: boolean
     updateApp: boolean
     updateTrackers: boolean
+    plugins: boolean
   }
 }

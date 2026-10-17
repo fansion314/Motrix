@@ -876,7 +876,14 @@
         "selectFilesFailed": "เปิดหน้าต่างเลือกไฟล์ไม่ได้",
         "singleTaskFailed": "{{name}}: {{reason}}",
         "stopSeeding": "หยุดปล่อยไฟล์",
-        "stopSeedingTooltipBatch": "หยุดปล่อยไฟล์ {{n}} จาก {{total}} งานที่เลือก"
+        "stopSeedingTooltipBatch": "หยุดปล่อยไฟล์ {{n}} จาก {{total}} งานที่เลือก",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "column": {
         "connections": "เพียร์",
@@ -1158,6 +1165,7 @@
         "banner": "รายการงานอาจไม่เป็นปัจจุบัน — กำลังเชื่อมต่อใหม่…"
       },
       "stats": {
+        "title": "สถานะการถ่ายโอน",
         "downSpeed": "ความเร็วดาวน์โหลด",
         "engineOffline": "เอนจินออฟไลน์",
         "engineOk": "เอนจินพร้อม",
@@ -1254,10 +1262,14 @@
       "ffmpeg": {
         "notInstalled": "ระบบนี้ยังไม่ได้ติดตั้ง FFmpeg",
         "optionalDegraded": "ความสามารถด้านสื่อของปลั๊กอินนี้จะใช้ไม่ได้จนกว่าจะติดตั้ง ffmpeg",
-        "requiredByPlugin": "ปลั๊กอินนี้ต้องใช้ ffmpeg ติดตั้งแล้วลองอีกครั้ง",
+        "requiredByPlugin": "คุณติดตั้งปลั๊กอินได้ทันที โปรดตั้งค่า FFmpeg เวอร์ชันที่รองรับก่อนเปิดใช้งานหรือเรียกใช้ปลั๊กอิน",
         "title": "ข้อกำหนด FFmpeg",
         "versionMismatch": "ติดตั้ง FFmpeg {{version}} แล้ว"
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "ไม่สามารถใช้ FFmpeg ได้ Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "เวอร์ชัน FFmpeg ไม่ตรงตามข้อกำหนดของปลั๊กอินนี้ Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "plugins": {
@@ -1608,6 +1620,14 @@
       "metadata": {
         "strong": "อ่านและเขียนข้อมูลเมตาของงาน",
         "plain": "บันทึกข้อมูลที่ปลั๊กอินนี้สร้างสำหรับงานดาวน์โหลด"
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "permissions": {
@@ -1663,6 +1683,20 @@
       "compromised": "ช่องทางเผยแพร่ปลั๊กอินนี้ถูกบุกรุก",
       "fixedVersion": "มีการแก้ไขในเวอร์ชัน {{version}}",
       "details": "ดูประกาศความปลอดภัย"
+    },
+    "network": {
+      "timeout": "การเชื่อมต่อหมดเวลา",
+      "dns": "ค้นหา DNS ไม่สำเร็จ",
+      "proxyAuth": "ยืนยันตัวตนพร็อกซีไม่สำเร็จ",
+      "proxyConnect": "เชื่อมต่อพร็อกซีไม่ได้",
+      "certificate": "ข้อผิดพลาดใบรับรองหรือ TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "ยกเลิกคำขอแล้ว",
+      "network": "คำขอเครือข่ายไม่สำเร็จ",
+      "cached": "รีเฟรชไม่สำเร็จ กำลังแสดงปลั๊กอินจากแคช",
+      "unavailable": "โหลดรายการปลั๊กอินไม่ได้",
+      "direct": "เชื่อมต่อโดยตรงกับ {{host}} ไม่สำเร็จ: {{reason}}",
+      "viaProxy": "เชื่อมต่อกับ {{host}} ผ่านพร็อกซี {{proxy}} ไม่สำเร็จ: {{reason}}"
     }
   },
   "quit": {
@@ -2067,6 +2101,7 @@
         "bandwidthUsed": "Motrix ใช้ได้สูงสุด {{motrix}}%",
         "baseDownload": "ดาวน์โหลด",
         "baseDownloadDesc": "ความเร็วดาวน์โหลดสูงสุดสำหรับการใช้งานทั่วไป",
+        "unitFor": "หน่วยของ {{field}}",
         "baseSection": "ขีดจำกัดมาตรฐาน",
         "baseSectionDesc": "ใช้สำหรับการดาวน์โหลดทั่วไปและมีผลในทุกโหมด",
         "baseUpload": "อัปโหลด",
@@ -2563,7 +2598,7 @@
         "bypass": "เชื่อมต่อโดยตรงไปยัง",
         "bypassDesc": "หนึ่งโดเมน IP หรือ CIDR ต่อบรรทัด เริ่มด้วย . เพื่อจับคู่เฉพาะโดเมนย่อย การดาวน์โหลดไฟล์ไม่รองรับอักขระตัวแทน *",
         "bypassPlaceholder": "localhost\n127.0.0.1\n.local",
-        "bypassScopeNote": "เฉพาะการดาวน์โหลดไฟล์และการอัปเดตแอป",
+        "bypassScopeNote": "เฉพาะการดาวน์โหลด ปลั๊กอิน และการอัปเดตแอป",
         "enable": "เปิดใช้พร็อกซี",
         "enableDesc": "ใช้พร็อกซีสำหรับการเชื่อมต่อที่เลือกด้านล่าง",
         "hidePassword": "ซ่อนรหัสผ่าน",
@@ -2590,7 +2625,9 @@
         "server": "เซิร์ฟเวอร์",
         "showPassword": "แสดงรหัสผ่าน",
         "title": "พร็อกซี",
-        "user": "ชื่อผู้ใช้"
+        "user": "ชื่อผู้ใช้",
+        "scopePlugins": "การติดตั้งและอัปเดตปลั๊กอิน",
+        "scopePluginsDesc": "ใช้พร็อกซีสำหรับรายการปลั๊กอิน แพ็กเกจติดตั้ง การอัปเดต และคำขอนโยบายความปลอดภัย"
       },
       "reachability": {
         "addEndpoint": "เพิ่มบริการตรวจสอบ",
@@ -3215,5 +3252,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "ต้องกู้คืนส่วนติดต่อ",
+    "description": "การดาวน์โหลดยังดำเนินต่อในเบื้องหลัง การแก้ไขฟอร์มที่ยังไม่บันทึกอาจสูญหาย",
+    "recovering": "กำลังกู้คืนส่วนติดต่อ…",
+    "recover": "กู้คืนส่วนติดต่อ",
+    "diagnostics": "เปิดบันทึกการวินิจฉัย",
+    "downloads": "เปิดรายการดาวน์โหลด",
+    "failed": "ไม่สามารถกู้คืนได้ในขณะนี้ โปรดลองอีกครั้งจากเมนูแอป",
+    "restored": "กู้คืนหน้าจอแล้ว",
+    "wait": "รอต่อไป",
+    "routeTitle": "ไม่สามารถแสดงหน้านี้ได้",
+    "submissionNotice": "การส่งครั้งก่อนอาจเสร็จสมบูรณ์แล้ว โปรดตรวจสอบรายการดาวน์โหลดก่อนสร้างงานเดิมอีกครั้ง"
+  },
+  "pluginOperations": {
+    "requiredField": "ช่องที่ต้องกรอก",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

@@ -879,7 +879,14 @@
         "selectFilesFailed": "باز کردن انتخاب فایل ممکن نشد.",
         "singleTaskFailed": "{{name}}: {{reason}}",
         "stopSeeding": "توقف توزیع",
-        "stopSeedingTooltipBatch": "توقف توزیع {{n}} مورد از {{total}} مورد انتخاب‌شده"
+        "stopSeedingTooltipBatch": "توقف توزیع {{n}} مورد از {{total}} مورد انتخاب‌شده",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "column": {
         "connections": "همتاها",
@@ -1170,6 +1177,7 @@
         "banner": "ممکن است فهرست کارها قدیمی باشد؛ در حال اتصال دوباره…"
       },
       "stats": {
+        "title": "وضعیت انتقال",
         "downSpeed": "سرعت دانلود",
         "engineOffline": "موتور آفلاین است",
         "engineOk": "موتور آماده است",
@@ -1266,10 +1274,14 @@
       "ffmpeg": {
         "notInstalled": "FFmpeg روی این سیستم نصب نیست.",
         "optionalDegraded": "تا نصب ffmpeg، قابلیت‌های رسانهٔ این افزونه در دسترس نخواهند بود.",
-        "requiredByPlugin": "این افزونه به ffmpeg نیاز دارد. آن را نصب کنید و دوباره تلاش کنید.",
+        "requiredByPlugin": "می‌توانید افزونه را اکنون نصب کنید. پیش از فعال‌سازی یا اجرا، نسخهٔ سازگار FFmpeg را پیکربندی کنید.",
         "title": "نیازمندی FFmpeg",
         "versionMismatch": "FFmpeg {{version}} نصب شده است."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg در دسترس نیست. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "نسخهٔ FFmpeg الزامات این افزونه را برآورده نمی‌کند. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "plugins": {
@@ -1626,6 +1638,14 @@
       "metadata": {
         "strong": "خواندن و نوشتن فرادادهٔ وظایف",
         "plain": "اطلاعات ایجادشده توسط این افزونه را برای وظایف بارگیری ذخیره می‌کند."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "permissions": {
@@ -1681,6 +1701,20 @@
       "compromised": "کانال توزیع این افزونه مورد نفوذ قرار گرفته است.",
       "fixedVersion": "اصلاحیه در نسخه {{version}} موجود است.",
       "details": "مشاهده اطلاعیه امنیتی"
+    },
+    "network": {
+      "timeout": "مهلت اتصال تمام شد",
+      "dns": "جستجوی DNS ناموفق بود",
+      "proxyAuth": "احراز هویت پراکسی ناموفق بود",
+      "proxyConnect": "اتصال به پراکسی ممکن نیست",
+      "certificate": "خطای گواهی یا TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "درخواست لغو شد",
+      "network": "درخواست شبکه ناموفق بود",
+      "cached": "تازه‌سازی ناموفق بود؛ افزونه‌های ذخیره‌شده نمایش داده می‌شوند",
+      "unavailable": "بارگیری فهرست افزونه‌ها ممکن نیست",
+      "direct": "اتصال مستقیم به {{host}} ناموفق بود: {{reason}}",
+      "viaProxy": "اتصال به {{host}} از طریق پراکسی {{proxy}} ناموفق بود: {{reason}}"
     }
   },
   "quit": {
@@ -2086,6 +2120,7 @@
         "bandwidthUsed": "Motrix می‌تواند حداکثر از {{motrix}}٪ استفاده کند.",
         "baseDownload": "دانلود",
         "baseDownloadDesc": "حداکثر سرعت دانلود روزمره.",
+        "unitFor": "واحد {{field}}",
         "baseSection": "محدودیت‌های استاندارد",
         "baseSectionDesc": "برای دانلودهای روزمره استفاده می‌شوند و در همهٔ حالت‌ها رعایت می‌شوند.",
         "baseUpload": "بارگذاری",
@@ -2583,7 +2618,7 @@
         "bypass": "اتصال مستقیم به",
         "bypassDesc": "در هر خط یک دامنه، IP یا CIDR. برای تطبیق فقط با زیردامنه‌ها، با . شروع کنید. دانلود فایل از نویسهٔ عام * پشتیبانی نمی‌کند.",
         "bypassPlaceholder": "localhost\n127.0.0.1\n.local",
-        "bypassScopeNote": "فقط دانلود فایل‌ها و به‌روزرسانی‌های برنامه",
+        "bypassScopeNote": "فقط دانلودها، افزونه‌ها و به‌روزرسانی برنامه",
         "enable": "فعال کردن پروکسی",
         "enableDesc": "برای اتصال‌های انتخاب‌شده در زیر از پروکسی استفاده شود.",
         "hidePassword": "پنهان کردن گذرواژه",
@@ -2610,7 +2645,9 @@
         "server": "سرور",
         "showPassword": "نمایش گذرواژه",
         "title": "پروکسی",
-        "user": "نام کاربری"
+        "user": "نام کاربری",
+        "scopePlugins": "نصب و به‌روزرسانی افزونه‌ها",
+        "scopePluginsDesc": "استفاده از پراکسی برای فهرست افزونه‌ها، بسته‌های نصب، به‌روزرسانی‌ها و درخواست‌های سیاست امنیتی."
       },
       "reachability": {
         "addEndpoint": "افزودن سرویس بررسی",
@@ -3239,5 +3276,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "رابط کاربری نیاز به بازیابی دارد",
+    "description": "بارگیری‌ها در پس‌زمینه ادامه دارند. تغییرات ذخیره‌نشدهٔ فرم ممکن است از دست بروند.",
+    "recovering": "در حال بازیابی رابط کاربری…",
+    "recover": "بازیابی رابط کاربری",
+    "diagnostics": "باز کردن گزارش‌های عیب‌یابی",
+    "downloads": "باز کردن بارگیری‌ها",
+    "failed": "بازیابی در دسترس نیست. از منوی برنامه دوباره تلاش کنید.",
+    "restored": "رابط بازیابی شد",
+    "wait": "ادامهٔ انتظار",
+    "routeTitle": "نمایش این صفحه ممکن نشد",
+    "submissionNotice": "ارسال قبلی ممکن است تکمیل شده باشد. پیش از ایجاد دوبارهٔ همان کار، بارگیری‌ها را بررسی کنید."
+  },
+  "pluginOperations": {
+    "requiredField": "فیلد الزامی",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

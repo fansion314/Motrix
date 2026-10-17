@@ -882,7 +882,14 @@
         "selectFilesFailed": "No s'ha pogut obrir la selecció de fitxers.",
         "singleTaskFailed": "{{name}}: {{reason}}",
         "stopSeeding": "Aturar la distribució",
-        "stopSeedingTooltipBatch": "Aturar la distribució de {{n}} de {{total}} tasques seleccionades"
+        "stopSeedingTooltipBatch": "Aturar la distribució de {{n}} de {{total}} tasques seleccionades",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "column": {
         "connections": "Parells",
@@ -1182,6 +1189,7 @@
         "banner": "La llista de tasques podria estar desactualitzada; s'està tornant a connectar…"
       },
       "stats": {
+        "title": "Estat de la transferència",
         "downSpeed": "Velocitat de baixada",
         "engineOffline": "Motor sense connexió",
         "engineOk": "Motor preparat",
@@ -1278,10 +1286,14 @@
       "ffmpeg": {
         "notInstalled": "L'FFmpeg no està instal·lat en aquest sistema.",
         "optionalDegraded": "Les funcions multimèdia d'aquest connector no estaran disponibles fins que s'instal·li l'ffmpeg.",
-        "requiredByPlugin": "Aquest connector necessita l'ffmpeg. Instal·leu-lo i torneu-ho a provar.",
+        "requiredByPlugin": "Pots instal·lar el complement ara. Configura una versió compatible de FFmpeg abans d’activar-lo o executar-lo.",
         "title": "Requisit d'FFmpeg",
         "versionMismatch": "L'FFmpeg {{version}} està instal·lat."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg no està disponible. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "La versió de FFmpeg no compleix els requisits d’aquest complement. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "plugins": {
@@ -1644,6 +1656,14 @@
       "metadata": {
         "strong": "Llegir i escriure metadades de tasques",
         "plain": "Desa la informació generada per aquest connector per a les tasques de baixada."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "permissions": {
@@ -1699,6 +1719,20 @@
       "compromised": "La distribució d’aquest connector s’ha vist compromesa.",
       "fixedVersion": "Hi ha una correcció disponible a la versió {{version}}.",
       "details": "Mostra l’avís de seguretat"
+    },
+    "network": {
+      "timeout": "S’ha esgotat el temps de connexió",
+      "dns": "Error de resolució DNS",
+      "proxyAuth": "Error d’autenticació del servidor intermediari",
+      "proxyConnect": "No s’ha pogut connectar al servidor intermediari",
+      "certificate": "Error de certificat o TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "Sol·licitud cancel·lada",
+      "network": "Error de sol·licitud de xarxa",
+      "cached": "No s’ha pogut actualitzar; es mostren els connectors de la memòria cau",
+      "unavailable": "No s’ha pogut carregar el catàleg de connectors",
+      "direct": "Ha fallat la connexió directa a {{host}}: {{reason}}",
+      "viaProxy": "Ha fallat la connexió a {{host}} mitjançant el servidor intermediari {{proxy}}: {{reason}}"
     }
   },
   "quit": {
@@ -2105,6 +2139,7 @@
         "bandwidthUsed": "El Motrix pot utilitzar fins al {{motrix}}%.",
         "baseDownload": "Baixada",
         "baseDownloadDesc": "Velocitat màxima de baixada per a l'ús habitual.",
+        "unitFor": "Unitat de {{field}}",
         "baseSection": "Límits estàndard",
         "baseSectionDesc": "S'utilitzen per a les baixades habituals i es respecten en tots els modes.",
         "baseUpload": "Pujada",
@@ -2603,7 +2638,7 @@
         "bypass": "Connectar directament a",
         "bypassDesc": "Un domini, una IP o un CIDR per línia. Comenceu amb . per incloure només els subdominis. Les baixades de fitxers no admeten comodins *.",
         "bypassPlaceholder": "localhost\n127.0.0.1\n.local",
-        "bypassScopeNote": "Només baixades de fitxers i actualitzacions de l'aplicació",
+        "bypassScopeNote": "Només baixades, connectors i actualitzacions de l’aplicació",
         "enable": "Activar el servidor intermediari",
         "enableDesc": "Utilitza un servidor intermediari per a les connexions seleccionades a continuació.",
         "hidePassword": "Amagar la contrasenya",
@@ -2630,7 +2665,9 @@
         "server": "Servidor",
         "showPassword": "Mostrar la contrasenya",
         "title": "Servidor intermediari",
-        "user": "Nom d'usuari"
+        "user": "Nom d'usuari",
+        "scopePlugins": "Instal·lació i actualització de connectors",
+        "scopePluginsDesc": "Utilitza el servidor intermediari per al catàleg, els paquets, les actualitzacions i les polítiques de seguretat dels connectors."
       },
       "reachability": {
         "addEndpoint": "Afegir un servei de comprovació",
@@ -3263,5 +3300,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "Cal recuperar la interfície",
+    "description": "Les baixades continuen en segon pla. Es poden perdre els canvis no desats del formulari.",
+    "recovering": "S’està recuperant la interfície…",
+    "recover": "Recupera la interfície",
+    "diagnostics": "Obre els registres de diagnòstic",
+    "downloads": "Obre les baixades",
+    "failed": "La recuperació no està disponible. Torna-ho a provar des del menú de l’aplicació.",
+    "restored": "Interfície restaurada",
+    "wait": "Continua esperant",
+    "routeTitle": "No s’ha pogut mostrar aquesta pàgina",
+    "submissionNotice": "L’enviament anterior pot haver finalitzat. Comprova les baixades abans de tornar a crear la mateixa tasca."
+  },
+  "pluginOperations": {
+    "requiredField": "Camp obligatori",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

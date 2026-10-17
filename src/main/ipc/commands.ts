@@ -14,7 +14,6 @@ import { getLogger } from '@core/logger'
 import { publishEngineRestartRequired } from '@core/notifications/engine-restart-required'
 import type { NotificationCenter } from '@core/notifications/notification-center'
 import type { CapabilityHost } from '@core/plugin/capabilities/interface'
-import { ManualMediaMerge } from '@core/plugin/commands/manual-media-merge'
 import type { GrantsManager } from '@core/plugin/grants/grants-manager'
 import type { HookAuditLog } from '@core/plugin/hooks/audit-log'
 import type { HookOrchestrator } from '@core/plugin/hooks/hook-orchestrator'
@@ -32,6 +31,8 @@ import {
 import type { SourceInput } from '@core/plugin/install/source-resolver'
 import { downloadUrlMoext } from '@core/plugin/install/url-fetcher'
 import { PluginEngineVersionTooOld } from '@core/plugin/manifest/errors'
+import { PluginNetworkError } from '@core/plugin/network/plugin-network-error'
+import type { OperationService } from '@core/plugin/operations/operation-service'
 import type { PluginRegistry } from '@core/plugin/plugin-registry'
 import type { RegistryClient } from '@core/plugin/registry/registry-client'
 import { downloadRegistryMoext } from '@core/plugin/registry/registry-fetcher'
@@ -100,6 +101,7 @@ import { EXTERNAL_URLS } from '@shared/external-urls'
 import { Commands } from '@shared/protocol/commands'
 import { Events } from '@shared/protocol/events'
 import type { CommandHandlerMap } from '@shared/protocol/handler-types'
+import { OPERATION_CHANNELS } from '@shared/protocol/operation-channels'
 import {
   type TaskCreateCommandResult,
   taskCreateRequestSchema,
@@ -117,6 +119,7 @@ import { PluginLogVerboseRequestSchema } from '@shared/schemas/plugin-logs'
 import { checkPluginUpdatesPayloadSchema } from '@shared/schemas/plugin-update'
 import { REGISTRY_PLUGIN_ID_RE } from '@shared/schemas/registry'
 import { removeTaskPayloadSchema } from '@shared/schemas/remove-task'
+import { rendererSubmissionSchema } from '@shared/schemas/renderer-submission'
 import { showAddTaskWindowSchema } from '@shared/schemas/show-add-task-window'
 import {
   taskTrackerApplySchema,
@@ -158,8 +161,10 @@ import { syncAutoLaunch } from '../platform/auto-launch'
 import { setLinuxDefaultTorrentHandler } from '../platform/linux-default-apps'
 import type { createProtocolManager } from '../platform/protocol-manager'
 import { resolveWindowsDefaultAppsSettingsUrl } from '../platform/windows-default-apps'
+import { desktopOperationHandlers } from '../plugin/operation-commands'
 import { installManagedFfmpeg } from '../plugin/verified-ffmpeg-electron'
 import type { createMainProxyApplier } from '../proxy/wiring'
+import type { createRendererRecoveryRuntime } from '../window/renderer-recovery-runtime'
 import type { WindowManager } from '../window/window-manager'
 import { createOpenTaskFileHandler } from './commands/open-task-file'
 import { createRevealInFolderHandler } from './commands/reveal-in-folder'
@@ -173,6 +178,8 @@ const cliInstallRequestSchema = z
   .strict()
 
 export interface CommandContext {
+  rendererRecovery?: ReturnType<typeof createRendererRecoveryRuntime>
+  operationService?: OperationService
   cliToolService: Pick<CliToolService, 'install'>
   supervisor: EngineSupervisor
   /** Session latch of the auto DNS fallback — reset when dnsMode changes. */
@@ -218,6 +225,7 @@ export interface CommandContext {
   pluginStateStore: PluginStateStore
   pluginHost: PluginHost
   pluginInstaller: PluginInstaller
+  pluginFetch: typeof fetch
   registryClient: RegistryClient
   hostVersion: string
   builtinUpdater: BuiltinUpdater
@@ -260,18 +268,22 @@ export interface CommandContext {
 }
 
 function sendToAddTaskWindow(
-  windowManager: WindowManager,
+  ctx: CommandContext,
   channel: string,
   ...args: unknown[]
 ): void {
-  windowManager.open('add-task')
-  const win = windowManager.get('add-task')
-  if (win && !win.isDestroyed()) {
-    // Delay to ensure window renderer has attached event listeners
-    setTimeout(() => {
-      win.webContents.send(channel, ...args)
-    }, 100)
-  }
+  ctx.windowManager.open('add-task')
+  if (
+    ctx.rendererRecovery?.intents.deliver(
+      'add-task',
+      channel,
+      undefined,
+      () => args[0]
+    )
+  )
+    return
+  const win = ctx.windowManager.get('add-task')
+  if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: sender is typed at registration
@@ -310,6 +322,7 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     pluginStateStore,
     pluginHost,
     pluginInstaller,
+    pluginFetch,
     registryClient,
     hostVersion,
     builtinUpdater,
@@ -570,12 +583,12 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
           downloadDir,
           `${spec.owner}-${spec.repo}-${Date.now()}.moext`
         )
-        await downloadGithubMoext(spec, target)
+        await downloadGithubMoext(spec, target, pluginFetch)
         return target
       }
       case 'url': {
         const target = path.join(downloadDir, `download-${Date.now()}.moext`)
-        await downloadUrlMoext(p.url, target)
+        await downloadUrlMoext(p.url, target, pluginFetch)
         return target
       }
       case 'local':
@@ -657,24 +670,10 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     runWork: ctx.trackAsyncWork,
   })
 
-  const manualMediaMerge = new ManualMediaMerge({
-    createLog: (pluginId) => capabilityHost.createLog(pluginId),
-    registry: pluginRegistry,
-    host: pluginHost,
-    tasks: taskManager,
-    runWork: ctx.trackAsyncWork,
-  })
-
   return {
-    [Commands.GetMediaMergeState]: async () => manualMediaMerge.state(),
-    [Commands.GetMediaMergeSelection]: async (value: unknown) =>
-      manualMediaMerge.selection(value),
-    [Commands.StartMediaMerge]: async (value: unknown) =>
-      manualMediaMerge.start(value),
-    [Commands.GetMediaMergeJob]: async (value: unknown) =>
-      manualMediaMerge.get(value),
-    [Commands.CancelMediaMerge]: async (value: unknown) =>
-      manualMediaMerge.cancel(value),
+    ...(ctx.operationService
+      ? desktopOperationHandlers(ctx.operationService)
+      : {}),
     [Commands.PickFile]: async (sender: WebContents, value: unknown) => {
       const params = filePickerOptionsSchema.parse(value)
       if (saveDirPickersInFlight.has(sender)) return null
@@ -774,7 +773,7 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
       name: string
     }) => {
       const meta = await torrentParser.parse(base64)
-      sendToAddTaskWindow(windowManager, Events.ProtocolTorrentFile, {
+      sendToAddTaskWindow(ctx, Events.ProtocolTorrentFile, {
         payload: { name, dataBase64: base64 },
         meta,
       })
@@ -1466,18 +1465,11 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
 
     [Commands.ShowAddTaskWindow]: async (rawPayload: unknown) => {
       const { prefill } = showAddTaskWindowSchema.parse(rawPayload ?? {})
-      const win = windowManager.open('add-task')
-      const showPayload = prefill ?? { mode: 'links' }
-      const sendShow = () => {
-        if (!win.isDestroyed()) {
-          win.webContents.send(Events.SetAddTaskMode, showPayload)
-        }
-      }
-      if (win.webContents.isLoading()) {
-        win.webContents.once('did-finish-load', sendShow)
-      } else {
-        sendShow()
-      }
+      sendToAddTaskWindow(
+        ctx,
+        Events.SetAddTaskMode,
+        prefill ?? { mode: 'links' }
+      )
       return { ok: true }
     },
 
@@ -1550,7 +1542,6 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     [Commands.RevealInFolder]: createRevealInFolderHandler({
       shell,
       getTask: (taskId) => taskManager.getById(taskId),
-      getMediaMergeJob: (jobId) => manualMediaMerge.get(jobId),
     }),
     [Commands.OpenTaskFile]: createOpenTaskFileHandler({
       shell,
@@ -1635,19 +1626,15 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     }),
 
     [Commands.EnablePlugin]: async (id: string) => {
-      pluginRegistry.assertSecurityAllowed?.(id)
-      pluginStateStore.setEnabled(id, true)
-      // Sync the in-memory IndexedPlugin.state so Queries.ListPlugins and
-      // downstream gating (PluginHost.activate, ActivationDispatcher,
-      // CrossPluginInvoker) see the new enabled flag without a process
-      // restart.
-      pluginRegistry.refreshState(id)
+      await pluginHost.enable(id)
       const state = pluginStateStore.get(id)
-      eventBus.emit(Events.PluginStatusChanged, {
-        id,
-        status: state?.status ?? 'inactive',
-        enabled: true,
-      })
+      if (state) {
+        eventBus.emit(Events.PluginStatusChanged, {
+          id,
+          status: state.status,
+          enabled: state.enabled,
+        })
+      }
       eventBus.emit(Events.ContributionIndexChanged)
       return { ok: true }
     },
@@ -1745,6 +1732,8 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
         if (parsed.sourceType === 'registry') {
           const entry = await registryClient.get(parsed.pluginId, hostVersion)
           if (!entry) {
+            const failure = registryClient.status().error
+            if (failure) throw new PluginNetworkError(failure)
             throw new AppError(
               ErrorCode.PluginManifestInvalid,
               'plugin.install.registry_entry_missing'
@@ -1763,7 +1752,7 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
             'plugin-downloads',
             `registry-${parsed.pluginId}-${Date.now()}.moext`
           )
-          await downloadRegistryMoext(entry, moextPath)
+          await downloadRegistryMoext(entry, moextPath, pluginFetch)
           expect = buildRegistryExpectation(entry)
         } else {
           moextPath = await materializeMoext(parsed)
@@ -1783,6 +1772,8 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
         }
         return result
       } catch (error) {
+        if (error instanceof PluginNetworkError)
+          return { networkError: error.failure }
         if (error instanceof PluginEngineVersionTooOld) {
           return {
             incompatible: {
@@ -1804,38 +1795,48 @@ export function buildCommandHandlers(ctx: CommandContext): CommandHandlerMap {
     },
 
     [Commands.InstallBuiltinUpdate]: async (payload: unknown) => {
-      const parsed = builtinUpdatePayloadSchema.parse(payload)
-      const entry = await registryClient.get(parsed.pluginId, hostVersion)
-      if (entry?.origin !== 'builtin') {
-        throw new AppError(
-          ErrorCode.PluginManifestInvalid,
-          'plugin.update.builtin_entry_missing'
+      try {
+        const parsed = builtinUpdatePayloadSchema.parse(payload)
+        const entry = await registryClient.get(parsed.pluginId, hostVersion)
+        if (!entry) {
+          const failure = registryClient.status().error
+          if (failure) throw new PluginNetworkError(failure)
+        }
+        if (entry?.origin !== 'builtin') {
+          throw new AppError(
+            ErrorCode.PluginManifestInvalid,
+            'plugin.update.builtin_entry_missing'
+          )
+        }
+        const effective = pluginRegistry.get(parsed.pluginId)?.manifest
+        if (!effective) {
+          throw new AppError(
+            ErrorCode.PluginManifestInvalid,
+            'plugin.update.builtin_entry_missing'
+          )
+        }
+        const staged = await builtinUpdater.stage(entry, effective)
+        if (staged.trustChanged) {
+          return { needsConsent: true, ...staged }
+        }
+        const wasActive = pluginHost.isActive(parsed.pluginId)
+        await builtinUpdater.commit(staged.stagingId)
+        const restartRequired = await reactivateBuiltin(
+          parsed.pluginId,
+          wasActive
         )
+        // Same event ConfirmPluginInstall emits after a community install
+        // commits: usePlugins.onLifecycle refetches ListPlugins so the
+        // plugin's version/status/source.type (builtin -> builtin-update)
+        // update live, without a remount. Only on the committed path — a
+        // needsConsent return above has not touched disk yet.
+        eventBus.emit(Events.PluginInstalled, { pluginId: parsed.pluginId })
+        return { ok: true, restartRequired }
+      } catch (error) {
+        if (error instanceof PluginNetworkError)
+          return { networkError: error.failure }
+        throw error
       }
-      const effective = pluginRegistry.get(parsed.pluginId)?.manifest
-      if (!effective) {
-        throw new AppError(
-          ErrorCode.PluginManifestInvalid,
-          'plugin.update.builtin_entry_missing'
-        )
-      }
-      const staged = await builtinUpdater.stage(entry, effective)
-      if (staged.trustChanged) {
-        return { needsConsent: true, ...staged }
-      }
-      const wasActive = pluginHost.isActive(parsed.pluginId)
-      await builtinUpdater.commit(staged.stagingId)
-      const restartRequired = await reactivateBuiltin(
-        parsed.pluginId,
-        wasActive
-      )
-      // Same event ConfirmPluginInstall emits after a community install
-      // commits: usePlugins.onLifecycle refetches ListPlugins so the
-      // plugin's version/status/source.type (builtin -> builtin-update)
-      // update live, without a remount. Only on the committed path — a
-      // needsConsent return above has not touched disk yet.
-      eventBus.emit(Events.PluginInstalled, { pluginId: parsed.pluginId })
-      return { ok: true, restartRequired }
     },
 
     [Commands.ConfirmBuiltinUpdate]: async (payload: unknown) => {
@@ -1961,6 +1962,27 @@ export function registerCommandHandlers(ctx: CommandContext): () => void {
     selectionTimeout.start()
   }
 
+  if (ctx.rendererRecovery) {
+    const recovery = ctx.rendererRecovery
+    channels.push(Commands.ExecuteRendererSubmission)
+    registerTrustedIpcHandler(
+      Commands.ExecuteRendererSubmission,
+      (event, raw: unknown) => {
+        const request = rendererSubmissionSchema.parse(raw)
+        const id = recovery.supervisor.validate(
+          event.sender,
+          request.generation
+        )
+        const handler = handlers[request.channel]
+        if (!handler) throw new Error('Submission handler is unavailable')
+        return recovery.submissions.execute(id, request, () => {
+          recovery.intents.clear(id)
+          return invoke(() => handler(...request.args))
+        })
+      }
+    )
+  }
+
   for (const [channel, handler] of Object.entries(handlers)) {
     // Window-bound commands need event.sender — pass it as the first arg.
     if (
@@ -1968,16 +1990,21 @@ export function registerCommandHandlers(ctx: CommandContext): () => void {
       channel === Commands.MinimizeCurrentWindow ||
       channel === Commands.ToggleMaximizeCurrentWindow ||
       channel === Commands.PickSaveDir ||
+      OPERATION_CHANNELS.has(channel) ||
       channel === Commands.PickFile ||
       channel === Commands.ResizeWindow ||
       channel === Commands.UpdateMenuContext
     ) {
-      registerTrustedIpcHandler(channel, (event, ...args) =>
-        invoke(() =>
+      registerTrustedIpcHandler(channel, (event, ...args) => {
+        const leaveModal =
+          channel === Commands.PickSaveDir || channel === Commands.PickFile
+            ? ctx.rendererRecovery?.supervisor.enterModal()
+            : undefined
+        return invoke(() =>
           // biome-ignore lint/suspicious/noExplicitAny: sender forwarded explicitly
           (handler as any)(event.sender, ...args)
-        )
-      )
+        ).finally(() => leaveModal?.())
+      })
     } else {
       registerTrustedIpcHandler(channel, async (_event, ...args) =>
         invoke(() => handler(...args))

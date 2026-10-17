@@ -1,4 +1,5 @@
 export const Queries = {
+  GetRendererSession: 'query:getRendererSession',
   GetLegacyImportNavigation: 'query:getLegacyImportNavigation',
   GetLegacyBtActivationAvailability: 'query:getLegacyBtActivationAvailability',
   DiscoverLegacyImport: 'query:discoverLegacyImport',
@@ -38,6 +39,7 @@ export const Queries = {
   // Entries come back annotated with a `compatible` host-version flag.
   // Contract: .claude/rules/plugin-registry.md.
   ListRegistryPlugins: 'query:listRegistryPlugins',
+  GetRegistryStatus: 'query:getRegistryStatus',
   GetRegistryPlugin: 'query:getRegistryPlugin',
   // Spec §10 L2877 — aggregate snapshot of all enabled plugins'
   // contributions (commands, hooks, configurations). Drives the renderer's
@@ -96,6 +98,7 @@ export const Queries = {
   GetLinuxDefaultAssociations: 'query:getLinuxDefaultAssociations',
   GetWindowsDefaultAssociations: 'query:getWindowsDefaultAssociations',
   GetApplicationMenu: 'query:getApplicationMenu',
+  CheckTaskFileExists: 'query:checkTaskFileExists',
 } as const
 
 export type QueryChannel = (typeof Queries)[keyof typeof Queries]

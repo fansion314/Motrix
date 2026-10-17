@@ -1,7 +1,10 @@
 import { AddTaskDialogHost } from '@renderer/components/add-task-dialog/add-task-dialog-host'
 import { AppSidebar } from '@renderer/components/desktop-kit/sidebar/app-sidebar'
+import {
+  RendererSubmissionNotice,
+  RendererToaster,
+} from '@renderer/components/renderer-recovery-notice'
 import { SidebarInset, SidebarProvider } from '@renderer/components/ui/sidebar'
-import { Toaster } from '@renderer/components/ui/toast'
 import { TooltipProvider } from '@renderer/components/ui/tooltip'
 import { WebConnectionNotice } from '@renderer/components/web-connection-notice'
 import { AddTaskTriggerButton } from '@renderer/components/window-chrome/add-task-trigger-button'
@@ -11,7 +14,7 @@ import { WindowChrome } from '@renderer/components/window-chrome/window-chrome'
 import { DesktopMenuActions } from '@renderer/features/application-menu/desktop-menu-actions'
 import { MenuNavigationFocus } from '@renderer/features/application-menu/navigation-focus'
 import { EngineDiagnosticsDialogHost } from '@renderer/features/engine-diagnostics/engine-diagnostics-dialog'
-import { MediaMergeDialogHost } from '@renderer/features/media-merge/media-merge-dialog'
+import { OperationDialogHost } from '@renderer/features/plugin-operations/operation-dialog'
 import { useEngineRestartRequiredToast } from '@renderer/hooks/use-engine-restart-required-toast'
 import { useIpcEvent } from '@renderer/hooks/use-ipc-event'
 import { useMenuContextSync } from '@renderer/hooks/use-menu-context-sync'
@@ -23,6 +26,7 @@ import { electronServices } from '@renderer/platform/electron-services'
 import { PlatformServicesProvider } from '@renderer/platform/services'
 import { webServices } from '@renderer/platform/web-services'
 import type { RouteHandle } from '@renderer/router-types'
+import { RedownloadOverwriteDialogHost } from '@renderer/routes/downloads/inspector/redownload-overwrite-dialog-host'
 import { RemoveTasksDialogHost } from '@renderer/routes/downloads/inspector/remove-tasks-dialog-host'
 import { useDownloadsSelection } from '@renderer/routes/downloads/store'
 import { useDownloadsView } from '@renderer/routes/downloads/view-preferences'
@@ -68,7 +72,7 @@ export function AppLayout() {
       useDownloadsView.getState().setInspectorVisible(false)
       useDownloadsSelection.getState().clearSelection()
     }
-    navigate(path)
+    return navigate(path)
   })
 
   return (
@@ -117,6 +121,10 @@ export function AppLayout() {
                 'bg-transparent shadow-none md:peer-data-[variant=inset]:shadow-none'
             )}
           >
+            <RendererSubmissionNotice
+              className="mx-4 mb-2 mt-12"
+              onOpenDownloads={() => void navigate('/downloads/all')}
+            />
             <div className="min-h-0 flex-1 overflow-hidden">
               <div hidden={!migrationActive} className="h-full min-h-0">
                 <MigrationPage active={migrationActive} />
@@ -137,11 +145,12 @@ export function AppLayout() {
         {__MOTRIX_TARGET__ === 'electron' && <DesktopMenuContext />}
         <MenuNavigationFocus />
         <RemoveTasksDialogHost />
-        <MediaMergeDialogHost />
+        <RedownloadOverwriteDialogHost />
+        <OperationDialogHost />
         <EngineDiagnosticsDialogHost />
         {__MOTRIX_TARGET__ === 'web' && <AddTaskDialogHost />}
       </PlatformServicesProvider>
-      <Toaster />
+      <RendererToaster />
     </TooltipProvider>
   )
 }

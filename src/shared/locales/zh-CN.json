@@ -634,6 +634,7 @@
         }
       },
       "stats": {
+        "title": "传输状态",
         "downSpeed": "下载速度",
         "upSpeed": "上传速度",
         "engineOk": "引擎就绪",
@@ -895,7 +896,14 @@
         "moveQueueTop": "移至队列最前",
         "moveQueueBottom": "移至队列最后",
         "copyError": "复制错误信息",
-        "errorReport": "{{name}}\n任务 ID：{{id}}\n{{details}}"
+        "errorReport": "{{name}}\n任务 ID：{{id}}\n{{details}}",
+        "redownload": "重新下载",
+        "redownloadWithDialog": "编辑参数后重新下载…（Alt+Click）",
+        "redownloadTooltipBatch": "重新下载所选中的 {{n}} / {{total}}",
+        "redownloadOverwriteTitle": "文件已存在",
+        "redownloadOverwriteDescription": "文件“{{name}}”已存在于下载路径中。重新下载将覆盖或重命名该文件，是否继续？",
+        "redownloadCredentialsExpired": "原始下载参数已失效，请确认后提交",
+        "redownloadStarted": "已重新发起下载"
       },
       "titleCount": "{{shown}} 项 · 共 {{total}}",
       "type": {
@@ -1574,6 +1582,7 @@
         "turtle_off": "常规",
         "turtle_on": "低速",
         "turtle_auto": "自动",
+        "unitFor": "{{field}}的单位",
         "baseSection": "常规限速",
         "baseSectionDesc": "日常下载使用；所有模式都会遵循这里的上限。",
         "baseDownload": "下载",
@@ -1694,7 +1703,7 @@
         "hidePassword": "隐藏密码",
         "bypass": "不使用代理的地址",
         "bypassDesc": "每行填写一个域名、IP 或 CIDR。开头加 . 仅匹配子域名。文件下载不支持 * 通配符。",
-        "bypassScopeNote": "仅下载文件和更新应用",
+        "bypassScopeNote": "仅下载文件、插件和更新应用",
         "scopes": "代理用途",
         "scopesDesc": "选择哪些流量通过代理。",
         "scopeDownload": "下载文件",
@@ -1710,7 +1719,9 @@
         "scopeHint": "BT 节点、DHT 和 UDP Tracker 仍直接连接。",
         "scopeNone": "未选择",
         "scopeChoose": "选择…",
-        "scopeSeparator": "、"
+        "scopeSeparator": "、",
+        "scopePlugins": "插件安装与更新",
+        "scopePluginsDesc": "为插件市场、安装包、插件更新和安全策略请求使用代理。"
       },
       "nat": {
         "title": "端口映射（NAT）",
@@ -2682,6 +2693,14 @@
       "metadata": {
         "strong": "读写任务元数据",
         "plain": "为下载任务保存此插件生成的信息。"
+      },
+      "files.selected.read": {
+        "strong": "读取本次操作选中的文件",
+        "plain": "每次操作都需要你选择输入；无法读取其他文件。"
+      },
+      "files.selected.write": {
+        "strong": "保存本次操作的新文件",
+        "plain": "保存到你确认的位置，不覆盖已有文件。"
       }
     },
     "security": {
@@ -2693,6 +2712,20 @@
       "compromised": "此插件的分发渠道已遭入侵。",
       "fixedVersion": "修复版本：{{version}}。",
       "details": "查看安全公告"
+    },
+    "network": {
+      "timeout": "连接超时",
+      "dns": "DNS 解析失败",
+      "proxyAuth": "代理认证失败",
+      "proxyConnect": "无法连接代理",
+      "certificate": "证书或 TLS 错误",
+      "http": "HTTP {{status}}",
+      "cancelled": "请求已取消",
+      "network": "网络请求失败",
+      "cached": "刷新失败，正在显示缓存的插件",
+      "unavailable": "无法加载插件市场",
+      "direct": "直连 {{host}} 失败：{{reason}}",
+      "viaProxy": "通过代理 {{proxy}} 连接 {{host}} 失败：{{reason}}"
     }
   },
   "plugin": {
@@ -2705,9 +2738,13 @@
         "title": "FFmpeg 要求",
         "notInstalled": "本机未安装 FFmpeg。",
         "versionMismatch": "已安装 FFmpeg {{version}}。",
-        "requiredByPlugin": "此插件必须 ffmpeg。安装后再试。",
+        "requiredByPlugin": "可以先安装插件，启用或运行前再配置兼容的 FFmpeg。",
         "optionalDegraded": "此插件的媒体功能在装 ffmpeg 前不可用。"
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg 当前不可用。 请在设置 → 集成 → 媒体工具中配置 FFmpeg。",
+      "ffmpegIncompatible": "FFmpeg 版本不满足此插件的要求。 请在设置 → 集成 → 媒体工具中配置 FFmpeg。"
     }
   },
   "bridge": {
@@ -3215,5 +3252,66 @@
       }
     },
     "importSelected": "迁移"
+  },
+  "rendererRecovery": {
+    "title": "界面需要恢复",
+    "description": "下载仍在后台继续。未保存的表单内容可能丢失。",
+    "recovering": "正在恢复界面…",
+    "recover": "恢复界面",
+    "diagnostics": "打开诊断日志",
+    "downloads": "打开下载列表",
+    "failed": "暂时无法恢复，请通过应用菜单重试。",
+    "restored": "界面已恢复",
+    "wait": "继续等待",
+    "routeTitle": "此页面暂时无法显示",
+    "submissionNotice": "上次提交可能已经完成，请先检查下载列表，避免重复创建任务。"
+  },
+  "pluginOperations": {
+    "requiredField": "必填项",
+    "run": "运行操作",
+    "runAgain": "再次运行",
+    "background": "关闭此面板后，操作仍会继续。",
+    "loading": "正在加载操作…",
+    "unauthorized": "当前会话已失去授权，请重新登录。",
+    "disabled": "启用此插件后即可使用操作。",
+    "blocked": "插件被阻止或权限正在变更。",
+    "unsupported": "此宿主不支持该操作所需的能力。",
+    "ffmpeg": "请在设置 → 集成 → 媒体工具中配置 FFmpeg。",
+    "busy": "其他操作正在使用资源，请等待完成。",
+    "unavailable": "此操作当前不可用。",
+    "draftExpired": "文件选择已过期，请重新打开操作并选择文件。",
+    "resourceLimit": "操作超过宿主资源限制，或磁盘可用空间不足。",
+    "invalidSelection": "请选择已完成且仅包含一个本地文件的任务。",
+    "invalidFile": "请选择非空的普通本地文件。",
+    "fileType": "文件类型与此字段不匹配。",
+    "outputExists": "输出文件已存在，请选择其他名称。",
+    "fileChanged": "所选文件或目录已发生变化，请重新选择。",
+    "invalidGrant": "开始前请重新选择文件。",
+    "sameInput": "请选择两个不同的输入文件。",
+    "invalidOutput": "插件未生成有效输出。",
+    "invalidRequest": "请检查操作参数后重试。",
+    "invalidValue": "请输入有效值。",
+    "descriptorChanged": "插件已变更，请重新打开操作。",
+    "jobMissing": "此会话中已找不到该操作。",
+    "cancelled": "操作已取消。",
+    "failed": "操作失败，请查看插件日志。",
+    "interrupted": "宿主在操作完成前退出，此操作不会自动重新运行。",
+    "publicationUncertain": "无法确认输出是否保存，请检查目标位置后再重试。",
+    "cleanupWarning": "部分临时文件已保留以便安全恢复，未删除归属不确定的文件。",
+    "status": {
+      "accepted": "已接受",
+      "preparing": "正在准备文件",
+      "running": "正在运行",
+      "validating": "正在校验结果",
+      "committing": "正在保存输出",
+      "cleaning": "正在清理",
+      "cancelling": "正在取消",
+      "succeeded": "已完成",
+      "cancelled": "已取消",
+      "failed": "失败",
+      "interrupted": "已中断"
+    },
+    "confirmFileTitle": "授权文件访问",
+    "confirmFile": "允许此操作读取以下文件？"
   }
 }

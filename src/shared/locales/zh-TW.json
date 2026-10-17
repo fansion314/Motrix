@@ -634,6 +634,7 @@
         }
       },
       "stats": {
+        "title": "傳輸狀態",
         "downSpeed": "下載速度",
         "upSpeed": "上傳速度",
         "engineOk": "引擎已就緒",
@@ -895,7 +896,14 @@
         "moveQueueTop": "移至佇列最前",
         "moveQueueBottom": "移至佇列最後",
         "copyError": "複製錯誤資訊",
-        "errorReport": "{{name}}\n任務 ID：{{id}}\n{{details}}"
+        "errorReport": "{{name}}\n任務 ID：{{id}}\n{{details}}",
+        "redownload": "重新下載",
+        "redownloadWithDialog": "編輯參數後重新下載…（Alt+Click）",
+        "redownloadTooltipBatch": "重新下載所選中的 {{n}} / {{total}}",
+        "redownloadOverwriteTitle": "檔案已存在",
+        "redownloadOverwriteDescription": "檔案「{{name}}」已存在於下載路徑中。重新下載將覆蓋或重命名該檔案，是否繼續？",
+        "redownloadCredentialsExpired": "原始下載參數已失效，請確認後提交",
+        "redownloadStarted": "已重新發起下載"
       },
       "titleCount": "顯示 {{shown}} 項 · 共 {{total}} 項",
       "type": {
@@ -1574,6 +1582,7 @@
         "turtle_off": "標準",
         "turtle_on": "低速",
         "turtle_auto": "自動",
+        "unitFor": "{{field}}的單位",
         "baseSection": "一般限速",
         "baseSectionDesc": "用於日常下載，且在每個模式下都會遵守。",
         "baseDownload": "下載",
@@ -1694,7 +1703,7 @@
         "hidePassword": "隱藏密碼",
         "bypass": "不使用代理的位址",
         "bypassDesc": "每行填寫一個網域、IP 或 CIDR。開頭加 . 僅比對子網域。檔案下載不支援 * 萬用字元。",
-        "bypassScopeNote": "僅下載檔案和更新應用程式",
+        "bypassScopeNote": "僅下載檔案、外掛和更新應用程式",
         "scopes": "代理用途",
         "scopesDesc": "選擇哪些流量要通過 Proxy。",
         "scopeDownload": "下載檔案",
@@ -1710,7 +1719,9 @@
         "scopeHint": "BT 節點、DHT 和 UDP Tracker 仍直接連線。",
         "scopeNone": "未選取",
         "scopeChoose": "選擇…",
-        "scopeSeparator": "、"
+        "scopeSeparator": "、",
+        "scopePlugins": "外掛安裝與更新",
+        "scopePluginsDesc": "為外掛市集、安裝套件、外掛更新和安全性原則請求使用代理。"
       },
       "nat": {
         "title": "連接埠對映（NAT）",
@@ -2300,9 +2311,13 @@
         "title": "FFmpeg 需求",
         "notInstalled": "此系統未安裝 FFmpeg。",
         "versionMismatch": "已安裝 FFmpeg {{version}}。",
-        "requiredByPlugin": "此外掛程式需要 ffmpeg。請安裝後再試一次。",
+        "requiredByPlugin": "可以先安裝外掛，啟用或執行前再設定相容的 FFmpeg。",
         "optionalDegraded": "安裝 ffmpeg 前，此外掛程式的媒體功能無法使用。"
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg 目前無法使用。 Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "FFmpeg 版本不符合此外掛的需求。 Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "bridge": {
@@ -2782,6 +2797,14 @@
       "metadata": {
         "strong": "讀寫工作中繼資料",
         "plain": "為下載工作儲存此外掛產生的資訊。"
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "security": {
@@ -2793,6 +2816,20 @@
       "compromised": "此外掛的散布管道已遭入侵。",
       "fixedVersion": "修復版本：{{version}}。",
       "details": "檢視安全公告"
+    },
+    "network": {
+      "timeout": "連線逾時",
+      "dns": "DNS 解析失敗",
+      "proxyAuth": "代理驗證失敗",
+      "proxyConnect": "無法連線至代理",
+      "certificate": "憑證或 TLS 錯誤",
+      "http": "HTTP {{status}}",
+      "cancelled": "請求已取消",
+      "network": "網路請求失敗",
+      "cached": "重新整理失敗，正在顯示快取的外掛",
+      "unavailable": "無法載入外掛市集",
+      "direct": "直接連線至 {{host}} 失敗：{{reason}}",
+      "viaProxy": "透過代理 {{proxy}} 連線至 {{host}} 失敗：{{reason}}"
     }
   },
   "applicationMenu": {
@@ -3215,5 +3252,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "介面需要復原",
+    "description": "下載仍在背景繼續。未儲存的表單內容可能遺失。",
+    "recovering": "正在復原介面…",
+    "recover": "復原介面",
+    "diagnostics": "開啟診斷記錄",
+    "downloads": "開啟下載清單",
+    "failed": "暫時無法復原，請透過應用程式選單重試。",
+    "restored": "介面已恢復",
+    "wait": "繼續等待",
+    "routeTitle": "此頁面暫時無法顯示",
+    "submissionNotice": "上次提交可能已經完成，請先檢查下載清單，避免重複建立任務。"
+  },
+  "pluginOperations": {
+    "requiredField": "必填項",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

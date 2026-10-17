@@ -639,6 +639,10 @@ export class SettingsManager {
       const merged = {
         ...next.app,
         ...partial.app,
+        speedLimitUnits: {
+          ...next.app.speedLimitUnits,
+          ...partial.app.speedLimitUnits,
+        },
         // Only dedicated queue actions can change this aggregate.
         directoryPreferences: next.app.directoryPreferences,
       }

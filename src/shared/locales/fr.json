@@ -882,7 +882,14 @@
         "selectFilesFailed": "Impossible d’ouvrir la sélection des fichiers.",
         "singleTaskFailed": "{{name}} : {{reason}}",
         "stopSeeding": "Arrêter le partage",
-        "stopSeedingTooltipBatch": "Arrêter le partage de {{n}} des {{total}} tâches sélectionnées"
+        "stopSeedingTooltipBatch": "Arrêter le partage de {{n}} des {{total}} tâches sélectionnées",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "column": {
         "connections": "Pairs",
@@ -1176,6 +1183,7 @@
         "banner": "La liste des tâches peut être obsolète. Reconnexion…"
       },
       "stats": {
+        "title": "État des transferts",
         "downSpeed": "Débit de réception",
         "engineOffline": "Moteur hors ligne",
         "engineOk": "Moteur prêt",
@@ -1278,10 +1286,14 @@
       "ffmpeg": {
         "notInstalled": "FFmpeg n’est pas installé sur ce système.",
         "optionalDegraded": "Les fonctions multimédias de cette extension seront indisponibles tant que ffmpeg ne sera pas installé.",
-        "requiredByPlugin": "Cette extension nécessite ffmpeg. Installez-le et réessayez.",
+        "requiredByPlugin": "Vous pouvez installer le plugin maintenant. Configurez une version compatible de FFmpeg avant de l’activer ou de l’exécuter.",
         "title": "Exigence FFmpeg",
         "versionMismatch": "FFmpeg {{version}} est installé."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg est indisponible. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "La version de FFmpeg ne répond pas aux exigences de ce plugin. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "plugins": {
@@ -1644,6 +1656,14 @@
       "metadata": {
         "strong": "Lire et écrire les métadonnées des tâches",
         "plain": "Enregistre les informations générées par ce plugin pour les tâches de téléchargement."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "permissions": {
@@ -1699,6 +1719,20 @@
       "compromised": "La distribution de ce plugin a été compromise.",
       "fixedVersion": "Un correctif est disponible dans la version {{version}}.",
       "details": "Voir l’avis de sécurité"
+    },
+    "network": {
+      "timeout": "Délai de connexion dépassé",
+      "dns": "Échec de la résolution DNS",
+      "proxyAuth": "Échec de l’authentification du proxy",
+      "proxyConnect": "Connexion au proxy impossible",
+      "certificate": "Erreur de certificat ou TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "Requête annulée",
+      "network": "Échec de la requête réseau",
+      "cached": "Actualisation impossible ; plugins en cache affichés",
+      "unavailable": "Impossible de charger le catalogue des plugins",
+      "direct": "Échec de la connexion directe à {{host}} : {{reason}}",
+      "viaProxy": "Échec de la connexion à {{host}} via le proxy {{proxy}} : {{reason}}"
     }
   },
   "quit": {
@@ -2105,6 +2139,7 @@
         "bandwidthUsed": "Motrix peut utiliser jusqu’à {{motrix}} %.",
         "baseDownload": "Réception",
         "baseDownloadDesc": "Débit maximal de réception au quotidien.",
+        "unitFor": "Unité pour {{field}}",
         "baseSection": "Limites standard",
         "baseSectionDesc": "Utilisées au quotidien et respectées dans tous les modes.",
         "baseUpload": "Envoi",
@@ -2603,7 +2638,7 @@
         "bypass": "Connexion directe à",
         "bypassDesc": "Un domaine, une IP ou un CIDR par ligne. Commencez par . pour ne cibler que les sous-domaines. Les téléchargements de fichiers ne prennent pas en charge le caractère générique *.",
         "bypassPlaceholder": "localhost\n127.0.0.1\n.local",
-        "bypassScopeNote": "Téléchargements de fichiers et mises à jour de l’application uniquement",
+        "bypassScopeNote": "Téléchargements, plugins et mises à jour de l’application uniquement",
         "enable": "Activer le proxy",
         "enableDesc": "Utiliser un proxy pour les connexions sélectionnées ci-dessous.",
         "hidePassword": "Masquer le mot de passe",
@@ -2630,7 +2665,9 @@
         "server": "Serveur",
         "showPassword": "Afficher le mot de passe",
         "title": "Proxy",
-        "user": "Nom d’utilisateur"
+        "user": "Nom d’utilisateur",
+        "scopePlugins": "Installation et mise à jour des plugins",
+        "scopePluginsDesc": "Utiliser le proxy pour le catalogue, les paquets, les mises à jour et les règles de sécurité des plugins."
       },
       "reachability": {
         "addEndpoint": "Ajouter un service de vérification",
@@ -3263,5 +3300,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "L’interface doit être restaurée",
+    "description": "Les téléchargements continuent en arrière-plan. Les modifications non enregistrées du formulaire peuvent être perdues.",
+    "recovering": "Restauration de l’interface…",
+    "recover": "Restaurer l’interface",
+    "diagnostics": "Ouvrir les journaux de diagnostic",
+    "downloads": "Ouvrir les téléchargements",
+    "failed": "La restauration est indisponible. Réessayez depuis le menu de l’application.",
+    "restored": "Interface rétablie",
+    "wait": "Continuer à attendre",
+    "routeTitle": "Impossible d’afficher cette page",
+    "submissionNotice": "L’envoi précédent a peut-être abouti. Vérifiez les téléchargements avant de recréer la même tâche."
+  },
+  "pluginOperations": {
+    "requiredField": "Champ obligatoire",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

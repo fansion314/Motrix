@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { access, mkdir, mkdtemp, realpath, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -5,6 +6,7 @@ import { NOOP_TASK_ACTIVITY_RECORDER } from '@core/activity'
 import { Aria2Adapter } from '@core/engine/aria2/aria2-adapter'
 import { EventBus } from '@core/events/event-bus'
 import { PluginEngineVersionTooOld } from '@core/plugin/manifest/errors'
+import { PluginNetworkError } from '@core/plugin/network/plugin-network-error'
 import { AppliedDownloadProxyPolicy } from '@core/proxy/applied-download-proxy-policy'
 import { SettingsManager } from '@core/settings/settings-manager'
 import { ErrorCode } from '@shared/errors'
@@ -255,6 +257,7 @@ function fakeCtx() {
       saveTaskWithInstances: vi.fn(),
     },
     pluginHost: {
+      enable: vi.fn().mockResolvedValue(undefined),
       allActive: vi.fn(() => []),
       deactivate: vi.fn().mockResolvedValue(undefined),
       isQuiescent: vi.fn(() => true),
@@ -301,6 +304,60 @@ function fakeCtx() {
 }
 
 describe('buildCommandHandlers', () => {
+  it('downloads registry packages through the injected plugin transport and serializes failures', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'plugin-network-command-'))
+    try {
+      const bytes = new Uint8Array([1, 2, 3])
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(bytes))
+      const entry = {
+        id: 'acme.plugin',
+        version: '1.0.0',
+        compatible: true,
+        engines: { motrix: '^2.0.0' },
+        permissions: [],
+        optionalPermissions: [],
+        hostPermissions: [],
+        package: {
+          url: 'https://github.com/acme/plugin/package.moext',
+          size: 3,
+          sha256: createHash('sha256').update(bytes).digest('hex'),
+        },
+      }
+      const ctx = {
+        ...fakeCtx(),
+        userDataDir: dir,
+        pluginFetch: fetcher,
+        registryClient: { get: vi.fn().mockResolvedValue(entry) },
+      }
+      ctx.pluginInstaller.stage.mockResolvedValue({
+        committed: true,
+        pluginId: 'acme.plugin',
+      })
+      const handler = buildCommandHandlers(ctx as unknown as CommandContext)[
+        Commands.InstallPlugin
+      ]
+      await handler?.({ sourceType: 'registry', pluginId: 'acme.plugin' })
+      expect(fetcher).toHaveBeenCalledOnce()
+      expect(String(fetcher.mock.calls[0]?.[0])).toBe(entry.package.url)
+      expect(ctx.pluginInstaller.stage).toHaveBeenCalledOnce()
+      const failure = {
+        reason: 'proxyAuth' as const,
+        route: 'proxy' as const,
+        proxyEndpoint: '127.0.0.1:7897',
+        targetHost: 'github.com',
+      }
+      fetcher.mockRejectedValueOnce(new PluginNetworkError(failure))
+      await expect(
+        handler?.({ sourceType: 'registry', pluginId: 'acme.plugin' })
+      ).resolves.toEqual({ networkError: failure })
+      expect(ctx.pluginInstaller.stage).toHaveBeenCalledOnce()
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
   it('returns the exact media-merge version requirement before downloading or requesting consent', async () => {
     const ctx = {
       ...fakeCtx(),
@@ -814,22 +871,21 @@ describe('buildCommandHandlers', () => {
     expect(ctx.eventBus.emit).not.toHaveBeenCalled()
   })
 
-  it('ShowAddTaskWindow opens the add-task window', async () => {
+  it('ShowAddTaskWindow delivers its default mode through the readiness coordinator', async () => {
     const ctx = fakeCtx()
-    const send = vi.fn()
-    ;(ctx.windowManager as any).open = vi.fn(() => ({
-      isDestroyed: vi.fn(() => false),
-      webContents: {
-        isLoading: vi.fn(() => false),
-        once: vi.fn(),
-        send,
-      },
-    }))
+    const deliver = vi.fn().mockReturnValue(true)
+    Object.assign(ctx, { rendererRecovery: { intents: { deliver } } })
     // @ts-expect-error partial ctx
     const handlers = buildCommandHandlers(ctx)
     const result = await handlers[Commands.ShowAddTaskWindow]?.()
     expect(ctx.windowManager.open).toHaveBeenCalledWith('add-task')
-    expect(send).toHaveBeenCalledWith(Events.SetAddTaskMode, { mode: 'links' })
+    expect(deliver).toHaveBeenCalledWith(
+      'add-task',
+      Events.SetAddTaskMode,
+      undefined,
+      expect.any(Function)
+    )
+    expect(deliver.mock.calls[0][3]()).toEqual({ mode: 'links' })
     expect(result).toEqual({ ok: true })
   })
 
@@ -1278,29 +1334,15 @@ describe('buildCommandHandlers', () => {
     }
   })
 
-  it('forwards add-task prefill only after the window finishes loading', async () => {
-    let didFinishLoad: (() => void) | undefined
-    const send = vi.fn()
+  it('retains add-task prefill for the mounted hydration consumer', async () => {
     const ctx = fakeCtx()
-    ctx.windowManager.open.mockReturnValue({
-      isDestroyed: vi.fn(() => false),
-      webContents: {
-        isLoading: vi.fn(() => true),
-        once: vi.fn((_event: string, handler: () => void) => {
-          didFinishLoad = handler
-        }),
-        send,
-      },
-    })
+    const deliver = vi.fn().mockReturnValue(true)
+    Object.assign(ctx, { rendererRecovery: { intents: { deliver } } })
     // @ts-expect-error partial ctx
     const handlers = buildCommandHandlers(ctx)
     const prefill = { url: 'https://example.com/file.zip' }
-
     await handlers[Commands.ShowAddTaskWindow]?.({ prefill })
-
-    expect(send).not.toHaveBeenCalled()
-    didFinishLoad?.()
-    expect(send).toHaveBeenCalledWith(Events.SetAddTaskMode, prefill)
+    expect(deliver.mock.calls[0][3]()).toEqual(prefill)
   })
 
   it.each([
@@ -1794,7 +1836,12 @@ describe('Commands.UpdateSettings', () => {
     user: '',
     password: '',
     bypass: [],
-    scopes: { download: false, updateApp: false, updateTrackers: false },
+    scopes: {
+      download: false,
+      updateApp: false,
+      updateTrackers: false,
+      plugins: false,
+    },
   }
   const PROXY_ON = { ...PROXY_OFF, enabled: true, host: 'p.example', port: 80 }
 
@@ -2049,11 +2096,21 @@ describe('Commands.UpdateSettings', () => {
     const policy = new AppliedDownloadProxyPolicy({ noProxy: '' })
     const proxyA = {
       ...PROXY_ON,
-      scopes: { download: true, updateApp: false, updateTrackers: false },
+      scopes: {
+        download: true,
+        updateApp: false,
+        updateTrackers: false,
+        plugins: false,
+      },
     }
     const proxyB = {
       ...proxyA,
-      scopes: { download: true, updateApp: true, updateTrackers: false },
+      scopes: {
+        download: true,
+        updateApp: true,
+        updateTrackers: false,
+        plugins: false,
+      },
     }
     const before = makeSettingsLike(PROXY_OFF)
     const afterA = makeSettingsLike(proxyA)
@@ -2112,7 +2169,12 @@ describe('Commands.UpdateSettings', () => {
     const policy = new AppliedDownloadProxyPolicy({ noProxy: '' })
     const proxy = {
       ...PROXY_ON,
-      scopes: { download: true, updateApp: false, updateTrackers: false },
+      scopes: {
+        download: true,
+        updateApp: false,
+        updateTrackers: false,
+        plugins: false,
+      },
     }
     const before = makeSettingsLike(PROXY_OFF, {
       app: { browserBridgeEnabled: false },
@@ -2688,12 +2750,19 @@ describe('plugin enable/disable commands', () => {
       ...fakeCtx(),
       pluginStateStore: {
         setEnabled,
-        get: vi.fn().mockReturnValue(undefined),
+        get: vi.fn(() => ({
+          status: 'inactive',
+          enabled: Boolean(setEnabled.mock.calls.at(-1)?.[1]),
+        })),
       },
       pluginRegistry: {
         refreshState,
       },
       pluginHost: {
+        enable: vi.fn(async (id: string) => {
+          setEnabled(id, true)
+          refreshState(id)
+        }),
         deactivate: vi.fn().mockResolvedValue(undefined),
         disable: vi.fn(async (id: string) => {
           setEnabled(id, false)
@@ -2708,6 +2777,24 @@ describe('plugin enable/disable commands', () => {
       },
     }
   }
+
+  it('keeps a plugin disabled when a runtime dependency is missing', async () => {
+    const ctx = makePluginLifecycleCtx()
+    ctx.pluginHost.enable.mockRejectedValueOnce(
+      new Error('plugin.runtime.ffmpegUnavailable')
+    )
+    const handlers = buildCommandHandlers(ctx as unknown as CommandContext)
+    await expect(
+      handlers[Commands.EnablePlugin]?.('test-plugin')
+    ).rejects.toThrow('plugin.runtime.ffmpegUnavailable')
+    expect(ctx.pluginStateStore.setEnabled).not.toHaveBeenCalled()
+    expect(ctx.eventBus.emit).not.toHaveBeenCalled()
+    await handlers[Commands.EnablePlugin]?.('test-plugin')
+    expect(ctx.pluginStateStore.setEnabled).toHaveBeenCalledWith(
+      'test-plugin',
+      true
+    )
+  })
 
   it('emits contribution index changes when enabling a plugin', async () => {
     const ctx = makePluginLifecycleCtx()
@@ -2963,47 +3050,6 @@ describe('host-owned task directory history', () => {
       })
     )
     finish({ ok: true, value: { favorites: [], recent: [] } })
-  })
-})
-
-describe('manual media merge logging', () => {
-  it('uses the existing plugin log capability for preparation failures', async () => {
-    const ctx = fakeCtx()
-    const error = vi.fn()
-    const createLog = vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error }))
-    const pluginId = 'test.merger'
-    const handlers = buildCommandHandlers({
-      ...ctx,
-      pluginRegistry: {
-        list: () => [{ id: pluginId, name: 'Merger', enabled: true }],
-        get: () => ({
-          manifest: {
-            permissions: ['ffmpeg'],
-            contributes: {
-              commands: [{ id: `${pluginId}.mergeStreams`, public: true }],
-            },
-          },
-        }),
-      },
-      capabilityHost: { createLog },
-    } as unknown as CommandContext)
-    await expect(
-      handlers[Commands.StartMediaMerge]?.({
-        pluginId,
-        videoInput: 'relative.mp4',
-        audioInput: '/media/audio.mp4',
-        output: '/media/merged.mp4',
-      })
-    ).rejects.toThrow('mediaMerge.absolutePaths')
-    expect(createLog).toHaveBeenCalledWith(pluginId)
-    expect(error).toHaveBeenCalledWith(
-      'Media merge failed',
-      expect.objectContaining({
-        event: 'media-merge.failed',
-        stage: 'preparing',
-        reason: 'mediaMerge.absolutePaths',
-      })
-    )
   })
 })
 

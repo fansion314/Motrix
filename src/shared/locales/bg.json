@@ -879,7 +879,14 @@
         "selectFilesFailed": "Изборът на файлове не можа да бъде отворен.",
         "singleTaskFailed": "{{name}}: {{reason}}",
         "stopSeeding": "Спиране на сийдването",
-        "stopSeedingTooltipBatch": "Спиране на сийдването на {{n}} от {{total}} избрани задачи"
+        "stopSeedingTooltipBatch": "Спиране на сийдването на {{n}} от {{total}} избрани задачи",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "column": {
         "connections": "Участници",
@@ -1170,6 +1177,7 @@
         "banner": "Списъкът със задачи може да не е актуален — повторно свързване…"
       },
       "stats": {
+        "title": "Състояние на прехвърлянето",
         "downSpeed": "Скорост на изтегляне",
         "engineOffline": "Модулът е без връзка",
         "engineOk": "Модулът е готов",
@@ -1266,10 +1274,14 @@
       "ffmpeg": {
         "notInstalled": "FFmpeg не е инсталиран на тази система.",
         "optionalDegraded": "Мултимедийните функции на тази приставка няма да са достъпни, докато не бъде инсталиран ffmpeg.",
-        "requiredByPlugin": "Тази приставка изисква ffmpeg. Инсталирайте го и опитайте отново.",
+        "requiredByPlugin": "Можете да инсталирате приставката сега. Преди да я активирате или стартирате, настройте съвместима версия на FFmpeg.",
         "title": "Изискване за FFmpeg",
         "versionMismatch": "Инсталиран е FFmpeg {{version}}."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg не е достъпен. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "Версията на FFmpeg не отговаря на изискванията на тази приставка. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "plugins": {
@@ -1626,6 +1638,14 @@
       "metadata": {
         "strong": "Четене и запис на метаданни за задачи",
         "plain": "Запазва информацията, генерирана от това разширение за задачите за изтегляне."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "permissions": {
@@ -1681,6 +1701,20 @@
       "compromised": "Каналът за разпространение на тази добавка е компрометиран.",
       "fixedVersion": "Поправка е налична във версия {{version}}.",
       "details": "Преглед на известието за сигурност"
+    },
+    "network": {
+      "timeout": "Времето за връзка изтече",
+      "dns": "Неуспешно DNS разрешаване",
+      "proxyAuth": "Неуспешно удостоверяване на прокси",
+      "proxyConnect": "Няма връзка с прокси сървъра",
+      "certificate": "Грешка в сертификата или TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "Заявката е отменена",
+      "network": "Неуспешна мрежова заявка",
+      "cached": "Обновяването е неуспешно; показват се кеширани добавки",
+      "unavailable": "Каталогът с добавки не може да се зареди",
+      "direct": "Неуспешна директна връзка с {{host}}: {{reason}}",
+      "viaProxy": "Неуспешна връзка с {{host}} чрез прокси {{proxy}}: {{reason}}"
     }
   },
   "quit": {
@@ -2086,6 +2120,7 @@
         "bandwidthUsed": "Motrix може да използва до {{motrix}}%.",
         "baseDownload": "Изтегляне",
         "baseDownloadDesc": "Максималната скорост на изтегляне за ежедневна употреба.",
+        "unitFor": "Единица за {{field}}",
         "baseSection": "Стандартни ограничения",
         "baseSectionDesc": "Използват се за ежедневни изтегляния и се спазват във всеки режим.",
         "baseUpload": "Качване",
@@ -2583,7 +2618,7 @@
         "bypass": "Директно свързване към",
         "bypassDesc": "По един домейн, IP адрес или CIDR на ред. Започнете с . за съвпадение само с поддомейни. Изтеглянето на файлове не поддържа заместващия знак *.",
         "bypassPlaceholder": "localhost\n127.0.0.1\n.local",
-        "bypassScopeNote": "Само за изтегляне на файлове и актуализации на приложението",
+        "bypassScopeNote": "Само изтегляния, добавки и обновявания на приложението",
         "enable": "Включване на прокси",
         "enableDesc": "Използва прокси за избраните по-долу връзки.",
         "hidePassword": "Скриване на паролата",
@@ -2610,7 +2645,9 @@
         "server": "Сървър",
         "showPassword": "Показване на паролата",
         "title": "Прокси",
-        "user": "Потребителско име"
+        "user": "Потребителско име",
+        "scopePlugins": "Инсталиране и обновяване на добавки",
+        "scopePluginsDesc": "Използвайте прокси за каталога, пакетите, обновяванията и правилата за сигурност на добавките."
       },
       "reachability": {
         "addEndpoint": "Добавяне на услуга за проверка",
@@ -3239,5 +3276,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "Интерфейсът трябва да бъде възстановен",
+    "description": "Изтеглянията продължават във фонов режим. Незапазените промени във формуляра може да бъдат изгубени.",
+    "recovering": "Възстановяване на интерфейса…",
+    "recover": "Възстановяване на интерфейса",
+    "diagnostics": "Отваряне на диагностичните записи",
+    "downloads": "Отваряне на изтеглянията",
+    "failed": "Възстановяването не е налично. Опитайте отново от менюто на приложението.",
+    "restored": "Интерфейсът е възстановен",
+    "wait": "Продължаване на изчакването",
+    "routeTitle": "Страницата не може да бъде показана",
+    "submissionNotice": "Предишното изпращане може да е завършило. Проверете изтеглянията, преди да създадете същата задача отново."
+  },
+  "pluginOperations": {
+    "requiredField": "Задължително поле",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

@@ -637,6 +637,7 @@
         }
       },
       "stats": {
+        "title": "Átviteli állapot",
         "downSpeed": "Letöltési sebesség",
         "upSpeed": "Feltöltési sebesség",
         "engineOk": "Motor kész",
@@ -907,7 +908,14 @@
         "moveQueueTop": "A sor elejére",
         "moveQueueBottom": "A sor végére",
         "copyError": "Hibainformáció másolása",
-        "errorReport": "{{name}}\nFeladatazonosító: {{id}}\n{{details}}"
+        "errorReport": "{{name}}\nFeladatazonosító: {{id}}\n{{details}}",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "titleCount": "{{shown}} megjelenítve · összesen {{total}}",
       "type": {
@@ -1588,6 +1596,7 @@
         "turtle_off": "Normál",
         "turtle_on": "Alacsony sebesség",
         "turtle_auto": "Automatikus",
+        "unitFor": "{{field}} mértékegysége",
         "baseSection": "Normál korlátok",
         "baseSectionDesc": "A mindennapi letöltésekhez használatosak, és minden mód figyelembe veszi őket.",
         "baseDownload": "Letöltés",
@@ -1708,7 +1717,7 @@
         "hidePassword": "Jelszó elrejtése",
         "bypass": "Közvetlen kapcsolódás ezekhez",
         "bypassDesc": "Soronként egy domain, IP-cím vagy CIDR-tartomány. Kezdő ponttal csak az aldomainekre illeszkedik. Fájlletöltésnél a * helyettesítő karakter nem támogatott.",
-        "bypassScopeNote": "Csak fájlletöltésekhez és alkalmazásfrissítésekhez",
+        "bypassScopeNote": "Csak letöltések, bővítmények és alkalmazásfrissítések",
         "scopes": "Proxy használata ezekhez",
         "scopesDesc": "Válaszd ki, mely forgalomtípusok haladjanak át a proxyn.",
         "scopeDownload": "Fájlletöltések",
@@ -1724,7 +1733,9 @@
         "scopeHint": "A BitTorrent-partnerek, a DHT és az UDP-trackerek közvetlenül kapcsolódnak.",
         "scopeNone": "Nincs kiválasztva",
         "scopeChoose": "Kiválasztás…",
-        "scopeSeparator": ", "
+        "scopeSeparator": ", ",
+        "scopePlugins": "Bővítmények telepítése és frissítése",
+        "scopePluginsDesc": "Proxy használata a bővítménykatalógushoz, csomagokhoz, frissítésekhez és biztonsági szabályzatokhoz."
       },
       "nat": {
         "title": "Portleképezés (NAT)",
@@ -2703,6 +2714,14 @@
       "metadata": {
         "strong": "Feladatok metaadatainak olvasása és írása",
         "plain": "Menti a bővítmény által a letöltési feladatokhoz létrehozott adatokat."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "security": {
@@ -2714,6 +2733,20 @@
       "compromised": "A bővítmény terjesztési csatornáját feltörték.",
       "fixedVersion": "Javítás érhető el a(z) {{version}} verzióban.",
       "details": "Biztonsági közlemény megtekintése"
+    },
+    "network": {
+      "timeout": "A kapcsolat időtúllépése",
+      "dns": "Sikertelen DNS-feloldás",
+      "proxyAuth": "Sikertelen proxyhitelesítés",
+      "proxyConnect": "Nem lehet kapcsolódni a proxyhoz",
+      "certificate": "Tanúsítvány- vagy TLS-hiba",
+      "http": "HTTP {{status}}",
+      "cancelled": "Kérés megszakítva",
+      "network": "Sikertelen hálózati kérés",
+      "cached": "Sikertelen frissítés; gyorsítótárazott bővítmények láthatók",
+      "unavailable": "A bővítménykatalógus nem tölthető be",
+      "direct": "Sikertelen közvetlen kapcsolat: {{host}}: {{reason}}",
+      "viaProxy": "Sikertelen kapcsolat: {{host}}, proxy: {{proxy}}: {{reason}}"
     }
   },
   "plugin": {
@@ -2726,9 +2759,13 @@
         "title": "FFmpeg-követelmény",
         "notInstalled": "Az FFmpeg nincs telepítve ezen a rendszeren.",
         "versionMismatch": "Az FFmpeg {{version}} verziója van telepítve.",
-        "requiredByPlugin": "Ehhez a bővítményhez FFmpeg szükséges. Telepítsd, majd próbáld újra.",
+        "requiredByPlugin": "A bővítmény most telepíthető. Engedélyezés vagy futtatás előtt állítson be egy kompatibilis FFmpeg-verziót.",
         "optionalDegraded": "A bővítmény médiafunkciói nem lesznek elérhetők, amíg az FFmpeg nincs telepítve."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "Az FFmpeg nem érhető el. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "Az FFmpeg verziója nem felel meg a bővítmény követelményeinek. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "bridge": {
@@ -3239,5 +3276,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "A felületet helyre kell állítani",
+    "description": "A letöltések a háttérben folytatódnak. Az űrlap nem mentett módosításai elveszhetnek.",
+    "recovering": "Felület helyreállítása…",
+    "recover": "Felület helyreállítása",
+    "diagnostics": "Diagnosztikai naplók megnyitása",
+    "downloads": "Letöltések megnyitása",
+    "failed": "A helyreállítás nem érhető el. Próbálja újra az alkalmazás menüjéből.",
+    "restored": "A felület helyreállt",
+    "wait": "Várakozás folytatása",
+    "routeTitle": "Az oldal nem jeleníthető meg",
+    "submissionNotice": "Az előző beküldés már befejeződhetett. Ugyanazon feladat újbóli létrehozása előtt ellenőrizze a letöltéseket."
+  },
+  "pluginOperations": {
+    "requiredField": "Kötelező mező",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

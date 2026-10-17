@@ -879,7 +879,14 @@
         "selectFilesFailed": "Δεν ήταν δυνατό το άνοιγμα της επιλογής αρχείων.",
         "singleTaskFailed": "{{name}}: {{reason}}",
         "stopSeeding": "Διακοπή διαμοιρασμού",
-        "stopSeedingTooltipBatch": "Διακοπή διαμοιρασμού — επιλεγμένες εργασίες: {{n}} / {{total}}"
+        "stopSeedingTooltipBatch": "Διακοπή διαμοιρασμού — επιλεγμένες εργασίες: {{n}} / {{total}}",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "column": {
         "connections": "Ομότιμοι",
@@ -1170,6 +1177,7 @@
         "banner": "Η λίστα εργασιών ενδέχεται να μην είναι ενημερωμένη — επανασύνδεση…"
       },
       "stats": {
+        "title": "Κατάσταση μεταφοράς",
         "downSpeed": "Ταχύτητα λήψης",
         "engineOffline": "Μηχανή εκτός σύνδεσης",
         "engineOk": "Η μηχανή είναι έτοιμη",
@@ -1266,10 +1274,14 @@
       "ffmpeg": {
         "notInstalled": "Το FFmpeg δεν είναι εγκατεστημένο σε αυτό το σύστημα.",
         "optionalDegraded": "Οι λειτουργίες πολυμέσων αυτού του πρόσθετου δεν θα είναι διαθέσιμες μέχρι να εγκατασταθεί το ffmpeg.",
-        "requiredByPlugin": "Αυτό το πρόσθετο απαιτεί ffmpeg. Εγκαταστήστε το και δοκιμάστε ξανά.",
+        "requiredByPlugin": "Μπορείτε να εγκαταστήσετε το πρόσθετο τώρα. Ρυθμίστε μια συμβατή έκδοση του FFmpeg πριν το ενεργοποιήσετε ή το εκτελέσετε.",
         "title": "Απαίτηση FFmpeg",
         "versionMismatch": "Είναι εγκατεστημένο το FFmpeg {{version}}."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "Το FFmpeg δεν είναι διαθέσιμο. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "Η έκδοση του FFmpeg δεν πληροί τις απαιτήσεις αυτού του πρόσθετου. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "plugins": {
@@ -1626,6 +1638,14 @@
       "metadata": {
         "strong": "Ανάγνωση και εγγραφή μεταδεδομένων εργασιών",
         "plain": "Αποθηκεύει πληροφορίες που δημιουργεί το πρόσθετο για εργασίες λήψης."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "permissions": {
@@ -1681,6 +1701,20 @@
       "compromised": "Η διανομή αυτού του πρόσθετου έχει παραβιαστεί.",
       "fixedVersion": "Διατίθεται διόρθωση στην έκδοση {{version}}.",
       "details": "Προβολή ανακοίνωσης ασφαλείας"
+    },
+    "network": {
+      "timeout": "Λήξη χρονικού ορίου σύνδεσης",
+      "dns": "Αποτυχία επίλυσης DNS",
+      "proxyAuth": "Αποτυχία ελέγχου ταυτότητας διακομιστή μεσολάβησης",
+      "proxyConnect": "Αδυναμία σύνδεσης στον διακομιστή μεσολάβησης",
+      "certificate": "Σφάλμα πιστοποιητικού ή TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "Το αίτημα ακυρώθηκε",
+      "network": "Αποτυχία αιτήματος δικτύου",
+      "cached": "Η ανανέωση απέτυχε· εμφανίζονται αποθηκευμένα πρόσθετα",
+      "unavailable": "Αδυναμία φόρτωσης καταλόγου πρόσθετων",
+      "direct": "Αποτυχία απευθείας σύνδεσης στο {{host}}: {{reason}}",
+      "viaProxy": "Αποτυχία σύνδεσης στο {{host}} μέσω {{proxy}}: {{reason}}"
     }
   },
   "quit": {
@@ -2086,6 +2120,7 @@
         "bandwidthUsed": "Το Motrix μπορεί να χρησιμοποιήσει έως το {{motrix}}%.",
         "baseDownload": "Λήψη",
         "baseDownloadDesc": "Η μέγιστη ταχύτητα λήψης για καθημερινή χρήση.",
+        "unitFor": "Μονάδα για {{field}}",
         "baseSection": "Κανονικά όρια",
         "baseSectionDesc": "Χρησιμοποιούνται για καθημερινές λήψεις και τηρούνται σε όλες τις λειτουργίες.",
         "baseUpload": "Αποστολή",
@@ -2583,7 +2618,7 @@
         "bypass": "Απευθείας σύνδεση προς",
         "bypassDesc": "Ένας τομέας, IP ή CIDR ανά γραμμή. Ξεκινήστε με . για αντιστοίχιση μόνο υποτομέων. Οι λήψεις αρχείων δεν υποστηρίζουν χαρακτήρες μπαλαντέρ *.",
         "bypassPlaceholder": "localhost\n127.0.0.1\n.local",
-        "bypassScopeNote": "Μόνο για λήψεις αρχείων και ενημερώσεις εφαρμογής",
+        "bypassScopeNote": "Μόνο λήψεις, πρόσθετα και ενημερώσεις εφαρμογής",
         "enable": "Ενεργοποίηση διακομιστή μεσολάβησης",
         "enableDesc": "Χρήση διακομιστή μεσολάβησης για τις παρακάτω επιλεγμένες συνδέσεις.",
         "hidePassword": "Απόκρυψη κωδικού πρόσβασης",
@@ -2610,7 +2645,9 @@
         "server": "Διακομιστής",
         "showPassword": "Εμφάνιση κωδικού πρόσβασης",
         "title": "Διακομιστής μεσολάβησης",
-        "user": "Όνομα χρήστη"
+        "user": "Όνομα χρήστη",
+        "scopePlugins": "Εγκατάσταση και ενημέρωση πρόσθετων",
+        "scopePluginsDesc": "Χρήση διακομιστή μεσολάβησης για τον κατάλογο, τα πακέτα, τις ενημερώσεις και τις πολιτικές ασφαλείας των πρόσθετων."
       },
       "reachability": {
         "addEndpoint": "Προσθήκη υπηρεσίας ελέγχου",
@@ -3239,5 +3276,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "Η διεπαφή χρειάζεται επαναφορά",
+    "description": "Οι λήψεις συνεχίζονται στο παρασκήνιο. Οι μη αποθηκευμένες αλλαγές στη φόρμα ενδέχεται να χαθούν.",
+    "recovering": "Γίνεται επαναφορά της διεπαφής…",
+    "recover": "Επαναφορά διεπαφής",
+    "diagnostics": "Άνοιγμα αρχείων διαγνωστικών",
+    "downloads": "Άνοιγμα λήψεων",
+    "failed": "Η επαναφορά δεν είναι διαθέσιμη. Δοκιμάστε ξανά από το μενού της εφαρμογής.",
+    "restored": "Η διεπαφή αποκαταστάθηκε",
+    "wait": "Συνέχιση αναμονής",
+    "routeTitle": "Δεν ήταν δυνατή η εμφάνιση αυτής της σελίδας",
+    "submissionNotice": "Η προηγούμενη υποβολή ενδέχεται να ολοκληρώθηκε. Ελέγξτε τις λήψεις πριν δημιουργήσετε ξανά την ίδια εργασία."
+  },
+  "pluginOperations": {
+    "requiredField": "Υποχρεωτικό πεδίο",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

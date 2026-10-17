@@ -61,6 +61,7 @@ import {
   parsePluginIdleDisposeMs,
 } from '@core/plugin/host/plugin-host'
 import { PluginInstaller } from '@core/plugin/install/plugin-installer'
+import { PluginHttpClient } from '@core/plugin/network/plugin-http-client'
 import { PluginRegistry } from '@core/plugin/plugin-registry'
 import { RegistryClient } from '@core/plugin/registry/registry-client'
 import type { PluginHookRuntime } from '@core/plugin/runtime/plugin-hook-runtime'
@@ -232,6 +233,7 @@ import {
   LiquidGlassController,
   shouldEnableLiquidGlassByDefault,
 } from './window/liquid-glass'
+import { createRendererRecoveryRuntime } from './window/renderer-recovery-runtime'
 import { initializeRendererUrlPolicy } from './window/renderer-url-policy'
 import { WindowManager } from './window/window-manager'
 import { resolveMainWindowStartupPlan } from './window/window-startup-plan'
@@ -305,6 +307,9 @@ const speedHistoryStore = new SpeedHistoryStore()
 const taskSpeedHistoryStore = new TaskSpeedHistoryStore()
 const torrentParser = new TorrentParser()
 let windowManager: WindowManager
+let rendererRecovery:
+  | ReturnType<typeof createRendererRecoveryRuntime>
+  | undefined
 let transferStats: TransferStatsRuntime | null = null
 let taskActivityService: TaskActivityService | null = null
 let taskInspectorActivityRuntime: TaskInspectorActivityRuntime | null = null
@@ -498,6 +503,7 @@ const fileCleanupService = new FileCleanupServiceImpl({
 
 let rpcClient: Aria2RpcClient
 let supervisor: EngineSupervisor
+let pluginHttpClient: PluginHttpClient | undefined
 let proxyBridge: ProxyBridgeManager
 let speedLimitController: SpeedLimitController
 let sessionManager: SessionManager
@@ -609,6 +615,7 @@ function performCleanup(): Promise<void> {
         devWatcherHandle = null
         await handle?.close()
       }),
+      safely('plugin-network', () => pluginHttpClient?.close()),
       safely('plugin-host', async () => {
         await postDeliveryLoop
         postDeliveryLoop = null
@@ -678,44 +685,24 @@ function loadWindowUrl(win: BrowserWindow, route: string) {
   const params = new URLSearchParams(query)
   params.set('locale', resolvedApplicationLocale)
   const localizedRoute = `${pathname}?${params.toString()}`
-  rendererUrlPolicy.loadWindow(win, localizedRoute)
+  return rendererUrlPolicy.loadWindow(win, localizedRoute)
 }
 
-// Send an IPC event to the add-task window without racing the renderer
-// load. useExternalHydration only subscribes after React mounts (one
-// useEffect tick after did-finish-load), so dispatching SetAddTaskMode
-// immediately after windowManager.open('add-task') drops the event on
-// cold-start protocol clicks. Strategy:
-//   1. If the page is still loading → wait for did-finish-load.
-//   2. Defer 100ms so React reconciliation + useEffect run and the
-//      renderer's transport.on(...) subscriptions are attached.
+// Durable UI intents are released only when the actual consumer is mounted.
 function dispatchWhenReady(
   win: BrowserWindow,
   channel: string,
   payload: unknown,
   resolvePayload?: () => unknown
 ) {
-  const dispatchLog = getLogger('dispatch')
-  const send = (reason: string) => {
-    setTimeout(() => {
-      if (!win.isDestroyed()) {
-        dispatchLog.info({ channel, reason }, 'webContents.send firing')
-        win.webContents.send(
-          channel,
-          resolvePayload ? resolvePayload() : payload
-        )
-      } else {
-        dispatchLog.warn({ channel, reason }, 'window destroyed before send')
-      }
-    }, 100)
-  }
-  const loading = win.webContents.isLoading()
-  dispatchLog.info({ channel, loading }, 'dispatchWhenReady entered')
-  if (loading) {
-    win.webContents.once('did-finish-load', () => send('did-finish-load'))
-  } else {
-    send('already-loaded')
-  }
+  const id = (['main', 'add-task', 'onboarding'] as const).find(
+    (id) => windowManager?.get(id) === win
+  )
+  if (!id || win.isDestroyed()) return
+  if (rendererRecovery?.intents.deliver(id, channel, payload, resolvePayload))
+    return
+  // Snapshot notifications have a query-on-mount consumer and need no replay.
+  win.webContents.send(channel, resolvePayload ? resolvePayload() : payload)
 }
 
 // Notifications and protocol links share the same last-moment availability
@@ -730,23 +717,6 @@ function navigateToTask(taskId: string) {
     dispatchWhenReady(win, Events.NavigateTo, ALL_DOWNLOADS_ROUTE, () =>
       resolveTaskRoute(taskId, taskManager.getById(taskId)?.status)
     )
-  })
-}
-
-// Each new add-task BrowserWindow gets a `closed` listener that resets
-// protocolManager's dialog state. Without this, after the first .torrent
-// open + close, dialogActive stays true and subsequent opens fall through
-// to the queue-increment path (TorrentQueueSizeChanged) instead of
-// ProtocolTorrentFile — which leaves the freshly precreated window stuck
-// on the Links tab without meta/files. WeakSet so destroyed windows are
-// GC'd and we hook each fresh BrowserWindow exactly once.
-const protocolHookedWindows = new WeakSet<BrowserWindow>()
-
-function hookAddTaskCloseReset(win: BrowserWindow) {
-  if (protocolHookedWindows.has(win)) return
-  protocolHookedWindows.add(win)
-  win.once('closed', () => {
-    protocolManager?.resetDialogState()
   })
 }
 
@@ -789,14 +759,9 @@ const protocolManager = createProtocolManager({
   // motrix://new-task?uri=...) open add-task with Links prefilled.
   onOpenAddTask: (params) => {
     if (!windowManager) return
-    // show() handles positioning (centers on main when visible). Calling
-    // without options skips its built-in setTimeout(100ms) — we route
-    // through dispatchWhenReady so cold-start clicks land after
-    // useExternalHydration has subscribed.
     windowManager.show('add-task')
     const win = windowManager.get('add-task')
     if (!win || win.isDestroyed()) return
-    hookAddTaskCloseReset(win)
     dispatchWhenReady(win, Events.SetAddTaskMode, params)
   },
   // .torrent file association (and queue increments) ship a parsed
@@ -808,8 +773,14 @@ const protocolManager = createProtocolManager({
     windowManager.show('add-task')
     const win = windowManager.get('add-task')
     if (!win || win.isDestroyed()) return
-    hookAddTaskCloseReset(win)
-    dispatchWhenReady(win, channel, payload)
+    dispatchWhenReady(
+      win,
+      channel,
+      payload,
+      channel === Events.ProtocolTorrentFile
+        ? () => protocolManager.getCurrentTorrentSnapshot()
+        : undefined
+    )
   },
   // motrix://plugins/<id> — navigation-only by contract
   // (.claude/rules/plugin-registry.md): open the marketplace detail route in
@@ -1609,6 +1580,7 @@ async function initializeMainProcess(): Promise<void> {
   // settings (for window bounds/run mode) and WindowManager.
 
   await settingsManager.load()
+  pluginHttpClient = new PluginHttpClient(() => settingsManager.getProxy())
   if (!mainProcessWork.isAccepting()) return
 
   let pluginLocaleTargets: {
@@ -1711,7 +1683,29 @@ async function initializeMainProcess(): Promise<void> {
   const gate = new DisclaimerGate({ settings: settingsManager })
   pendingDisclaimerGate = gate.isAccepted() ? null : gate
   const liquidGlass = new LiquidGlassController({ settingsManager })
+  rendererRecovery = createRendererRecoveryRuntime({
+    windows: () => windowManager,
+    logDirectory: logDir,
+    isMagnetSelectionPending: (taskId) =>
+      taskManager.getById(taskId)?.status === TaskStatus.MetadataReady,
+  })
   windowManager = new WindowManager({
+    lifecycle: rendererRecovery.supervisor,
+    canPrewarm: () => rendererRecovery?.supervisor.canPrewarm ?? true,
+    deliverAddTask: (options) => {
+      rendererRecovery?.intents.deliver(
+        'add-task',
+        Events.SetAddTaskMode,
+        options
+      )
+    },
+    onUserDismiss: (id) => {
+      rendererRecovery?.intents.clear(id)
+      rendererRecovery?.submissions.dismiss(id)
+      if (id === 'add-task') protocolManager.resetDialogState()
+      if (id === 'onboarding' && !gate.isAccepted())
+        requestForcedQuit('onboarding-window-closed')
+    },
     settingsManager,
     preloadPath: path.join(__dirname, '../preload/preload.cjs'),
     loadUrl: loadWindowUrl,
@@ -1745,8 +1739,11 @@ async function initializeMainProcess(): Promise<void> {
   // interval. Early forwarding guarantees the eventual LocaleChanged reaches
   // either the onboarding window or the newly-opened main window (whose
   // preload buffers it until React subscribes).
-  setupEventForwarding(eventBus, windowManager, () =>
-    getHiddenNotificationKinds(settingsManager.getApp())
+  setupEventForwarding(
+    eventBus,
+    windowManager,
+    () => getHiddenNotificationKinds(settingsManager.getApp()),
+    rendererRecovery.intents
   )
 
   // Subscribe before notification-center replay. Resolve task paths on click
@@ -1863,13 +1860,14 @@ async function initializeMainProcess(): Promise<void> {
   })
   const beginLegacyInvitation = (): void => {
     runShellAsyncWork('legacy-import-discovery', async () => {
-      const state = await legacyNavigation.detect()
+      await legacyNavigation.detect()
       if (
-        !state.invitationPending ||
+        !legacyNavigation.getState().invitationPending ||
         !gate.isAccepted() ||
         !mainProcessWork.isAccepting()
       )
         return
+      legacyNavigation.finishInvitation()
       windowManager?.open('main', { show: true })
       navigateToMigration()
     })
@@ -1907,10 +1905,7 @@ async function initializeMainProcess(): Promise<void> {
     launcher.markWindowReady()
     beginLegacyInvitation()
   } else {
-    const onboardingWindow = windowManager.open('onboarding')
-    onboardingWindow.once('closed', () => {
-      if (!gate.isAccepted()) requestForcedQuit('onboarding-window-closed')
-    })
+    windowManager.open('onboarding')
 
     // A second launch must also be able to restore a minimized onboarding
     // window while download ingress is still waiting for legal acceptance.
@@ -2045,6 +2040,7 @@ async function initializeMainProcess(): Promise<void> {
   const overlayDir = path.join(platform.userDataDir, 'builtin-updates')
   const devPath = process.env.MOTRIX_PLUGIN_DEV_PATH
   const pluginSecurity = new PluginSecurityService({
+    fetchImpl: pluginHttpClient.fetch,
     cachePath: path.join(platform.userDataDir, 'plugin-security.json'),
   })
   await pluginSecurity.initialize()
@@ -2096,7 +2092,9 @@ async function initializeMainProcess(): Promise<void> {
     userDataDir: app.getPath('userData'),
   })
   const detectPluginFfmpeg = async () =>
-    projectActiveToLegacy(await detectElectronFfmpeg())
+    projectActiveToLegacy(
+      await pluginCapHost.ffmpeg.refreshDetection(detectElectronFfmpeg)
+    )
   const activePluginHost = new PluginHost({
     security: pluginSecurity,
     onSecurityChanged: () => {
@@ -2232,6 +2230,7 @@ async function initializeMainProcess(): Promise<void> {
     sessionManager.purgeEphemeralMediaRows()
   )
   const pluginRuntime = await createPluginRuntime({
+    getTask: (id) => taskManager.getById(id),
     activation: pluginActivation,
     registry: pluginRegistry,
     grants: pluginGrants,
@@ -2490,6 +2489,7 @@ async function initializeMainProcess(): Promise<void> {
   const keybindingRegistry = new KeybindingRegistry()
 
   const commandDeps: CommandDeps = {
+    recoverInterface: () => rendererRecovery?.recoverFocused(),
     taskManager,
     settingsManager,
     adapter,
@@ -2802,9 +2802,11 @@ async function initializeMainProcess(): Promise<void> {
   await activePluginHost.enforceSecurityPolicy()
   pluginSecurity.start()
   const registryClient = new RegistryClient({
+    fetchImpl: pluginHttpClient.fetch,
     cachePath: path.join(platform.userDataDir, REGISTRY_CACHE_FILENAME),
   })
   const builtinUpdater = new BuiltinUpdater({
+    fetchImpl: pluginHttpClient.fetch,
     security: pluginSecurity,
     overlayDir,
     hostVersion: app.getVersion(),
@@ -2875,6 +2877,8 @@ async function initializeMainProcess(): Promise<void> {
   })
 
   const disposeCommandHandlers = registerCommandHandlers({
+    rendererRecovery,
+    operationService: pluginRuntime.operations,
     mediaMetaStore,
     cliToolService,
     supervisor,
@@ -2949,6 +2953,7 @@ async function initializeMainProcess(): Promise<void> {
     publishTaskUpdate,
     publishTaskUpdateNow,
     registryClient,
+    pluginFetch: pluginHttpClient.fetch,
     hostVersion: app.getVersion(),
     builtinUpdater,
     overlayDir,
@@ -3109,6 +3114,7 @@ async function showQuitConfirmation(activeCount: number): Promise<{
   confirmed: boolean
   dontAskAgain: boolean
 }> {
+  const leaveModal = rendererRecovery?.supervisor.enterModal()
   try {
     const { response, checkboxChecked } = await dialog.showMessageBox({
       type: 'question',
@@ -3123,6 +3129,8 @@ async function showQuitConfirmation(activeCount: number): Promise<{
     return { confirmed: response === 1, dontAskAgain: checkboxChecked }
   } catch {
     return { confirmed: true, dontAskAgain: false } // fail-open
+  } finally {
+    leaveModal?.()
   }
 }
 
@@ -3134,6 +3142,7 @@ function beginShutdown(): void {
   // Drain a pending coalesced TaskUpdated while consumers are still attached.
   taskUpdatePublisher.flush()
   windowManager?.setWillQuit(true) // FIRST — never before/during the dialog
+  rendererRecovery?.dispose()
   // Tear down renderer ingress before removing ipcMain handlers. Service
   // shutdown emits final state-change events (for example NAT stopped), and a
   // still-live renderer can react by invoking queries after their handlers

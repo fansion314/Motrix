@@ -882,7 +882,14 @@
         "selectFilesFailed": "Selecția fișierelor nu a putut fi deschisă.",
         "singleTaskFailed": "{{name}}: {{reason}}",
         "stopSeeding": "Oprește distribuirea",
-        "stopSeedingTooltipBatch": "Oprește distribuirea: {{n}} din selecția totală de {{total}}"
+        "stopSeedingTooltipBatch": "Oprește distribuirea: {{n}} din selecția totală de {{total}}",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "column": {
         "connections": "Parteneri",
@@ -1182,6 +1189,7 @@
         "banner": "Lista sarcinilor poate fi învechită — se reconectează…"
       },
       "stats": {
+        "title": "Starea transferului",
         "downSpeed": "Viteză de descărcare",
         "engineOffline": "Motor offline",
         "engineOk": "Motor pregătit",
@@ -1278,10 +1286,14 @@
       "ffmpeg": {
         "notInstalled": "FFmpeg nu este instalat pe acest sistem.",
         "optionalDegraded": "Funcțiile media ale acestui modul nu vor fi disponibile până la instalarea ffmpeg.",
-        "requiredByPlugin": "Acest modul necesită ffmpeg. Instalează-l și încearcă din nou.",
+        "requiredByPlugin": "Puteți instala pluginul acum. Configurați o versiune compatibilă de FFmpeg înainte de activare sau rulare.",
         "title": "Cerință FFmpeg",
         "versionMismatch": "Este instalat FFmpeg {{version}}."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg nu este disponibil. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "Versiunea FFmpeg nu îndeplinește cerințele acestui plugin. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "plugins": {
@@ -1644,6 +1656,14 @@
       "metadata": {
         "strong": "Citirea și scrierea metadatelor sarcinilor",
         "plain": "Salvează informațiile generate de această extensie pentru sarcinile de descărcare."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "permissions": {
@@ -1699,6 +1719,20 @@
       "compromised": "Canalul de distribuție al acestui plugin a fost compromis.",
       "fixedVersion": "O remediere este disponibilă în versiunea {{version}}.",
       "details": "Vedeți anunțul de securitate"
+    },
+    "network": {
+      "timeout": "Conexiunea a expirat",
+      "dns": "Rezolvarea DNS a eșuat",
+      "proxyAuth": "Autentificarea proxy a eșuat",
+      "proxyConnect": "Nu se poate conecta la proxy",
+      "certificate": "Eroare de certificat sau TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "Cerere anulată",
+      "network": "Cererea de rețea a eșuat",
+      "cached": "Actualizarea a eșuat; se afișează extensiile din cache",
+      "unavailable": "Catalogul de extensii nu a putut fi încărcat",
+      "direct": "Conexiunea directă la {{host}} a eșuat: {{reason}}",
+      "viaProxy": "Conexiunea la {{host}} prin proxy-ul {{proxy}} a eșuat: {{reason}}"
     }
   },
   "quit": {
@@ -2105,6 +2139,7 @@
         "bandwidthUsed": "Motrix poate folosi până la {{motrix}}%.",
         "baseDownload": "Descărcare",
         "baseDownloadDesc": "Viteza maximă obișnuită de descărcare.",
+        "unitFor": "Unitate pentru {{field}}",
         "baseSection": "Limite standard",
         "baseSectionDesc": "Folosite pentru descărcările obișnuite și respectate în toate modurile.",
         "baseUpload": "Încărcare",
@@ -2603,7 +2638,7 @@
         "bypass": "Conectează direct la",
         "bypassDesc": "Un domeniu, IP sau CIDR pe linie. Începe cu . pentru a include doar subdomenii. Descărcările de fișiere nu acceptă metacaracterul *.",
         "bypassPlaceholder": "localhost\n127.0.0.1\n.local",
-        "bypassScopeNote": "Doar descărcări de fișiere și actualizări ale aplicației",
+        "bypassScopeNote": "Doar descărcări, extensii și actualizări ale aplicației",
         "enable": "Activează proxy-ul",
         "enableDesc": "Folosește un proxy pentru conexiunile selectate mai jos.",
         "hidePassword": "Ascunde parola",
@@ -2630,7 +2665,9 @@
         "server": "Server",
         "showPassword": "Arată parola",
         "title": "Proxy",
-        "user": "Nume de utilizator"
+        "user": "Nume de utilizator",
+        "scopePlugins": "Instalarea și actualizarea extensiilor",
+        "scopePluginsDesc": "Folosește proxy-ul pentru catalog, pachete, actualizări și politicile de securitate ale extensiilor."
       },
       "reachability": {
         "addEndpoint": "Adaugă serviciu de verificare",
@@ -3263,5 +3300,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "Interfața trebuie recuperată",
+    "description": "Descărcările continuă în fundal. Modificările nesalvate ale formularului se pot pierde.",
+    "recovering": "Se recuperează interfața…",
+    "recover": "Recuperează interfața",
+    "diagnostics": "Deschide jurnalele de diagnostic",
+    "downloads": "Deschide descărcările",
+    "failed": "Recuperarea nu este disponibilă. Încearcă din nou din meniul aplicației.",
+    "restored": "Interfață restabilită",
+    "wait": "Continuă așteptarea",
+    "routeTitle": "Această pagină nu a putut fi afișată",
+    "submissionNotice": "Trimiterea anterioară poate fi finalizată. Verifică descărcările înainte de a crea din nou aceeași sarcină."
+  },
+  "pluginOperations": {
+    "requiredField": "Câmp obligatoriu",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

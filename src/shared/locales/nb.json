@@ -879,7 +879,14 @@
         "selectFilesFailed": "Kunne ikke åpne filvalget.",
         "singleTaskFailed": "{{name}}: {{reason}}",
         "stopSeeding": "Stopp deling",
-        "stopSeedingTooltipBatch": "Stopp deling: {{n}} / {{total}} i utvalget"
+        "stopSeedingTooltipBatch": "Stopp deling: {{n}} / {{total}} i utvalget",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "column": {
         "connections": "Noder",
@@ -1170,6 +1177,7 @@
         "banner": "Oppgavelisten kan være utdatert — kobler til på nytt…"
       },
       "stats": {
+        "title": "Overføringsstatus",
         "downSpeed": "Nedlastingshastighet",
         "engineOffline": "Motor frakoblet",
         "engineOk": "Motoren er klar",
@@ -1266,10 +1274,14 @@
       "ffmpeg": {
         "notInstalled": "FFmpeg er ikke installert på dette systemet.",
         "optionalDegraded": "Mediefunksjonene i dette programtillegget er utilgjengelige inntil ffmpeg er installert.",
-        "requiredByPlugin": "Dette programtillegget krever ffmpeg. Installer det og prøv igjen.",
+        "requiredByPlugin": "Du kan installere utvidelsen nå. Konfigurer en kompatibel FFmpeg-versjon før du aktiverer eller kjører den.",
         "title": "FFmpeg-krav",
         "versionMismatch": "FFmpeg {{version}} er installert."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg er ikke tilgjengelig. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "FFmpeg-versjonen oppfyller ikke kravene til denne utvidelsen. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "plugins": {
@@ -1626,6 +1638,14 @@
       "metadata": {
         "strong": "Lese og skrive oppgavemetadata",
         "plain": "Lagrer informasjon som denne utvidelsen lager for nedlastingsoppgaver."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "permissions": {
@@ -1681,6 +1701,20 @@
       "compromised": "Distribusjonen av denne utvidelsen er kompromittert.",
       "fixedVersion": "En rettelse er tilgjengelig i versjon {{version}}.",
       "details": "Vis sikkerhetsvarsel"
+    },
+    "network": {
+      "timeout": "Tidsavbrudd for tilkoblingen",
+      "dns": "DNS-oppslag mislyktes",
+      "proxyAuth": "Proxyautentisering mislyktes",
+      "proxyConnect": "Kunne ikke koble til proxyen",
+      "certificate": "Sertifikat- eller TLS-feil",
+      "http": "HTTP {{status}}",
+      "cancelled": "Forespørselen ble avbrutt",
+      "network": "Nettverksforespørselen mislyktes",
+      "cached": "Oppdatering mislyktes; viser mellomlagrede programtillegg",
+      "unavailable": "Kunne ikke laste katalogen for programtillegg",
+      "direct": "Direkte tilkobling til {{host}} mislyktes: {{reason}}",
+      "viaProxy": "Tilkobling til {{host}} via proxy {{proxy}} mislyktes: {{reason}}"
     }
   },
   "quit": {
@@ -2086,6 +2120,7 @@
         "bandwidthUsed": "Motrix kan bruke opptil {{motrix}}%.",
         "baseDownload": "Nedlasting",
         "baseDownloadDesc": "Maksimal nedlastingshastighet til daglig bruk.",
+        "unitFor": "Enhet for {{field}}",
         "baseSection": "Standardgrenser",
         "baseSectionDesc": "Brukes til daglige nedlastinger og overholdes i alle moduser.",
         "baseUpload": "Opplasting",
@@ -2583,7 +2618,7 @@
         "bypass": "Koble direkte til",
         "bypassDesc": "Ett domene, én IP-adresse eller ett CIDR-område per linje. Start med . for bare å samsvare med underdomener. Filnedlastinger støtter ikke jokertegnet *.",
         "bypassPlaceholder": "localhost\n127.0.0.1\n.local",
-        "bypassScopeNote": "Bare filnedlastinger og appoppdateringer",
+        "bypassScopeNote": "Bare nedlastinger, programtillegg og appoppdateringer",
         "enable": "Aktiver mellomtjener",
         "enableDesc": "Bruk en mellomtjener for tilkoblingene som er valgt nedenfor.",
         "hidePassword": "Skjul passord",
@@ -2610,7 +2645,9 @@
         "server": "Server",
         "showPassword": "Vis passord",
         "title": "Mellomtjener",
-        "user": "Brukernavn"
+        "user": "Brukernavn",
+        "scopePlugins": "Installasjon og oppdatering av programtillegg",
+        "scopePluginsDesc": "Bruk proxy for katalogen, pakker, oppdateringer og sikkerhetsregler for programtillegg."
       },
       "reachability": {
         "addEndpoint": "Legg til kontrolltjeneste",
@@ -3239,5 +3276,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "Grensesnittet må gjenopprettes",
+    "description": "Nedlastinger fortsetter i bakgrunnen. Ulagrede endringer i skjemaet kan gå tapt.",
+    "recovering": "Gjenoppretter grensesnittet…",
+    "recover": "Gjenopprett grensesnitt",
+    "diagnostics": "Åpne diagnoselogger",
+    "downloads": "Åpne nedlastinger",
+    "failed": "Gjenoppretting er ikke tilgjengelig. Prøv igjen fra appmenyen.",
+    "restored": "Grensesnittet er gjenopprettet",
+    "wait": "Fortsett å vente",
+    "routeTitle": "Denne siden kunne ikke vises",
+    "submissionNotice": "Forrige innsending kan være fullført. Sjekk nedlastingene før du oppretter samme oppgave på nytt."
+  },
+  "pluginOperations": {
+    "requiredField": "Obligatorisk felt",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

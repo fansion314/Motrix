@@ -634,6 +634,7 @@
         }
       },
       "stats": {
+        "title": "Trạng thái truyền",
         "downSpeed": "Tốc độ tải xuống",
         "upSpeed": "Tốc độ tải lên",
         "engineOk": "Bộ máy sẵn sàng",
@@ -895,7 +896,14 @@
         "moveQueueTop": "Chuyển lên đầu",
         "moveQueueBottom": "Chuyển xuống cuối",
         "copyError": "Sao chép thông tin lỗi",
-        "errorReport": "{{name}}\nID tác vụ: {{id}}\n{{details}}"
+        "errorReport": "{{name}}\nID tác vụ: {{id}}\n{{details}}",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "titleCount": "Đang hiện {{shown}} · Tổng cộng {{total}}",
       "type": {
@@ -1574,6 +1582,7 @@
         "turtle_off": "Tiêu chuẩn",
         "turtle_on": "Tốc độ thấp",
         "turtle_auto": "Tự động",
+        "unitFor": "Đơn vị cho {{field}}",
         "baseSection": "Giới hạn tiêu chuẩn",
         "baseSectionDesc": "Dùng cho các lượt tải xuống hằng ngày và được tuân thủ trong mọi chế độ.",
         "baseDownload": "Tải xuống",
@@ -1694,7 +1703,7 @@
         "hidePassword": "Ẩn mật khẩu",
         "bypass": "Kết nối trực tiếp đến",
         "bypassDesc": "Mỗi dòng một tên miền, IP hoặc CIDR. Bắt đầu bằng dấu . để chỉ khớp tên miền con. Tải tệp không hỗ trợ ký tự đại diện *.",
-        "bypassScopeNote": "Chỉ áp dụng cho tải tệp và cập nhật ứng dụng",
+        "bypassScopeNote": "Chỉ tải xuống, tiện ích và cập nhật ứng dụng",
         "scopes": "Dùng proxy cho",
         "scopesDesc": "Chọn các loại lưu lượng đi qua proxy.",
         "scopeDownload": "Tải tệp",
@@ -1710,7 +1719,9 @@
         "scopeHint": "Máy ngang hàng BT, DHT và máy chủ theo dõi UDP kết nối trực tiếp.",
         "scopeNone": "Chưa chọn",
         "scopeChoose": "Chọn…",
-        "scopeSeparator": ", "
+        "scopeSeparator": ", ",
+        "scopePlugins": "Cài đặt và cập nhật tiện ích",
+        "scopePluginsDesc": "Dùng proxy cho danh mục, gói cài đặt, bản cập nhật và yêu cầu chính sách bảo mật của tiện ích."
       },
       "nat": {
         "title": "Ánh xạ cổng (NAT)",
@@ -2682,6 +2693,14 @@
       "metadata": {
         "strong": "Đọc và ghi siêu dữ liệu tác vụ",
         "plain": "Lưu thông tin do tiện ích này tạo cho các tác vụ tải xuống."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "security": {
@@ -2693,6 +2712,20 @@
       "compromised": "Kênh phân phối tiện ích này đã bị xâm phạm.",
       "fixedVersion": "Bản sửa lỗi có trong phiên bản {{version}}.",
       "details": "Xem thông báo bảo mật"
+    },
+    "network": {
+      "timeout": "Kết nối hết thời gian chờ",
+      "dns": "Tra cứu DNS thất bại",
+      "proxyAuth": "Xác thực proxy thất bại",
+      "proxyConnect": "Không thể kết nối tới proxy",
+      "certificate": "Lỗi chứng chỉ hoặc TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "Yêu cầu đã bị hủy",
+      "network": "Yêu cầu mạng thất bại",
+      "cached": "Làm mới thất bại; đang hiển thị tiện ích đã lưu đệm",
+      "unavailable": "Không thể tải danh mục tiện ích",
+      "direct": "Kết nối trực tiếp tới {{host}} thất bại: {{reason}}",
+      "viaProxy": "Kết nối tới {{host}} qua proxy {{proxy}} thất bại: {{reason}}"
     }
   },
   "plugin": {
@@ -2705,9 +2738,13 @@
         "title": "Yêu cầu FFmpeg",
         "notInstalled": "Chưa cài FFmpeg trên hệ thống này.",
         "versionMismatch": "Đã cài FFmpeg {{version}}.",
-        "requiredByPlugin": "Tiện ích này cần ffmpeg. Hãy cài đặt rồi thử lại.",
+        "requiredByPlugin": "Bạn có thể cài đặt plugin ngay. Hãy cấu hình phiên bản FFmpeg tương thích trước khi bật hoặc chạy plugin.",
         "optionalDegraded": "Các tính năng đa phương tiện của tiện ích này sẽ không khả dụng cho đến khi cài ffmpeg."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg hiện không khả dụng. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "Phiên bản FFmpeg không đáp ứng yêu cầu của plugin này. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "bridge": {
@@ -3215,5 +3252,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "Giao diện cần được khôi phục",
+    "description": "Các lượt tải vẫn tiếp tục trong nền. Những thay đổi chưa lưu trong biểu mẫu có thể bị mất.",
+    "recovering": "Đang khôi phục giao diện…",
+    "recover": "Khôi phục giao diện",
+    "diagnostics": "Mở nhật ký chẩn đoán",
+    "downloads": "Mở danh sách tải xuống",
+    "failed": "Chưa thể khôi phục. Hãy thử lại từ menu ứng dụng.",
+    "restored": "Đã khôi phục giao diện",
+    "wait": "Tiếp tục chờ",
+    "routeTitle": "Không thể hiển thị trang này",
+    "submissionNotice": "Lần gửi trước có thể đã hoàn tất. Kiểm tra danh sách tải xuống trước khi tạo lại cùng một tác vụ."
+  },
+  "pluginOperations": {
+    "requiredField": "Trường bắt buộc",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

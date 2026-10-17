@@ -12,16 +12,13 @@ import { ffmpegSatisfies } from '../install/ffmpeg-semver'
 import { readMoextEntry } from '../install/moext-reader'
 import { loadOfficialPackage } from '../install/official-package'
 import { resolveInsidePluginDir } from '../manifest/path-safety'
+import type { OperationExecution } from '../operations/operation-files'
 import type { PluginRegistry } from '../plugin-registry'
 import type { PluginSecurityService } from '../security/security-service'
 import type { PluginStateStore } from '../state/plugin-state-store'
 import { verifyBuiltinSignature } from '../update/signature'
 import type { HookName } from './bridge-protocol'
-import {
-  CapabilityBridge,
-  type HookContextArgs,
-  type ManualMergeContext,
-} from './capability-bridge'
+import { CapabilityBridge, type HookContextArgs } from './capability-bridge'
 import {
   type PluginCallChain,
   PluginLane,
@@ -146,7 +143,7 @@ interface ActivationAttempt {
   epoch: number
   cancelled: boolean
   cancellation: Promise<never>
-  cancel(): void
+  cancel(reason?: Error): void
   promise: Promise<void>
 }
 
@@ -273,7 +270,7 @@ export class PluginHost {
     args: unknown,
     options: {
       callChain?: PluginCallChain
-      mediaMerge?: ManualMergeContext
+      operation?: OperationExecution
     } = {}
   ): Promise<unknown> {
     return this.laneFor(pluginId).run(
@@ -286,15 +283,19 @@ export class PluginHost {
           )
         }
         a.lastActivityAt = Date.now()
-        if (options.mediaMerge) {
-          return a.bridge.callMediaMerge(commandId, args, {
-            ...options.mediaMerge,
+        if (options.operation) {
+          const context = {
+            ...options.operation,
             signal: AbortSignal.any([
-              options.mediaMerge.signal,
+              options.operation.signal,
               a.admissionAbort.signal,
             ]),
-          })
+          }
+          return a.bridge
+            .callOperation(commandId, args, context)
+            .finally(() => this.teardownActive(pluginId, a, true))
         }
+
         return raceWithAdmissionAbort(
           a.bridge.callPlugin(commandId, args),
           a.admissionAbort.signal,
@@ -366,10 +367,10 @@ export class PluginHost {
       epoch,
       cancelled: false,
       cancellation,
-      cancel: () => {
+      cancel: (reason = this.activationSupersededError(pluginId)) => {
         if (attempt.cancelled) return
         attempt.cancelled = true
-        rejectCancellation(this.activationSupersededError(pluginId))
+        rejectCancellation(reason)
       },
       promise: Promise.resolve(),
     }
@@ -385,6 +386,54 @@ export class PluginHost {
     attempt.promise = promise
     this.activating.set(pluginId, attempt)
     return promise
+  }
+
+  /** Probe dependencies, then publish enabled state only if admission stayed current. */
+  async enable(pluginId: string): Promise<void> {
+    const checkPolicy = this.capturePolicyCheck(pluginId)
+    const indexed = this.opts.registry.get(pluginId)
+    if (!indexed) {
+      throw new AppError(
+        ErrorCode.PluginManifestInvalid,
+        `unknown plugin: ${pluginId}`
+      )
+    }
+    if (this.shuttingDown) throw laneAdmissionClosed(pluginId)
+    await this.checkRuntimeRequirements(indexed.manifest)
+    checkPolicy()
+    if (this.shuttingDown) throw laneAdmissionClosed(pluginId)
+    // No await between the final policy check and publishing enabled state.
+    // A disable, upgrade, uninstall or grant change supersedes the old probe.
+    if (!this.opts.stateStore.get(pluginId)?.enabled) {
+      this.opts.stateStore.setEnabled(pluginId, true)
+      this.opts.registry.refreshState(pluginId)
+    }
+  }
+
+  private async checkRuntimeRequirements(
+    manifest: PluginManifest
+  ): Promise<boolean> {
+    const required = manifest.permissions.includes('ffmpeg')
+    const optional = manifest.optionalPermissions?.includes('ffmpeg')
+    if ((!required && !optional) || !this.opts.ffmpegDetect) return true
+    let detection: FfmpegDetection = { available: false }
+    try {
+      detection = await this.opts.ffmpegDetect()
+    } catch {
+      // A probe failure is an unavailable runtime dependency, not a bad package.
+    }
+    const satisfied =
+      detection.available &&
+      ffmpegSatisfies(detection.version ?? '', manifest.engines.ffmpeg ?? null)
+    if (required && !satisfied) {
+      throw new AppError(
+        ErrorCode.PluginCapabilityUnavailable,
+        detection.available
+          ? 'plugin.runtime.ffmpegIncompatible'
+          : 'plugin.runtime.ffmpegUnavailable'
+      )
+    }
+    return satisfied
   }
 
   private async doActivate(
@@ -419,40 +468,23 @@ export class PluginHost {
       )
     }
 
-    const needsFfmpeg =
-      indexed.manifest.permissions.includes('ffmpeg') ||
-      (indexed.manifest.optionalPermissions ?? []).includes('ffmpeg')
-
-    let ffmpegDetection: FfmpegDetection = { available: false }
-    if (needsFfmpeg && this.opts.ffmpegDetect) {
-      ffmpegDetection = await this.awaitActivation(
+    let ffmpegAdvertised: boolean
+    try {
+      ffmpegAdvertised = await this.awaitActivation(
         pluginId,
         attempt,
-        this.opts.ffmpegDetect()
+        this.checkRuntimeRequirements(indexed.manifest)
       )
+    } catch (error) {
+      if (
+        error instanceof AppError &&
+        error.code === ErrorCode.PluginCapabilityUnavailable
+      ) {
+        this.opts.stateStore.recordError(pluginId, error.message)
+        this.opts.registry.refreshState(pluginId)
+      }
+      throw error
     }
-
-    const ffmpegSatisfied =
-      !this.opts.ffmpegDetect ||
-      (ffmpegDetection.available &&
-        ffmpegSatisfies(
-          ffmpegDetection.version ?? '',
-          indexed.manifest.engines.ffmpeg ?? null
-        ))
-
-    if (indexed.manifest.permissions.includes('ffmpeg') && !ffmpegSatisfied) {
-      this.opts.stateStore.recordError(
-        pluginId,
-        'plugin.manifest.engines.ffmpeg_too_old'
-      )
-      this.opts.registry.refreshState(pluginId)
-      throw new AppError(
-        ErrorCode.PluginManifestInvalid,
-        'plugin.manifest.engines.ffmpeg_too_old'
-      )
-    }
-
-    const ffmpegAdvertised = !needsFfmpeg || ffmpegSatisfied
 
     // manifest.main is only length-validated by the schema; contain it to the
     // plugin's own dir so "../../x" can't make us read+eval a file elsewhere.
@@ -655,7 +687,11 @@ export class PluginHost {
           }
           this.opts.stateStore.recordError(pluginId, `${code}: ${message}`)
           this.opts.registry.refreshState(pluginId)
-          rejectReady(new AppError(ErrorCode.PluginRuntimeFault, message))
+          const error = new AppError(ErrorCode.PluginRuntimeFault, message)
+          rejectReady(error)
+          // Teardown cancels activation synchronously. Preserve the worker
+          // failure even if cancellation wins the nested readiness race.
+          attempt.cancel(error)
           void this.deactivate(pluginId).catch(() => undefined)
         },
       }
@@ -1246,7 +1282,12 @@ export class PluginHost {
     this.opts.registry.refreshState(pluginId)
   }
 
+  private operationsShutdown?: () => Promise<void>
+  bindOperationsShutdown(shutdown: () => Promise<void>) {
+    this.operationsShutdown = shutdown
+  }
   async shutdown(): Promise<void> {
+    await this.operationsShutdown?.()
     this.shuttingDown = true
     this.unsubscribeSecurity()
     await this.opts.security?.stop()

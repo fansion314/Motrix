@@ -10,7 +10,12 @@ import { DirectoryPreferencesSchema } from './directory-preferences'
 import { languagePreferenceSchema } from './locale'
 import { settingsInputObject } from './settings-input'
 import { sidebarColorSchema } from './sidebar-color'
+import {
+  speedLimitUnitsInputSchema,
+  speedLimitUnitsSchema,
+} from './speed-limit-units'
 import { DEFAULT_TRAY_ICON_COLOR, trayIconColorSchema } from './tray-icon-color'
+import { windowMinimumDimensionSchema } from './window-bounds'
 
 export const appUpdateChannelSchema = z.enum(['stable', 'beta'])
 export const UI_SCALE_MIN = 75
@@ -33,12 +38,15 @@ export const magnetFileSelectionTimeoutSecondsSchema = z
 export const appSettingsSchema = z.object({
   launchAtStartup: z.boolean().catch(false),
   showMainWindowAtLogin: z.boolean().catch(false),
+  mainWindowMinWidth: windowMinimumDimensionSchema.catch(914),
+  mainWindowMinHeight: windowMinimumDimensionSchema.catch(672),
   theme: z.enum(['system', 'light', 'dark']).catch('system'),
   uiScale: z.number().int().min(UI_SCALE_MIN).max(UI_SCALE_MAX).catch(100),
   sidebarColor: sidebarColorSchema.catch('cyan'),
   reduceMotion: z.boolean().catch(false),
   language: languagePreferenceSchema.catch(DEFAULT_LOCALE),
   byteUnitSystem: byteUnitSystemSchema.catch(DEFAULT_BYTE_UNIT_PREFERENCE),
+  speedLimitUnits: speedLimitUnitsSchema.catch(speedLimitUnitsSchema.parse({})),
   // Empty string is a sentinel: SettingsManager (main/server) seeds the
   // absolute platform download directory on first load. The renderer never
   // observes '' because settings are loaded before the UI mounts.
@@ -81,6 +89,7 @@ export const DEFAULT_APP_SETTINGS: MotrixAppSettings = appSettingsSchema.parse(
 export const appSettingsInputSchema = settingsInputObject(
   appSettingsSchema
 ).extend({
+  speedLimitUnits: speedLimitUnitsInputSchema,
   defaultSaveDir: z
     .string()
     .refine((value) => value.trim().length > 0 && !value.includes('\0'), {

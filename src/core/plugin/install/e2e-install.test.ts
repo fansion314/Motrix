@@ -785,49 +785,50 @@ describe('PluginInstaller e2e', () => {
   })
 })
 
-describe('PluginInstaller.stage — ffmpeg gate', () => {
-  it('required + missing ffmpeg → ABORT unsupported_on_runtime; staging cleaned', async () => {
-    const inst = await makeInstaller({
-      ffmpegDetect: async () => ({ available: false }),
-    })
-    const moext = await writeMoext(
-      path.join(inputDir, 'req.moext'),
-      manifestJSON({ permissions: ['ffmpeg'] })
-    )
-    await expect(
-      inst.stage(moext, { type: 'github', spec: 'example/test' })
-    ).rejects.toMatchObject({
-      message: 'plugin.manifest.permissions.unsupported_on_runtime',
-    })
-    const stagingRoot = path.join(pluginsDir, '_staging')
-    const leftover = existsSync(stagingRoot) ? await readdir(stagingRoot) : []
-    expect(leftover).toEqual([])
-  })
-
-  it('required + old version → ABORT engines.ffmpeg_too_old (mentions detected version)', async () => {
-    const inst = await makeInstaller({
-      ffmpegDetect: async () => ({
-        available: true,
-        version: '3.4.2',
-        binaryPath: '/u/b',
-      }),
-    })
-    const moext = await writeMoext(
-      path.join(inputDir, 'reqver.moext'),
-      manifestJSON({
-        permissions: ['ffmpeg'],
-        engines: { motrix: '^2.0.0', ffmpeg: '>=4.4' },
+describe('PluginInstaller.stage — advisory ffmpeg detection', () => {
+  it.each(['missing', 'old', 'probe failure'] as const)(
+    'installs a required FFmpeg plugin when detection reports %s',
+    async (state) => {
+      const inst = await makeInstaller({
+        ffmpegDetect: async () => {
+          if (state === 'probe failure') throw new Error('probe failed')
+          return state === 'old'
+            ? { available: true, version: '3.4.2', binaryPath: '/u/b' }
+            : { available: false }
+        },
       })
-    )
-    await expect(
-      inst.stage(moext, { type: 'github', spec: 'example/test' })
-    ).rejects.toMatchObject({
-      message: expect.stringContaining('3.4.2'),
-    })
-    const stagingRoot = path.join(pluginsDir, '_staging')
-    const leftover = existsSync(stagingRoot) ? await readdir(stagingRoot) : []
-    expect(leftover).toEqual([])
-  })
+      const moext = await writeMoext(
+        path.join(inputDir, 'req.moext'),
+        manifestJSON({
+          permissions: ['ffmpeg'],
+          engines: { motrix: '^2.0.0', ffmpeg: '>=4.4' },
+        })
+      )
+      const { stagingId, consent } = await inst.stage(moext, {
+        type: 'github',
+        spec: 'example/test',
+      })
+      expect(consent.ffmpegRuntime).toMatchObject({
+        available: state === 'old',
+        satisfiesRange: false,
+        requiredByPlugin: 'required',
+      })
+      await expect(inst.commit(stagingId, {})).resolves.toEqual({
+        pluginId: 'example.test',
+      })
+      expect(
+        JSON.parse(
+          await readFile(
+            path.join(pluginsDir, 'example.test', '_install.json'),
+            'utf8'
+          )
+        ).consentSnapshot.permissions
+      ).toEqual(['ffmpeg'])
+      const stagingRoot = path.join(pluginsDir, '_staging')
+      const leftover = existsSync(stagingRoot) ? await readdir(stagingRoot) : []
+      expect(leftover).toEqual([])
+    }
+  )
 
   it('optional + missing → succeed; consent reflects degraded', async () => {
     const inst = await makeInstaller({
@@ -1143,8 +1144,9 @@ describe('official optional plugin lifecycle', () => {
 
   it.each([
     ['2.0.0-beta.46', false],
-    ['2.0.0-beta.47', true],
+    ['2.0.0-beta.47', false],
     ['2.0.0-beta.48', true],
+    ['2.0.0-beta.49', true],
     ['2.0.0', true],
     ['3.0.0', false],
   ])(
@@ -1158,7 +1160,7 @@ describe('official optional plugin lifecycle', () => {
       const result = stage({
         id: 'motrix.media-merge',
         version: '0.1.0',
-        engines: { motrix: '>=2.0.0-beta.47 <3.0.0' },
+        engines: { motrix: '>=2.0.0-beta.48 <3.0.0' },
         permissions: ['ffmpeg'],
         optionalPermissions: [],
         categories: ['post-action'],
@@ -1168,7 +1170,7 @@ describe('official optional plugin lifecycle', () => {
         expect(staged.committed).toBe(false)
         expect(staged.consent.trustSurface.notVerified).toBe(false)
         expect(staged.consent.trustSurface.enginesMotrix).toBe(
-          '>=2.0.0-beta.47 <3.0.0'
+          '>=2.0.0-beta.48 <3.0.0'
         )
         expect(staged.consent.ffmpegRuntime).toMatchObject({
           available: true,
@@ -1176,7 +1178,7 @@ describe('official optional plugin lifecycle', () => {
         })
       } else {
         await expect(result).rejects.toMatchObject({
-          required: '>=2.0.0-beta.47 <3.0.0',
+          required: '>=2.0.0-beta.48 <3.0.0',
           hostVersion,
         })
         expect(registry.list()).toEqual([])

@@ -35,6 +35,10 @@ beforeEach(() =>
   useRemoveTasksStore.setState({ open: false, targets: [], busy: false })
 )
 
+vi.mock('@renderer/features/plugin-operations/operation-task-menu', () => ({
+  OperationTaskMenuItems: () => null,
+}))
+
 vi.mock('@renderer/lib/transport', () => ({
   transport: {
     invoke: vi.fn().mockResolvedValue({ failed: [] }),
@@ -607,6 +611,7 @@ describe('organized task menu and keyboard actions', () => {
     )
     expect(groups).toEqual([
       ['Open file', 'Open folder', 'Show Inspector'],
+      ['Re-download'],
       ['Copy URL', 'Copy file path'],
       ['New Task…'],
       ['Remove'],

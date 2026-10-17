@@ -640,6 +640,7 @@
         }
       },
       "stats": {
+        "title": "Stato dei trasferimenti",
         "downSpeed": "Velocità di download",
         "upSpeed": "Velocità di caricamento",
         "engineOk": "Motore pronto",
@@ -919,7 +920,14 @@
         "moveQueueTop": "Sposta all’inizio",
         "moveQueueBottom": "Sposta alla fine",
         "copyError": "Copia informazioni sull’errore",
-        "errorReport": "{{name}}\nID attività: {{id}}\n{{details}}"
+        "errorReport": "{{name}}\nID attività: {{id}}\n{{details}}",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "titleCount": "Visualizzati: {{shown}} · Totale: {{total}}",
       "type": {
@@ -1602,6 +1610,7 @@
         "turtle_off": "Standard",
         "turtle_on": "Bassa velocità",
         "turtle_auto": "Automatica",
+        "unitFor": "Unità per {{field}}",
         "baseSection": "Limiti standard",
         "baseSectionDesc": "Usati per i download quotidiani e rispettati in ogni modalità.",
         "baseDownload": "Download",
@@ -1722,7 +1731,7 @@
         "hidePassword": "Nascondi password",
         "bypass": "Connetti direttamente a",
         "bypassDesc": "Un dominio, IP o CIDR per riga. Inizia con . per includere solo i sottodomini. I download di file non supportano il carattere jolly *.",
-        "bypassScopeNote": "Solo download di file e aggiornamenti dell’app",
+        "bypassScopeNote": "Solo download, plugin e aggiornamenti dell’app",
         "scopes": "Usa proxy per",
         "scopesDesc": "Scegli quali tipi di traffico passano attraverso il proxy.",
         "scopeDownload": "Download di file",
@@ -1738,7 +1747,9 @@
         "scopeHint": "Peer BT, DHT e tracker UDP si connettono direttamente.",
         "scopeNone": "Nessuna selezione",
         "scopeChoose": "Seleziona…",
-        "scopeSeparator": ", "
+        "scopeSeparator": ", ",
+        "scopePlugins": "Installazione e aggiornamento dei plugin",
+        "scopePluginsDesc": "Usa il proxy per il catalogo, i pacchetti, gli aggiornamenti e le politiche di sicurezza dei plugin."
       },
       "nat": {
         "title": "Mappatura delle porte (NAT)",
@@ -2724,6 +2735,14 @@
       "metadata": {
         "strong": "Leggere e scrivere i metadati delle attività",
         "plain": "Salva le informazioni generate da questo plugin per le attività di download."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "security": {
@@ -2735,6 +2754,20 @@
       "compromised": "La distribuzione di questo plugin è stata compromessa.",
       "fixedVersion": "Una correzione è disponibile nella versione {{version}}.",
       "details": "Visualizza avviso di sicurezza"
+    },
+    "network": {
+      "timeout": "Connessione scaduta",
+      "dns": "Risoluzione DNS non riuscita",
+      "proxyAuth": "Autenticazione del proxy non riuscita",
+      "proxyConnect": "Impossibile connettersi al proxy",
+      "certificate": "Errore di certificato o TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "Richiesta annullata",
+      "network": "Richiesta di rete non riuscita",
+      "cached": "Aggiornamento non riuscito; vengono mostrati i plugin in cache",
+      "unavailable": "Impossibile caricare il catalogo dei plugin",
+      "direct": "Connessione diretta a {{host}} non riuscita: {{reason}}",
+      "viaProxy": "Connessione a {{host}} tramite il proxy {{proxy}} non riuscita: {{reason}}"
     }
   },
   "plugin": {
@@ -2747,9 +2780,13 @@
         "title": "Requisito FFmpeg",
         "notInstalled": "FFmpeg non è installato su questo sistema.",
         "versionMismatch": "È installato FFmpeg {{version}}.",
-        "requiredByPlugin": "Questo plugin richiede ffmpeg. Installalo e riprova.",
+        "requiredByPlugin": "Puoi installare il plugin ora. Configura una versione compatibile di FFmpeg prima di attivarlo o eseguirlo.",
         "optionalDegraded": "Le funzionalità multimediali di questo plugin non saranno disponibili finché non verrà installato ffmpeg."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg non è disponibile. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "La versione di FFmpeg non soddisfa i requisiti di questo plugin. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "bridge": {
@@ -3263,5 +3300,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "L’interfaccia deve essere ripristinata",
+    "description": "I download continuano in background. Le modifiche non salvate del modulo potrebbero andare perse.",
+    "recovering": "Ripristino dell’interfaccia…",
+    "recover": "Ripristina interfaccia",
+    "diagnostics": "Apri i registri diagnostici",
+    "downloads": "Apri i download",
+    "failed": "Il ripristino non è disponibile. Riprova dal menu dell’applicazione.",
+    "restored": "Interfaccia ripristinata",
+    "wait": "Continua ad attendere",
+    "routeTitle": "Impossibile visualizzare questa pagina",
+    "submissionNotice": "L’invio precedente potrebbe essere stato completato. Controlla i download prima di creare di nuovo la stessa attività."
+  },
+  "pluginOperations": {
+    "requiredField": "Campo obbligatorio",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { TaskActivityService, type TaskActivityStore } from '@core/activity'
 import { createTaskInspectorActivityQuery } from '@core/inspector-activity'
+import { FfmpegCapabilityHost } from '@core/plugin/capabilities/ffmpeg'
 import { ErrorCode } from '@shared/errors'
 import { PROTOCOL_ENVELOPE_VERSION } from '@shared/protocol/errors'
 import { Queries } from '@shared/protocol/queries'
@@ -770,6 +771,36 @@ describe('GetFfmpegDetection handler', () => {
     mockedFfmpegFactory.mockClear()
   })
 
+  it('does not let an older detection replace a newer unavailable result', async () => {
+    const oldResult = {
+      active: { path: '/old/ffmpeg', version: '7.0' },
+      candidates: [],
+    }
+    let finish!: (result: typeof oldResult) => void
+    const probe = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve
+          })
+      )
+      .mockResolvedValueOnce({ active: null, candidates: [] })
+    mockedFfmpegFactory.mockReturnValueOnce(probe)
+    const ffmpeg = new FfmpegCapabilityHost({ detect: { available: false } })
+    const ctx = {
+      settingsManager: {},
+      userDataDir: '/data',
+      capabilityHost: { ffmpeg },
+    } as unknown as QueryContext
+    const handlers = buildQueryHandlers(ctx)
+    const old = handlers[Queries.GetFfmpegDetection]?.()
+    await handlers[Queries.GetFfmpegDetection]?.()
+    finish(oldResult)
+    await old
+    expect(ffmpeg.available).toBe(false)
+  })
+
   it('returns the enriched detection result from the factory', async () => {
     const fakeDetection = {
       active: { path: '/u/ffmpeg', version: '6.0.1' },
@@ -799,7 +830,9 @@ describe('GetFfmpegDetection handler', () => {
     const settingsManager = {
       get: vi.fn(() => ({ media: { ffmpegBinaryPath: '/u/ffmpeg' } })),
     }
+    const ffmpeg = new FfmpegCapabilityHost({ detect: { available: false } })
     const ctx = {
+      capabilityHost: { ffmpeg },
       settingsManager,
       userDataDir: '/data',
     } as unknown as QueryContext
@@ -807,6 +840,8 @@ describe('GetFfmpegDetection handler', () => {
     const handlers = buildQueryHandlers(ctx)
     const result = await handlers[Queries.GetFfmpegDetection]?.()
     expect(result).toEqual(fakeDetection)
+    expect(ffmpeg.available).toBe(true)
+    expect(ffmpeg.version).toBe(fakeDetection.active.version)
     expect(mockedFfmpegFactory).toHaveBeenCalledWith({
       settingsManager,
       userDataDir: '/data',
@@ -832,5 +867,52 @@ describe('plugin diagnostic state query', () => {
       ).rejects.toThrow()
     }
     expect(getLogState).not.toHaveBeenCalled()
+  })
+})
+
+describe('CheckTaskFileExists query', () => {
+  it('checks output file existence through taskManager', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'motrix-check-file-test-'))
+    const existingFile = path.join(root, 'exists.txt')
+    await writeFile(existingFile, 'hello')
+    const missingFile = path.join(root, 'missing.txt')
+
+    const taskManager = {
+      getById: vi.fn((id: string) => {
+        if (id === 't-exists') {
+          return makeDownloadTask({ id: 't-exists', finalPath: existingFile })
+        }
+        if (id === 't-missing') {
+          return makeDownloadTask({ id: 't-missing', finalPath: missingFile })
+        }
+        return undefined
+      }),
+    }
+
+    const handlers = buildQueryHandlers({
+      taskManager,
+    } as unknown as QueryContext)
+
+    // The output file still exists.
+    await expect(
+      handlers[Queries.CheckTaskFileExists]?.({ taskId: 't-exists' })
+    ).resolves.toEqual({ exists: true })
+
+    // The output file has been deleted.
+    await expect(
+      handlers[Queries.CheckTaskFileExists]?.({ taskId: 't-missing' })
+    ).resolves.toEqual({ exists: false })
+
+    // The task does not exist.
+    await expect(
+      handlers[Queries.CheckTaskFileExists]?.({ taskId: 't-unknown' })
+    ).resolves.toEqual({ exists: false })
+
+    // The request payload is invalid.
+    await expect(
+      handlers[Queries.CheckTaskFileExists]?.({ taskId: '' })
+    ).rejects.toThrow()
+
+    await rm(root, { recursive: true, force: true })
   })
 })

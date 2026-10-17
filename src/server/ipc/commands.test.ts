@@ -53,7 +53,12 @@ const PROXY_OFF = {
   user: '',
   password: '',
   bypass: [] as string[],
-  scopes: { download: false, updateApp: false, updateTrackers: false },
+  scopes: {
+    download: false,
+    updateApp: false,
+    updateTrackers: false,
+    plugins: false,
+  },
 }
 const PROXY_ON = { ...PROXY_OFF, enabled: true, host: 'p.example', port: 80 }
 
@@ -142,9 +147,16 @@ function makeFakeCtx() {
     hostVersion: '2.0',
     pluginStateStore: {
       setEnabled,
-      get: vi.fn().mockReturnValue(undefined),
+      get: vi.fn(() => ({
+        status: 'inactive',
+        enabled: Boolean(setEnabled.mock.calls.at(-1)?.[1]),
+      })),
     } as unknown as PluginStateStore,
     pluginHost: {
+      enable: vi.fn(async (id: string) => {
+        setEnabled(id, true)
+        refreshState(id)
+      }),
       deactivate: vi.fn().mockResolvedValue(undefined),
       disable: vi.fn(async (id: string) => {
         setEnabled(id, false)
@@ -766,11 +778,21 @@ describe('server Commands.UpdateSettings', () => {
     const policy = new AppliedDownloadProxyPolicy({ noProxy: '' })
     const proxyA = {
       ...PROXY_ON,
-      scopes: { download: true, updateApp: false, updateTrackers: false },
+      scopes: {
+        download: true,
+        updateApp: false,
+        updateTrackers: false,
+        plugins: false,
+      },
     }
     const proxyB = {
       ...proxyA,
-      scopes: { download: true, updateApp: true, updateTrackers: false },
+      scopes: {
+        download: true,
+        updateApp: true,
+        updateTrackers: false,
+        plugins: false,
+      },
     }
     const before = makeSettings(PROXY_OFF)
     const afterA = makeSettings(proxyA)
@@ -1644,6 +1666,26 @@ describe('server Commands.UpdatePluginConfig', () => {
 })
 
 describe('server plugin enable/disable commands', () => {
+  it('keeps a plugin disabled when a runtime dependency is missing', async () => {
+    const ctx = makeFakeCtx()
+    vi.spyOn(ctx.pluginHost, 'enable').mockRejectedValueOnce(
+      new Error('plugin.runtime.ffmpegUnavailable')
+    )
+    const handlers = buildServerCommandHandlers(
+      ctx as Parameters<typeof buildServerCommandHandlers>[0]
+    )
+    await expect(
+      handlers[Commands.EnablePlugin]?.('test-plugin')
+    ).rejects.toThrow('plugin.runtime.ffmpegUnavailable')
+    expect(ctx.pluginStateStore.setEnabled).not.toHaveBeenCalled()
+    expect(ctx.eventBus.emit).not.toHaveBeenCalled()
+    await handlers[Commands.EnablePlugin]?.('test-plugin')
+    expect(ctx.pluginStateStore.setEnabled).toHaveBeenCalledWith(
+      'test-plugin',
+      true
+    )
+  })
+
   it('emits contribution index changes when enabling a plugin', async () => {
     const ctx = makeFakeCtx()
     const handlers = buildServerCommandHandlers(
@@ -2020,47 +2062,6 @@ describe('host-owned task directory history', () => {
       })
     )
     finish({ ok: true, value: { favorites: [], recent: [] } })
-  })
-})
-
-describe('manual media merge logging', () => {
-  it('uses the existing plugin log capability for preparation failures', async () => {
-    const ctx = makeFakeCtx()
-    const error = vi.fn()
-    const createLog = vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error }))
-    const pluginId = 'test.merger'
-    const handlers = buildServerCommandHandlers({
-      ...ctx,
-      pluginRegistry: {
-        list: () => [{ id: pluginId, name: 'Merger', enabled: true }],
-        get: () => ({
-          manifest: {
-            permissions: ['ffmpeg'],
-            contributes: {
-              commands: [{ id: `${pluginId}.mergeStreams`, public: true }],
-            },
-          },
-        }),
-      },
-      capabilityHost: { createLog },
-    } as unknown as ServerCommandContext)
-    await expect(
-      handlers[Commands.StartMediaMerge]?.({
-        pluginId,
-        videoInput: 'relative.mp4',
-        audioInput: '/media/audio.mp4',
-        output: '/media/merged.mp4',
-      })
-    ).rejects.toThrow('mediaMerge.absolutePaths')
-    expect(createLog).toHaveBeenCalledWith(pluginId)
-    expect(error).toHaveBeenCalledWith(
-      'Media merge failed',
-      expect.objectContaining({
-        event: 'media-merge.failed',
-        stage: 'preparing',
-        reason: 'mediaMerge.absolutePaths',
-      })
-    )
   })
 })
 

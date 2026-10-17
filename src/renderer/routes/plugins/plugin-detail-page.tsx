@@ -50,8 +50,10 @@ import { PluginSettingsForm } from './components/plugin-settings-form'
 import { PluginStatusDot } from './components/plugin-status-dot'
 import { RegistryDetailPanel } from './components/registry-detail-panel'
 import { RegistryInstallAction } from './components/registry-install-action'
+import { RegistryNetworkNotice } from './components/registry-network-notice'
 import { UninstallSection } from './components/uninstall-section'
 import { usePluginDetail } from './hooks/use-plugin-detail'
+import { usePluginEnabled } from './hooks/use-plugin-enabled'
 import { usePlugins } from './hooks/use-plugins'
 import { useRegistryEntry, useRegistryUpdates } from './hooks/use-registry'
 import { type UpdateChannel, usePluginsStore } from './store'
@@ -75,7 +77,7 @@ export function PluginDetailPage() {
   usePlugins()
   const pluginsLoaded = usePluginsStore((s) => s.loaded)
   const listEntry = usePluginsStore((s) => s.list.find((p) => p.id === id))
-  const applyStatus = usePluginsStore((s) => s.applyStatus)
+  const { toggleEnabled, pending: togglingEnabled } = usePluginEnabled(id)
   const update = usePluginsStore((s) => s.updates[id])
   const [updateOpen, setUpdateOpen] = useState(false)
   // Snapshot of update.channel taken when the dialog opens. The dialog's own
@@ -98,8 +100,12 @@ export function PluginDetailPage() {
   // installed list nor the registry do we bounce to the list with a toast.
   const { checked: registryChecked, entry: registryEntry } =
     useRegistryEntry(id)
+  const registryFailure = usePluginsStore(
+    (state) => state.registryStatus?.error
+  )
   useEffect(() => {
     if (pluginsLoaded && !listEntry && registryChecked && !registryEntry) {
+      if (registryFailure) return
       toast.add({ title: t('plugins.registry.notFound', { id }) })
       navigate('/plugins', { replace: true })
     }
@@ -107,6 +113,7 @@ export function PluginDetailPage() {
     pluginsLoaded,
     listEntry,
     registryChecked,
+    registryFailure,
     registryEntry,
     navigate,
     t,
@@ -114,6 +121,8 @@ export function PluginDetailPage() {
   ])
 
   if (!detail || !listEntry) {
+    if (registryFailure && !registryEntry)
+      return <RegistryNetworkNotice retry={refresh} pending={refreshing} />
     if (pluginsLoaded && !listEntry && registryEntry) {
       return <RegistryDetailPanel entry={registryEntry} />
     }
@@ -147,14 +156,6 @@ export function PluginDetailPage() {
       : hasOperations
         ? 'operations'
         : 'overview'
-
-  async function toggleEnabled(next: boolean) {
-    await transport.invoke(
-      next ? Commands.EnablePlugin : Commands.DisablePlugin,
-      id
-    )
-    applyStatus(id, next ? 'inactive' : 'disabled', undefined, next)
-  }
 
   return (
     <>
@@ -198,7 +199,7 @@ export function PluginDetailPage() {
               id="plugin-detail-enabled"
               aria-label={t('plugins.detail.enabled')}
               checked={listEntry.enabled && !listEntry.security}
-              disabled={!!listEntry.security}
+              disabled={togglingEnabled || !!listEntry.security}
               onCheckedChange={toggleEnabled}
             />
           </div>

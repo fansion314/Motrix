@@ -643,6 +643,7 @@
         }
       },
       "stats": {
+        "title": "Состояние передачи",
         "downSpeed": "Скорость загрузки",
         "upSpeed": "Скорость отдачи",
         "engineOk": "Движок готов",
@@ -931,7 +932,14 @@
         "moveQueueTop": "В начало очереди",
         "moveQueueBottom": "В конец очереди",
         "copyError": "Копировать сведения об ошибке",
-        "errorReport": "{{name}}\nID задачи: {{id}}\n{{details}}"
+        "errorReport": "{{name}}\nID задачи: {{id}}\n{{details}}",
+        "redownload": "Re-download",
+        "redownloadWithDialog": "Re-download with options... (Alt+Click)",
+        "redownloadTooltipBatch": "Re-download {{n}} of {{total}} selected",
+        "redownloadOverwriteTitle": "File Already Exists",
+        "redownloadOverwriteDescription": "“{{name}}” already exists in the download directory. Re-downloading will overwrite or rename it. Do you want to continue?",
+        "redownloadCredentialsExpired": "Original request options have expired. Please review and submit.",
+        "redownloadStarted": "Re-download started"
       },
       "titleCount": "Показано: {{shown}} · Всего: {{total}}",
       "type": {
@@ -1616,6 +1624,7 @@
         "turtle_off": "Стандартный",
         "turtle_on": "Низкая скорость",
         "turtle_auto": "Автоматически",
+        "unitFor": "Единица для {{field}}",
         "baseSection": "Стандартные ограничения",
         "baseSectionDesc": "Используются для повседневных загрузок и соблюдаются во всех режимах.",
         "baseDownload": "Загрузка",
@@ -1736,7 +1745,7 @@
         "hidePassword": "Скрыть пароль",
         "bypass": "Подключаться напрямую к",
         "bypassDesc": "Один домен, IP-адрес или CIDR на строку. Начните с . для совпадения только с поддоменами. При загрузке файлов подстановочный знак * не поддерживается.",
-        "bypassScopeNote": "Только загрузки файлов и обновления приложения",
+        "bypassScopeNote": "Только загрузки, плагины и обновления приложения",
         "scopes": "Использовать прокси для",
         "scopesDesc": "Выберите, какие виды трафика направлять через прокси.",
         "scopeDownload": "Загрузки файлов",
@@ -1752,7 +1761,9 @@
         "scopeHint": "Пиры BT, DHT и UDP-трекеры подключаются напрямую.",
         "scopeNone": "Ничего не выбрано",
         "scopeChoose": "Выбрать…",
-        "scopeSeparator": ", "
+        "scopeSeparator": ", ",
+        "scopePlugins": "Установка и обновление плагинов",
+        "scopePluginsDesc": "Использовать прокси для каталога, пакетов, обновлений и политик безопасности плагинов."
       },
       "nat": {
         "title": "Проброс портов (NAT)",
@@ -2745,6 +2756,14 @@
       "metadata": {
         "strong": "Чтение и запись метаданных задач",
         "plain": "Сохраняет сведения, созданные этим плагином для задач загрузки."
+      },
+      "files.selected.read": {
+        "strong": "Read files selected for this operation",
+        "plain": "Each operation needs your input selection. Other files are not authorized."
+      },
+      "files.selected.write": {
+        "strong": "Save a new file for this operation",
+        "plain": "Save at the location you confirm without replacing existing files."
       }
     },
     "security": {
@@ -2756,6 +2775,20 @@
       "compromised": "Канал распространения этого плагина был скомпрометирован.",
       "fixedVersion": "Исправление доступно в версии {{version}}.",
       "details": "Открыть уведомление о безопасности"
+    },
+    "network": {
+      "timeout": "Время ожидания соединения истекло",
+      "dns": "Ошибка DNS",
+      "proxyAuth": "Ошибка аутентификации прокси",
+      "proxyConnect": "Не удалось подключиться к прокси",
+      "certificate": "Ошибка сертификата или TLS",
+      "http": "HTTP {{status}}",
+      "cancelled": "Запрос отменён",
+      "network": "Ошибка сетевого запроса",
+      "cached": "Обновление не удалось; показаны плагины из кэша",
+      "unavailable": "Не удалось загрузить каталог плагинов",
+      "direct": "Ошибка прямого подключения к {{host}}: {{reason}}",
+      "viaProxy": "Ошибка подключения к {{host}} через прокси {{proxy}}: {{reason}}"
     }
   },
   "plugin": {
@@ -2768,9 +2801,13 @@
         "title": "Требования к FFmpeg",
         "notInstalled": "FFmpeg не установлен в этой системе.",
         "versionMismatch": "Установлен FFmpeg {{version}}.",
-        "requiredByPlugin": "Этому плагину требуется ffmpeg. Установите его и повторите попытку.",
+        "requiredByPlugin": "Плагин можно установить сейчас. Перед включением или запуском настройте совместимую версию FFmpeg.",
         "optionalDegraded": "Функции работы с медиа в этом плагине будут недоступны до установки ffmpeg."
       }
+    },
+    "runtime": {
+      "ffmpegUnavailable": "FFmpeg недоступен. Configure FFmpeg in Settings → Integration → Media Tools.",
+      "ffmpegIncompatible": "Версия FFmpeg не соответствует требованиям этого плагина. Configure FFmpeg in Settings → Integration → Media Tools."
     }
   },
   "bridge": {
@@ -3287,5 +3324,66 @@
       }
     },
     "importSelected": "Migrate"
+  },
+  "rendererRecovery": {
+    "title": "Интерфейс необходимо восстановить",
+    "description": "Загрузки продолжаются в фоне. Несохранённые изменения формы могут быть потеряны.",
+    "recovering": "Восстановление интерфейса…",
+    "recover": "Восстановить интерфейс",
+    "diagnostics": "Открыть журналы диагностики",
+    "downloads": "Открыть загрузки",
+    "failed": "Восстановление недоступно. Повторите попытку через меню приложения.",
+    "restored": "Интерфейс восстановлен",
+    "wait": "Продолжить ожидание",
+    "routeTitle": "Не удалось отобразить эту страницу",
+    "submissionNotice": "Предыдущая отправка могла завершиться. Проверьте загрузки, прежде чем создавать то же задание повторно."
+  },
+  "pluginOperations": {
+    "requiredField": "Обязательное поле",
+    "run": "Run operation",
+    "runAgain": "Run again",
+    "background": "Operations continue when this panel is closed.",
+    "loading": "Loading operation…",
+    "unauthorized": "This session is no longer authorized. Sign in again.",
+    "disabled": "Enable this plugin to use its operations.",
+    "blocked": "This plugin is blocked or its permissions are changing.",
+    "unsupported": "This host does not support the operation requirements.",
+    "ffmpeg": "Configure FFmpeg in Settings → Integration → Media Tools.",
+    "busy": "Another operation is using these resources. Try again after it finishes.",
+    "unavailable": "This operation is unavailable.",
+    "draftExpired": "This selection expired. Reopen the operation and select the files again.",
+    "resourceLimit": "The operation exceeds the host resource limit or available disk space.",
+    "invalidSelection": "Select completed tasks with one local file each.",
+    "invalidFile": "Choose a regular, non-empty local file.",
+    "fileType": "The selected file type does not match this field.",
+    "outputExists": "The output already exists. Choose a different name.",
+    "fileChanged": "A selected file or directory changed. Select it again.",
+    "invalidGrant": "Select the files again before starting.",
+    "sameInput": "Choose two different input files.",
+    "invalidOutput": "The plugin did not produce a valid output.",
+    "invalidRequest": "Check the operation parameters and try again.",
+    "invalidValue": "Enter a valid value.",
+    "descriptorChanged": "The plugin changed. Reopen the operation.",
+    "jobMissing": "This operation is no longer available in this session.",
+    "cancelled": "The operation was cancelled.",
+    "failed": "The operation failed. See the plugin log for details.",
+    "interrupted": "The host stopped before this operation finished. It was not restarted.",
+    "publicationUncertain": "The host could not confirm output publication. Check the destination before trying again.",
+    "cleanupWarning": "Temporary files remain for safe recovery. The host did not delete uncertain files.",
+    "status": {
+      "accepted": "Queued",
+      "preparing": "Preparing files",
+      "running": "Running",
+      "validating": "Validating result",
+      "committing": "Saving output",
+      "cleaning": "Cleaning up",
+      "cancelling": "Cancelling",
+      "succeeded": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    },
+    "confirmFileTitle": "Authorize file access",
+    "confirmFile": "Allow this operation to read the following file?"
   }
 }

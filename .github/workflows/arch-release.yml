@@ -4,12 +4,18 @@ on:
   push:
     tags:
       - 'arch-v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing Arch release tag to build and publish'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: arch-release-${{ github.ref }}
+  group: arch-release-${{ inputs.release_tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -19,7 +25,7 @@ jobs:
     container: archlinux:base
     timeout-minutes: 45
     env:
-      ARCH_TAG: ${{ github.ref_name }}
+      ARCH_TAG: ${{ inputs.release_tag || github.ref_name }}
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
       MOTRIX_SKIP_ELECTRON_REBUILD: '1'
       MOTRIX_SKIP_ENGINE_FETCH: '1'
@@ -32,6 +38,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ inputs.release_tag || github.ref }}
+
+      - name: Validate release source
+        shell: bash
+        run: |
+          [[ $ARCH_TAG =~ ^arch-v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?-[1-9][0-9]*$ ]]
+          test "$(git rev-parse "refs/tags/$ARCH_TAG^{commit}")" = "$(git rev-parse HEAD)"
+          git merge-base --is-ancestor HEAD origin/main
 
       - name: Validate tag and build the source PKGBUILD as an unprivileged user
         shell: bash
@@ -103,7 +118,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          ARCH_TAG: ${{ github.ref_name }}
+          ARCH_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
           sha256sum --check SHA256SUMS
           flags=()

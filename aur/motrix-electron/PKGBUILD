@@ -1,8 +1,8 @@
 # Maintainer: fansion314 <https://github.com/fansion314>
 pkgname=motrix-electron
-pkgver=2.0.0beta.49
+pkgver=2.0.0beta.51
 pkgrel=1
-_version=2.0.0-beta.49
+_version=2.0.0-beta.51
 _tag=arch-v${_version}-${pkgrel}
 pkgdesc='Motrix download manager using system Electron and bundled Motrix aria2'
 arch=('x86_64')

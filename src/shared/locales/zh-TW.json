@@ -7,7 +7,7 @@
     "submit": "解鎖"
   },
   "operatorAdmin": {
-    "help": "用法：\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\n此命令只會透過容器 loopback 與正在執行的 Motrix 伺服器通訊。",
+    "help": "用法：\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\n此命令只會透過容器 loopback 與正在執行的 Motrix 伺服器通訊。",
     "errorPrefix": "motrix-admin: {{message}}",
     "usageHint": "執行「motrix-admin --help」查看用法。",
     "pending": {
@@ -55,6 +55,20 @@
         "loopback": "無法透過容器 loopback 連線至正在執行的 Motrix 伺服器。",
         "approvalNotReady": "正在執行的 Motrix 伺服器尚未準備好核准配對。"
       }
+    },
+    "extension": {
+      "heading": "待處理的瀏覽器擴充功能配對請求",
+      "identityNotice": "請核對這是你剛發起的請求。Origin 和自報身分不能單獨證明連線方身分。終端錄製可能記錄配對碼。",
+      "row": "{{index}}. {{browser}} [{{identity}}] 來源：{{origin}}；自報 ID：{{claimedId}}；伺服器：{{authority}}；剩餘 {{seconds}} 秒",
+      "select": "輸入一個請求的序號（Ctrl+C 結束）：",
+      "code": "配對碼：{{code}}",
+      "instructions": "將此配對碼輸入瀏覽器擴充功能，有效期限不會延長。Ctrl+C 僅關閉此檢視，不核准或拒絕請求。",
+      "none": "沒有待處理的擴充功能配對請求。請先在擴充功能中發起配對，再執行此命令。如果仍無請求，請檢查遠端擴充功能設定。",
+      "ended": "所選配對請求已結束，請在擴充功能中確認結果。",
+      "ttyRequired": "擴充功能配對要求輸入、輸出及錯誤輸出均為互動式終端，不支援管線、重新導向或 JSON 輸出。",
+      "cancelled": "已關閉配對碼檢視，未傳送核准或拒絕操作。",
+      "invalidSelection": "請透過序號選擇一個清單中的請求。",
+      "unavailable": "所選請求已過期、結束或發生變化，請在擴充功能中重新發起配對。"
     }
   },
   "common": {
@@ -686,18 +700,17 @@
         },
         "activity": {
           "transferTitle": {
-            "session": "本次工作階段傳輸量",
-            "lifetime": "累計傳輸量"
+            "session": "近期傳輸",
+            "lifetime": "全程傳輸"
           },
           "download": "下載",
           "upload": "上傳",
           "loading": "正在載入活動資料…",
           "collecting": "正在收集傳輸資料…",
-          "noSessionHistory": "此應用程式工作階段尚無傳輸記錄。",
+          "noSessionHistory": "暫無近期傳輸記錄。",
           "lifetimeEmpty": "尚無法取得累計歷程記錄。",
           "noTraffic": "目前沒有網路流量。",
           "unavailable": "無法取得累計活動資料。",
-          "coverageGap": "追蹤曾中斷。",
           "retry": "重試",
           "notAvailable": "無法使用",
           "stale": {
@@ -706,8 +719,8 @@
           },
           "range": {
             "label": "傳輸時間範圍",
-            "session": "工作階段 (60 秒)",
-            "lifetime": "累計",
+            "session": "最近 60 秒",
+            "lifetime": "全程",
             "latest": "最近 60 秒",
             "adaptive_other": "自適應解析度 · {{count}} 個樣本"
           },
@@ -759,7 +772,18 @@
             "accessibleSummary": "{{start}} 至 {{end}} 的 {{range}}。最新下載 {{download}}、上傳 {{upload}}。累計平均下載 {{average}}、最高下載 {{peak}}、有效時間 {{activeDuration}}。{{sampleLabel}}。{{state}}",
             "activeSeconds_other": "{{count}} 秒",
             "sampleCount_other": "{{count}} 個樣本",
-            "noDataQualityIssues": "沒有追蹤警告。"
+            "noDataQualityIssues": "沒有追蹤警告。",
+            "noSamples": "缺少取樣",
+            "overview": "全程概覽",
+            "rangeStart": "開始時間",
+            "rangeEnd": "結束時間",
+            "earlier": "較早歷史",
+            "later": "較新歷史",
+            "zoomIn": "放大",
+            "zoomOut": "縮小",
+            "showAll": "查看全程",
+            "following": "正在跟隨最新",
+            "followLatest": "回到最新"
           }
         },
         "pieces": {
@@ -891,6 +915,8 @@
         "removeMixedTitle": "要移除 {{count}} 個任務嗎？",
         "openFile": "開啟檔案",
         "openFileFailed": "無法開啟檔案",
+        "openFileAppFailed": "系統無法開啟此檔案。請檢查預設應用程式是否仍已安裝，或透過「開啟資料夾」選擇其他應用程式開啟。",
+        "openFileFailedHint": "請確認檔案仍然存在，而且你有權限開啟它。",
         "chooseFiles": "選擇下載檔案…",
         "queueOrder": "調整下載順序",
         "moveQueueTop": "移至佇列最前",
@@ -1334,7 +1360,15 @@
         "historyCountHint": "較早的恢復記錄會被移除。",
         "historyCountPositive": "請輸入大於 0 的數量。"
       },
-      "description": "RPC、進度與恢復"
+      "description": "RPC、進度與恢復",
+      "configFile": {
+        "title": "設定檔",
+        "serverTitle": "伺服器設定檔",
+        "openDirectory": "開啟所在資料夾",
+        "copyPath": "複製路徑",
+        "copied": "已複製",
+        "actionFailed": "操作未完成，請重試。"
+      }
     },
     "about": {
       "appIconAlt": "Motrix 應用程式圖示",
@@ -2518,6 +2552,8 @@
       "accessHosts_other": "可讀取 {{count}} 個網站",
       "accessBroad": "可讀取任何網站",
       "attentionTitle": "此外掛程式回報問題",
+      "runtimeStartFailed": "外掛執行環境無法啟動",
+      "runtimeFailed": "外掛執行環境意外停止",
       "attentionGeneric": "請查看日誌以瞭解詳細資料。",
       "viewIssue": "檢視問題",
       "removeTitle": "移除外掛程式",
@@ -2547,6 +2583,7 @@
       },
       "copy": "複製已遮蔽的日誌",
       "clear": "清除",
+      "clearFailed": "無法清空日誌，請重試。",
       "output": "即時輸出",
       "entryCount_other": "{{count}} 筆項目",
       "empty": "尚無日誌項目",
@@ -3059,6 +3096,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "如需移轉，可前往「{{settings}} → {{advanced}}」。",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

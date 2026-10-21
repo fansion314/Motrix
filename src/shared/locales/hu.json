@@ -7,7 +7,7 @@
     "submit": "Feloldás"
   },
   "operatorAdmin": {
-    "help": "Használat:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nA parancs kizárólag a futó Motrix szerverrel kommunikál a konténer loopback kapcsolatán keresztül.",
+    "help": "Használat:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nA parancs kizárólag a futó Motrix szerverrel kommunikál a konténer loopback kapcsolatán keresztül.",
     "errorPrefix": "motrix-admin: {{message}}",
     "usageHint": "A használati útmutatóhoz futtasd a `motrix-admin --help` parancsot.",
     "pending": {
@@ -55,6 +55,20 @@
         "loopback": "A futó Motrix szerver nem érhető el a konténer loopback kapcsolatán keresztül.",
         "approvalNotReady": "A párosítás jóváhagyása még nem áll készen a futó Motrix szerveren."
       }
+    },
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
     }
   },
   "common": {
@@ -689,18 +703,17 @@
         },
         "activity": {
           "transferTitle": {
-            "session": "Munkamenet adatforgalma",
+            "session": "Legutóbbi átvitel",
             "lifetime": "Összesített adatforgalom"
           },
           "download": "Letöltés",
           "upload": "Feltöltés",
           "loading": "Aktivitási adatok betöltése…",
           "collecting": "Adatforgalmi adatok gyűjtése…",
-          "noSessionHistory": "Ebben a munkamenetben még nincs rögzített adatforgalom.",
+          "noSessionHistory": "Nincs rögzített legutóbbi átvitel.",
           "lifetimeEmpty": "Még nem érhetők el a teljes időszak előzményei.",
           "noTraffic": "Jelenleg nincs hálózati adatforgalom.",
           "unavailable": "A teljes időszak aktivitási adatai nem érhetők el.",
-          "coverageGap": "Az adatrögzítés megszakadt.",
           "retry": "Újrapróbálás",
           "notAvailable": "Nem érhető el",
           "stale": {
@@ -709,7 +722,7 @@
           },
           "range": {
             "label": "Adatforgalmi időszak",
-            "session": "Munkamenet (60 mp)",
+            "session": "Utolsó 60 mp",
             "lifetime": "Teljes időszak",
             "latest": "Legutóbbi 60 másodperc",
             "adaptive_one": "Adaptív felbontás · {{count}} minta",
@@ -767,7 +780,18 @@
             "activeSeconds_other": "{{count}} másodperc",
             "sampleCount_one": "{{count}} minta",
             "sampleCount_other": "{{count}} minta",
-            "noDataQualityIssues": "Nincs adatrögzítési figyelmeztetés."
+            "noDataQualityIssues": "Nincs adatrögzítési figyelmeztetés.",
+            "noSamples": "Nincsenek minták",
+            "overview": "Előzmények áttekintése",
+            "rangeStart": "Tartomány kezdete",
+            "rangeEnd": "Tartomány vége",
+            "earlier": "Régebbi előzmények",
+            "later": "Újabb előzmények",
+            "zoomIn": "Nagyítás",
+            "zoomOut": "Kicsinyítés",
+            "showAll": "Összes megjelenítése",
+            "following": "Legfrissebb adatok követése",
+            "followLatest": "Vissza a legfrissebbhez"
           }
         },
         "pieces": {
@@ -903,6 +927,8 @@
         "removeMixedTitle": "Eltávolítod a(z) {{count}} feladatot?",
         "openFile": "Fájl megnyitása",
         "openFileFailed": "Nem sikerült megnyitni a fájlt",
+        "openFileAppFailed": "A rendszer nem tudta megnyitni ezt a fájlt. Ellenőrizze, hogy az alapértelmezett alkalmazás még telepítve van-e, vagy nyissa meg a mappát, és válasszon másik alkalmazást.",
+        "openFileFailedHint": "Ellenőrizze, hogy a fájl még létezik-e, és van-e jogosultsága megnyitni.",
         "chooseFiles": "Fájlok kiválasztása…",
         "queueOrder": "Letöltési sorrend",
         "moveQueueTop": "A sor elejére",
@@ -1348,7 +1374,15 @@
         "historyCountHint": "A régebbi helyreállítási bejegyzések törlődnek.",
         "historyCountPositive": "Adj meg 0-nál nagyobb számot."
       },
-      "description": "RPC, előrehaladás és helyreállítás"
+      "description": "RPC, előrehaladás és helyreállítás",
+      "configFile": {
+        "title": "Konfigurációs fájl",
+        "serverTitle": "Szerver konfigurációs fájlja",
+        "openDirectory": "Mappa megnyitása",
+        "copyPath": "Útvonal másolása",
+        "copied": "Másolva",
+        "actionFailed": "A művelet nem sikerült. Próbáld újra."
+      }
     },
     "about": {
       "appIconAlt": "Motrix alkalmazásikon",
@@ -2432,6 +2466,8 @@
       "accessHosts_other": "{{count}} webhelyet olvashat",
       "accessBroad": "Bármely webhelyet olvashat",
       "attentionTitle": "A bővítmény problémát jelzett",
+      "runtimeStartFailed": "A bővítmény futtatókörnyezete nem indítható el",
+      "runtimeFailed": "A bővítmény futtatókörnyezete váratlanul leállt",
       "attentionGeneric": "A részleteket a naplókban találod.",
       "viewIssue": "Probléma megtekintése",
       "removeTitle": "Bővítmény eltávolítása",
@@ -2461,6 +2497,7 @@
       },
       "copy": "Kitakart naplók másolása",
       "clear": "Törlés",
+      "clearFailed": "Nem sikerült törölni a naplókat. Próbáld újra.",
       "output": "Élő napló",
       "entryCount_one": "{{count}} bejegyzés",
       "entryCount_other": "{{count}} bejegyzés",
@@ -3081,6 +3118,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Később is elvégezheti az áttelepítést itt: {{settings}} → {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

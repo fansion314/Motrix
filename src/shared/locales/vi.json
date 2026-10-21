@@ -7,7 +7,7 @@
     "submit": "Mở khóa"
   },
   "operatorAdmin": {
-    "help": "Cách dùng:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nLệnh chỉ giao tiếp với máy chủ Motrix đang chạy qua địa chỉ loopback của container.",
+    "help": "Cách dùng:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nLệnh chỉ giao tiếp với máy chủ Motrix đang chạy qua địa chỉ loopback của container.",
     "errorPrefix": "motrix-admin: {{message}}",
     "usageHint": "Chạy `motrix-admin --help` để xem cách dùng.",
     "pending": {
@@ -55,6 +55,20 @@
         "loopback": "Không thể truy cập máy chủ Motrix đang chạy qua địa chỉ loopback của container.",
         "approvalNotReady": "Chức năng chấp thuận ghép đôi trên máy chủ Motrix đang chạy chưa sẵn sàng."
       }
+    },
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
     }
   },
   "common": {
@@ -686,18 +700,17 @@
         },
         "activity": {
           "transferTitle": {
-            "session": "Lưu lượng trong phiên",
+            "session": "Truyền gần đây",
             "lifetime": "Lưu lượng toàn bộ thời gian"
           },
           "download": "Tải xuống",
           "upload": "Tải lên",
           "loading": "Đang tải dữ liệu hoạt động…",
           "collecting": "Đang thu thập dữ liệu lưu lượng…",
-          "noSessionHistory": "Chưa ghi nhận lưu lượng trong phiên ứng dụng này.",
+          "noSessionHistory": "Chưa ghi nhận truyền dữ liệu gần đây.",
           "lifetimeEmpty": "Chưa có lịch sử toàn bộ thời gian.",
           "noTraffic": "Hiện không có lưu lượng mạng.",
           "unavailable": "Không thể tải dữ liệu hoạt động của toàn bộ thời gian.",
-          "coverageGap": "Việc theo dõi đã bị gián đoạn.",
           "retry": "Thử lại",
           "notAvailable": "Không khả dụng",
           "stale": {
@@ -706,7 +719,7 @@
           },
           "range": {
             "label": "Khoảng thời gian truyền dữ liệu",
-            "session": "Phiên (60 giây)",
+            "session": "60 giây gần nhất",
             "lifetime": "Toàn bộ thời gian",
             "latest": "60 giây gần nhất",
             "adaptive_other": "Độ phân giải thích ứng · {{count}} mẫu"
@@ -759,7 +772,18 @@
             "accessibleSummary": "{{range}} từ {{start}} đến {{end}}. Tốc độ mới nhất: tải xuống {{download}}, tải lên {{upload}}. Trong toàn bộ thời gian: tải xuống trung bình {{average}}, cao nhất {{peak}}, hoạt động {{activeDuration}}. {{sampleLabel}}. {{state}}",
             "activeSeconds_other": "{{count}} giây",
             "sampleCount_other": "{{count}} mẫu",
-            "noDataQualityIssues": "Không có cảnh báo theo dõi."
+            "noDataQualityIssues": "Không có cảnh báo theo dõi.",
+            "noSamples": "Không có mẫu",
+            "overview": "Tổng quan lịch sử",
+            "rangeStart": "Bắt đầu khoảng",
+            "rangeEnd": "Kết thúc khoảng",
+            "earlier": "Lịch sử cũ hơn",
+            "later": "Lịch sử mới hơn",
+            "zoomIn": "Phóng to",
+            "zoomOut": "Thu nhỏ",
+            "showAll": "Hiện tất cả",
+            "following": "Đang theo dõi dữ liệu mới nhất",
+            "followLatest": "Về dữ liệu mới nhất"
           }
         },
         "pieces": {
@@ -891,6 +915,8 @@
         "removeMixedTitle": "Xóa {{count}} tác vụ khỏi danh sách?",
         "openFile": "Mở tệp",
         "openFileFailed": "Không thể mở tệp",
+        "openFileAppFailed": "Hệ thống không thể mở tệp này. Hãy kiểm tra xem ứng dụng mặc định còn được cài đặt hay không, hoặc mở thư mục để chọn ứng dụng khác.",
+        "openFileFailedHint": "Hãy kiểm tra xem tệp còn tồn tại và bạn có quyền mở tệp hay không.",
         "chooseFiles": "Chọn tệp…",
         "queueOrder": "Thứ tự tải xuống",
         "moveQueueTop": "Chuyển lên đầu",
@@ -1334,7 +1360,15 @@
         "historyCountHint": "Các bản ghi khôi phục cũ hơn sẽ bị xóa.",
         "historyCountPositive": "Nhập một số lớn hơn 0."
       },
-      "description": "RPC, tiến độ và khôi phục"
+      "description": "RPC, tiến độ và khôi phục",
+      "configFile": {
+        "title": "Tệp cấu hình",
+        "serverTitle": "Tệp cấu hình máy chủ",
+        "openDirectory": "Mở thư mục",
+        "copyPath": "Sao chép đường dẫn",
+        "copied": "Đã sao chép",
+        "actionFailed": "Không thể hoàn tất thao tác. Vui lòng thử lại."
+      }
     },
     "about": {
       "appIconAlt": "Biểu tượng ứng dụng Motrix",
@@ -2414,6 +2448,8 @@
       "accessHosts_other": "Có thể đọc {{count}} trang web",
       "accessBroad": "Có thể đọc mọi trang web",
       "attentionTitle": "Tiện ích này đã báo cáo sự cố",
+      "runtimeStartFailed": "Không thể khởi động môi trường chạy tiện ích",
+      "runtimeFailed": "Môi trường chạy tiện ích đã dừng đột ngột",
       "attentionGeneric": "Xem chi tiết trong nhật ký.",
       "viewIssue": "Xem sự cố",
       "removeTitle": "Gỡ tiện ích",
@@ -2443,6 +2479,7 @@
       },
       "copy": "Sao chép nhật ký đã che dữ liệu",
       "clear": "Xóa",
+      "clearFailed": "Không thể xóa nhật ký. Hãy thử lại.",
       "output": "Đầu ra trực tiếp",
       "entryCount_other": "{{count}} mục",
       "empty": "Chưa có mục nhật ký",
@@ -3059,6 +3096,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Bạn có thể di chuyển sau từ {{settings}} → {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

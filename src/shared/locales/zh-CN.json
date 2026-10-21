@@ -7,7 +7,7 @@
     "submit": "解锁"
   },
   "operatorAdmin": {
-    "help": "用法：\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <配对码> [--json]\n  motrix-admin pairing deny <配对码> [--json]\n\n此命令仅通过容器内的本机回环地址与正在运行的 Motrix 服务器通信。",
+    "help": "用法：\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <配对码> [--json]\n  motrix-admin pairing deny <配对码> [--json]\n  motrix-admin extension pair\n\n此命令仅通过容器内的本机回环地址与正在运行的 Motrix 服务器通信。",
     "errorPrefix": "motrix-admin：{{message}}",
     "usageHint": "运行 `motrix-admin --help` 查看用法。",
     "pending": {
@@ -55,6 +55,20 @@
         "loopback": "无法通过容器内的本机回环地址连接正在运行的 Motrix 服务器。",
         "approvalNotReady": "正在运行的 Motrix 服务器尚未准备好配对审批。"
       }
+    },
+    "extension": {
+      "heading": "待处理的浏览器扩展配对请求",
+      "identityNotice": "请核对这是你刚发起的请求。Origin 和自报身份不能单独证明连接方身份。终端录制可能记录配对码。",
+      "row": "{{index}}. {{browser}} [{{identity}}] 来源：{{origin}}；自报 ID：{{claimedId}}；服务端：{{authority}}；剩余 {{seconds}} 秒",
+      "select": "输入一个请求的序号（Ctrl+C 退出）：",
+      "code": "配对码：{{code}}",
+      "instructions": "将此配对码输入浏览器扩展，有效期不会延长。Ctrl+C 仅关闭此视图，不批准或拒绝请求。",
+      "none": "没有待处理的扩展配对请求。请先在扩展中发起配对，再运行此命令。如果仍无请求，请检查远程扩展配置。",
+      "ended": "所选配对请求已结束，请在扩展中确认结果。",
+      "ttyRequired": "扩展配对要求输入、输出及错误输出均为交互终端，不支持管道、重定向或 JSON 输出。",
+      "cancelled": "已关闭配对码视图，未发送批准或拒绝操作。",
+      "invalidSelection": "请通过序号选择一个列表中的请求。",
+      "unavailable": "所选请求已过期、结束或发生变化，请在扩展中重新发起配对。"
     }
   },
   "common": {
@@ -686,18 +700,17 @@
         },
         "activity": {
           "transferTitle": {
-            "session": "会话传输",
-            "lifetime": "生命周期传输"
+            "session": "近期传输",
+            "lifetime": "全程传输"
           },
           "download": "下载",
           "upload": "上传",
           "loading": "正在加载活动记录…",
           "collecting": "正在收集传输数据…",
-          "noSessionHistory": "本次应用会话未记录传输数据。",
-          "lifetimeEmpty": "生命周期历史暂不可用。",
+          "noSessionHistory": "暂无近期传输记录。",
+          "lifetimeEmpty": "全程历史暂不可用。",
           "noTraffic": "当前没有网络流量。",
-          "unavailable": "生命周期活动暂不可用。",
-          "coverageGap": "活动追踪曾中断。",
+          "unavailable": "全程活动暂不可用。",
           "retry": "重试",
           "notAvailable": "不可用",
           "stale": {
@@ -706,8 +719,8 @@
           },
           "range": {
             "label": "传输时间范围",
-            "session": "会话(60 秒)",
-            "lifetime": "生命周期",
+            "session": "最近 60 秒",
+            "lifetime": "全程",
             "latest": "最近 60 秒",
             "adaptive_other": "自适应分辨率 {{count}} 个样本"
           },
@@ -756,10 +769,21 @@
             "activeExpanded": "活跃传输时长"
           },
           "chart": {
-            "accessibleSummary": "{{range}}，从 {{start}} 到 {{end}}。最新下载 {{download}}，上传 {{upload}}。生命周期平均下载 {{average}}，下载峰值 {{peak}}，活跃 {{activeDuration}}。{{sampleLabel}}。{{state}}",
+            "accessibleSummary": "{{range}}，从 {{start}} 到 {{end}}。最新下载 {{download}}，上传 {{upload}}。全程平均下载 {{average}}，下载峰值 {{peak}}，活跃 {{activeDuration}}。{{sampleLabel}}。{{state}}",
             "activeSeconds_other": "{{count}} 秒",
             "sampleCount_other": "{{count}} 个样本",
-            "noDataQualityIssues": "没有追踪警告。"
+            "noDataQualityIssues": "没有追踪警告。",
+            "noSamples": "缺少采样",
+            "overview": "全程概览",
+            "rangeStart": "开始时间",
+            "rangeEnd": "结束时间",
+            "earlier": "较早历史",
+            "later": "较新历史",
+            "zoomIn": "放大",
+            "zoomOut": "缩小",
+            "showAll": "查看全程",
+            "following": "正在跟随最新",
+            "followLatest": "回到最新"
           }
         },
         "pieces": {
@@ -891,6 +915,8 @@
         "removeMixedTitle": "移除 {{count}} 个任务？",
         "openFile": "打开文件",
         "openFileFailed": "无法打开文件",
+        "openFileAppFailed": "系统无法打开此文件。请检查默认应用是否仍已安装，或通过“打开文件夹”选择其他应用打开。",
+        "openFileFailedHint": "请确认文件仍然存在，并且你有权限打开它。",
         "chooseFiles": "选择下载文件…",
         "queueOrder": "调整下载顺序",
         "moveQueueTop": "移至队列最前",
@@ -1402,7 +1428,15 @@
         "historyCountHint": "较早的恢复记录会被移除。",
         "historyCountPositive": "请输入大于 0 的数量。"
       },
-      "description": "RPC、进度与恢复"
+      "description": "RPC、进度与恢复",
+      "configFile": {
+        "title": "配置文件",
+        "serverTitle": "服务端配置文件",
+        "openDirectory": "打开所在目录",
+        "copyPath": "复制路径",
+        "copied": "已复制",
+        "actionFailed": "操作未完成，请重试。"
+      }
     },
     "bittorrent": {
       "trackers": {
@@ -2414,6 +2448,8 @@
       "accessHosts_other": "读取 {{count}} 个网站",
       "accessBroad": "可读取任意网站",
       "attentionTitle": "该插件报告了一个问题",
+      "runtimeStartFailed": "插件运行环境无法启动",
+      "runtimeFailed": "插件运行环境意外停止",
       "attentionGeneric": "请查看日志了解详情。",
       "viewIssue": "查看错误",
       "removeTitle": "移除插件",
@@ -2443,6 +2479,7 @@
       },
       "copy": "复制脱敏日志",
       "clear": "清空",
+      "clearFailed": "无法清空日志，请重试。",
       "output": "实时输出",
       "entryCount_other": "{{count}} 条日志",
       "empty": "暂无日志条目",
@@ -3059,6 +3096,7 @@
     "preserveFiles": "已下载的文件保留在原来的位置。",
     "chooseTasks": "选择任务",
     "skip": "暂不迁移",
+    "skippedHint": "如需迁移，可前往“{{settings}} → {{advanced}}”。",
     "back": "返回",
     "loading": "正在查找旧版任务…",
     "empty": "此文件夹中没有可迁移的任务。",

@@ -374,13 +374,27 @@
         "unknownOption": "Opció de línia d'ordres desconeguda."
       }
     },
-    "help": "Ús:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nL'ordre només es comunica amb el servidor Motrix en execució mitjançant la interfície de bucle local del contenidor.",
+    "help": "Ús:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nL'ordre només es comunica amb el servidor Motrix en execució mitjançant la interfície de bucle local del contenidor.",
     "pending": {
       "none": "No hi ha peticions d'aparellament pendents.",
       "row": "{{userCode}}  {{clientName}}  {{clientVersion}}  caduca d'aquí a {{ttl}}",
       "ttl": "{{minutes}} min {{seconds}} s"
     },
-    "usageHint": "Executeu `motrix-admin --help` per veure les instruccions d'ús."
+    "usageHint": "Executeu `motrix-admin --help` per veure les instruccions d'ús.",
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
+    }
   },
   "operatorUnlock": {
     "error": "El testimoni d'operador no és vàlid. Comproveu MOTRIX_OPERATOR_TOKEN o <dataDir>/operator-token a l'amfitrió i torneu-ho a provar.",
@@ -850,6 +864,8 @@
         "moveQueueUp": "Moure amunt a la cua",
         "openFile": "Obrir el fitxer",
         "openFileFailed": "No s'ha pogut obrir el fitxer",
+        "openFileAppFailed": "El sistema no ha pogut obrir aquest fitxer. Comproveu que l’aplicació predeterminada encara estigui instal·lada o obriu la carpeta per triar una altra aplicació.",
+        "openFileFailedHint": "Comproveu que el fitxer encara existeixi i que tingueu permís per obrir-lo.",
         "openFolder": "Obrir la carpeta",
         "pause": "Pausar",
         "pauseTooltipBatch": "Pausar {{n}} de {{total}} tasques seleccionades",
@@ -945,14 +961,24 @@
             "noDataQualityIssues": "No hi ha avisos de seguiment.",
             "sampleCount_many": "{{count}} mostres",
             "sampleCount_one": "{{count}} mostra",
-            "sampleCount_other": "{{count}} mostres"
+            "sampleCount_other": "{{count}} mostres",
+            "noSamples": "Sense mostres",
+            "overview": "Resum de l’historial",
+            "rangeStart": "Inici de l’interval",
+            "rangeEnd": "Final de l’interval",
+            "earlier": "Historial anterior",
+            "later": "Historial posterior",
+            "zoomIn": "Amplia",
+            "zoomOut": "Redueix",
+            "showAll": "Mostra-ho tot",
+            "following": "Seguint les dades més recents",
+            "followLatest": "Torna a les més recents"
           },
           "collecting": "S'estan recollint dades de transferència…",
-          "coverageGap": "S'ha interromput el seguiment.",
           "download": "Baixada",
           "lifetimeEmpty": "L'historial acumulat encara no està disponible.",
           "loading": "S'està carregant l'activitat…",
-          "noSessionHistory": "No s'ha registrat cap transferència en aquesta sessió de l'aplicació.",
+          "noSessionHistory": "No hi ha transferències recents registrades.",
           "noTraffic": "Ara mateix no hi ha trànsit de xarxa.",
           "notAvailable": "No disponible",
           "range": {
@@ -962,7 +988,7 @@
             "label": "Període de transferència",
             "latest": "Últims 60 segons",
             "lifetime": "Acumulat",
-            "session": "Sessió (60 s)"
+            "session": "Últims 60 s"
           },
           "retry": "Tornar-ho a provar",
           "stale": {
@@ -1019,7 +1045,7 @@
           },
           "transferTitle": {
             "lifetime": "Transferència acumulada",
-            "session": "Transferència de la sessió"
+            "session": "Transferència recent"
           },
           "unavailable": "L'activitat acumulada no està disponible.",
           "upload": "Pujada"
@@ -1360,6 +1386,8 @@
       "advanced": "Avançat",
       "attentionGeneric": "Consulteu els registres per veure'n els detalls.",
       "attentionTitle": "Aquest connector ha notificat un problema",
+      "runtimeStartFailed": "No s’ha pogut iniciar l’entorn d’execució del connector",
+      "runtimeFailed": "L’entorn d’execució del connector s’ha aturat inesperadament",
       "author": "Autor",
       "back": "Tots els connectors",
       "disabled": "Desactivat",
@@ -1567,6 +1595,7 @@
     "lead": "Afegiu petites funcions al Motrix. Manteniu els connectors de confiança i desactiveu la resta.",
     "logs": {
       "clear": "Esborrar",
+      "clearFailed": "No s’han pogut esborrar els registres. Torna-ho a provar.",
       "copy": "Copia els registres amb dades ocultes",
       "empty": "Encara no hi ha entrades al registre",
       "emptyFiltered": "No hi ha entrades d'aquest nivell.",
@@ -1838,6 +1867,14 @@
         "secret": "Secret RPC",
         "secretDesc": "Necessari per a les connexions RPC.",
         "title": "RPC"
+      },
+      "configFile": {
+        "title": "Fitxer de configuració",
+        "serverTitle": "Fitxer de configuració del servidor",
+        "openDirectory": "Obre la carpeta",
+        "copyPath": "Copia el camí",
+        "copied": "Copiat",
+        "actionFailed": "No s’ha pogut completar l’acció. Torneu-ho a provar."
       }
     },
     "appearance": {
@@ -3103,6 +3140,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Pots migrar més endavant des de {{settings}} → {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

@@ -6,6 +6,7 @@ import {
   ProtocolEnvelopeError,
   type TransportError,
 } from '@shared/protocol/errors'
+import { Events } from '@shared/protocol/events'
 import { Queries } from '@shared/protocol/queries'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ElectronTransport } from './electron'
@@ -15,43 +16,71 @@ afterEach(() => {
 })
 
 describe('ElectronTransport', () => {
-  it('unwraps a protocol success envelope', async () => {
-    const invoke = vi.fn(async () => makeProtocolSuccess({ revision: 3 }))
+  it('retains preload disposers per callback and channel without passing callbacks back across the bridge', () => {
+    const first = vi.fn()
+    const second = vi.fn()
+    const on = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second)
     Object.defineProperty(window, 'motrix', {
       configurable: true,
-      value: { invoke, on: vi.fn(), off: vi.fn(), platform: 'darwin' },
+      value: { on, platform: 'darwin' },
     })
-
-    await expect(
-      new ElectronTransport().invoke(Queries.GetTaskInspectorActivity, {
-        taskId: 'task-1',
-      })
-    ).resolves.toEqual({ revision: 3 })
+    const transport = new ElectronTransport()
+    const callback = vi.fn()
+    transport.on(Events.PluginInstalled, callback)
+    transport.on(Events.PluginInstalled, callback)
+    transport.on(Events.PluginStatusChanged, callback)
+    expect(on).toHaveBeenCalledTimes(2)
+    transport.off(Events.PluginInstalled, callback)
+    transport.off(Events.PluginInstalled, callback)
+    expect(first).toHaveBeenCalledOnce()
+    expect(second).not.toHaveBeenCalled()
+    transport.off(Events.PluginStatusChanged, callback)
+    expect(second).toHaveBeenCalledOnce()
   })
+  it.each([Queries.GetTaskInspectorActivity, Commands.OpenTaskFile])(
+    'unwraps a protocol success envelope for %s',
+    async (channel) => {
+      const invoke = vi.fn(async () => makeProtocolSuccess({ revision: 3 }))
+      Object.defineProperty(window, 'motrix', {
+        configurable: true,
+        value: { invoke, on: vi.fn(), off: vi.fn(), platform: 'darwin' },
+      })
 
-  it('reconstructs the typed domain failure', async () => {
-    const invoke = vi.fn(async () =>
-      makeProtocolFailure({
-        code: ErrorCode.TaskNotFound,
-        message: 'task missing',
-      })
-    )
-    Object.defineProperty(window, 'motrix', {
-      configurable: true,
-      value: { invoke, on: vi.fn(), off: vi.fn(), platform: 'darwin' },
-    })
+      await expect(
+        new ElectronTransport().invoke(channel, {
+          taskId: 'task-1',
+        })
+      ).resolves.toEqual({ revision: 3 })
+    }
+  )
 
-    await expect(
-      new ElectronTransport().invoke(Queries.GetTaskInspectorActivity, {
-        taskId: 'task-1',
+  it.each([Queries.GetTaskInspectorActivity, Commands.OpenTaskFile])(
+    'reconstructs the typed domain failure for %s',
+    async (channel) => {
+      const invoke = vi.fn(async () =>
+        makeProtocolFailure({
+          code: ErrorCode.TaskOpenAppFailed,
+          message: 'No application available',
+        })
+      )
+      Object.defineProperty(window, 'motrix', {
+        configurable: true,
+        value: { invoke, on: vi.fn(), off: vi.fn(), platform: 'darwin' },
       })
-    ).rejects.toEqual(
-      expect.objectContaining<Partial<TransportError>>({
-        name: 'TransportError',
-        code: ErrorCode.TaskNotFound,
-      })
-    )
-  })
+
+      await expect(
+        new ElectronTransport().invoke(channel, {
+          taskId: 'task-1',
+        })
+      ).rejects.toEqual(
+        expect.objectContaining<Partial<TransportError>>({
+          name: 'TransportError',
+          code: ErrorCode.TaskOpenAppFailed,
+          message: 'No application available',
+        })
+      )
+    }
+  )
 
   it('preserves non-envelope command results', async () => {
     const invoke = vi.fn(async () => ({ ok: true }))
@@ -65,17 +94,20 @@ describe('ElectronTransport', () => {
     ).resolves.toEqual({ ok: true })
   })
 
-  it('rejects a malformed inspector envelope', async () => {
-    const invoke = vi.fn(async () => ({ ok: true, revision: 3 }))
-    Object.defineProperty(window, 'motrix', {
-      configurable: true,
-      value: { invoke, on: vi.fn(), off: vi.fn(), platform: 'darwin' },
-    })
-
-    await expect(
-      new ElectronTransport().invoke(Queries.GetTaskInspectorActivity, {
-        taskId: 'task-1',
+  it.each([Queries.GetTaskInspectorActivity, Commands.OpenTaskFile])(
+    'rejects a malformed envelope for %s',
+    async (channel) => {
+      const invoke = vi.fn(async () => ({ ok: true, revision: 3 }))
+      Object.defineProperty(window, 'motrix', {
+        configurable: true,
+        value: { invoke, on: vi.fn(), off: vi.fn(), platform: 'darwin' },
       })
-    ).rejects.toBeInstanceOf(ProtocolEnvelopeError)
-  })
+
+      await expect(
+        new ElectronTransport().invoke(channel, {
+          taskId: 'task-1',
+        })
+      ).rejects.toBeInstanceOf(ProtocolEnvelopeError)
+    }
+  )
 })

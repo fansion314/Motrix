@@ -374,13 +374,27 @@
         "unknownOption": "Opțiune necunoscută a liniei de comandă."
       }
     },
-    "help": "Utilizare:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nComanda comunică doar cu serverul Motrix activ, prin interfața loopback a containerului.",
+    "help": "Utilizare:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nComanda comunică doar cu serverul Motrix activ, prin interfața loopback a containerului.",
     "pending": {
       "none": "Nu există cereri de asociere în așteptare.",
       "row": "{{userCode}}  {{clientName}}  {{clientVersion}}  expiră în {{ttl}}",
       "ttl": "{{minutes}}m {{seconds}}s"
     },
-    "usageHint": "Rulează `motrix-admin --help` pentru instrucțiuni de utilizare."
+    "usageHint": "Rulează `motrix-admin --help` pentru instrucțiuni de utilizare.",
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
+    }
   },
   "operatorUnlock": {
     "error": "Token de operator nevalid. Verifică MOTRIX_OPERATOR_TOKEN sau <dataDir>/operator-token pe gazdă și încearcă din nou.",
@@ -850,6 +864,8 @@
         "moveQueueUp": "Mută în sus în coadă",
         "openFile": "Deschide fișierul",
         "openFileFailed": "Fișierul nu a putut fi deschis",
+        "openFileAppFailed": "Sistemul nu a putut deschide acest fișier. Verifică dacă aplicația implicită este încă instalată sau deschide dosarul pentru a alege altă aplicație.",
+        "openFileFailedHint": "Verifică dacă fișierul mai există și dacă ai permisiunea să îl deschizi.",
         "openFolder": "Deschide dosarul",
         "pause": "Pune pe pauză",
         "pauseTooltipBatch": "Pune pe pauză: {{n}} din selecția totală de {{total}}",
@@ -945,14 +961,24 @@
             "noDataQualityIssues": "Niciun avertisment privind înregistrarea.",
             "sampleCount_few": "{{count}} eșantioane",
             "sampleCount_one": "{{count}} eșantion",
-            "sampleCount_other": "{{count}} de eșantioane"
+            "sampleCount_other": "{{count}} de eșantioane",
+            "noSamples": "Fără eșantioane",
+            "overview": "Prezentarea istoricului",
+            "rangeStart": "Începutul intervalului",
+            "rangeEnd": "Sfârșitul intervalului",
+            "earlier": "Istoric anterior",
+            "later": "Istoric mai recent",
+            "zoomIn": "Mărire",
+            "zoomOut": "Micșorare",
+            "showAll": "Afișează tot",
+            "following": "Urmărirea datelor recente",
+            "followLatest": "Înapoi la cele mai recente"
           },
           "collecting": "Se colectează datele de transfer…",
-          "coverageGap": "Înregistrarea a fost întreruptă.",
           "download": "Descărcare",
           "lifetimeEmpty": "Istoricul pe întreaga durată nu este încă disponibil.",
           "loading": "Se încarcă activitatea…",
-          "noSessionHistory": "Niciun transfer înregistrat în această sesiune a aplicației.",
+          "noSessionHistory": "Nu există transferuri recente înregistrate.",
           "noTraffic": "Nu există trafic de rețea momentan.",
           "notAvailable": "Indisponibil",
           "range": {
@@ -962,7 +988,7 @@
             "label": "Intervalul de timp al transferului",
             "latest": "Ultimele 60 de secunde",
             "lifetime": "Întreaga durată",
-            "session": "Sesiune (60 s)"
+            "session": "Ultimele 60 s"
           },
           "retry": "Încearcă din nou",
           "stale": {
@@ -1019,7 +1045,7 @@
           },
           "transferTitle": {
             "lifetime": "Transfer pe întreaga durată",
-            "session": "Transfer în sesiune"
+            "session": "Transfer recent"
           },
           "unavailable": "Activitatea pe întreaga durată nu este disponibilă.",
           "upload": "Încărcare"
@@ -1360,6 +1386,8 @@
       "advanced": "Avansat",
       "attentionGeneric": "Consultă jurnalele pentru detalii.",
       "attentionTitle": "Acest modul a raportat o problemă",
+      "runtimeStartFailed": "Mediul de execuție al extensiei nu a putut porni",
+      "runtimeFailed": "Mediul de execuție al extensiei s-a oprit neașteptat",
       "author": "Autor",
       "back": "Toate modulele",
       "disabled": "Dezactivat",
@@ -1567,6 +1595,7 @@
     "lead": "Adaugă funcții mici în Motrix. Păstrează active modulele în care ai încredere și dezactivează-le pe celelalte.",
     "logs": {
       "clear": "Șterge",
+      "clearFailed": "Jurnalele nu au putut fi șterse. Încearcă din nou.",
       "copy": "Copiază jurnalele cu date mascate",
       "empty": "Încă nu există înregistrări în jurnal",
       "emptyFiltered": "Nicio înregistrare nu corespunde acestui nivel.",
@@ -1838,6 +1867,14 @@
         "secret": "Secret RPC",
         "secretDesc": "Necesar pentru conexiunile RPC.",
         "title": "RPC"
+      },
+      "configFile": {
+        "title": "Fișier de configurare",
+        "serverTitle": "Fișier de configurare al serverului",
+        "openDirectory": "Deschide dosarul",
+        "copyPath": "Copiază calea",
+        "copied": "Copiat",
+        "actionFailed": "Acțiunea nu a putut fi finalizată. Încearcă din nou."
       }
     },
     "appearance": {
@@ -3103,6 +3140,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Puteți migra mai târziu din {{settings}} → {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

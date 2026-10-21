@@ -373,13 +373,27 @@
         "unknownOption": "Ukjent kommandolinjealternativ."
       }
     },
-    "help": "Bruk:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nKommandoen kommuniserer bare med den kjørende Motrix-serveren via containerens loopback-grensesnitt.",
+    "help": "Bruk:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nKommandoen kommuniserer bare med den kjørende Motrix-serveren via containerens loopback-grensesnitt.",
     "pending": {
       "none": "Ingen ventende sammenkoblingsforespørsler.",
       "row": "{{userCode}}  {{clientName}}  {{clientVersion}}  utløper om {{ttl}}",
       "ttl": "{{minutes}} min {{seconds}} s"
     },
-    "usageHint": "Kjør `motrix-admin --help` for bruksanvisning."
+    "usageHint": "Kjør `motrix-admin --help` for bruksanvisning.",
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
+    }
   },
   "operatorUnlock": {
     "error": "Ugyldig operatørtoken. Kontroller MOTRIX_OPERATOR_TOKEN eller <dataDir>/operator-token på vertsmaskinen og prøv igjen.",
@@ -847,6 +861,8 @@
         "moveQueueUp": "Flytt opp i køen",
         "openFile": "Åpne fil",
         "openFileFailed": "Kunne ikke åpne filen",
+        "openFileAppFailed": "Systemet kunne ikke åpne denne filen. Kontroller at standardappen fortsatt er installert, eller åpne mappen for å velge en annen app.",
+        "openFileFailedHint": "Kontroller at filen fortsatt finnes, og at du har tillatelse til å åpne den.",
         "openFolder": "Åpne mappe",
         "pause": "Sett på pause",
         "pauseTooltipBatch": "Sett på pause: {{n}} / {{total}} i utvalget",
@@ -940,14 +956,24 @@
             "activeSeconds_other": "{{count}} sekunder",
             "noDataQualityIssues": "Ingen registreringsadvarsler.",
             "sampleCount_one": "{{count}} måling",
-            "sampleCount_other": "{{count}} målinger"
+            "sampleCount_other": "{{count}} målinger",
+            "noSamples": "Ingen målinger",
+            "overview": "Historikkoversikt",
+            "rangeStart": "Start på intervallet",
+            "rangeEnd": "Slutt på intervallet",
+            "earlier": "Eldre historikk",
+            "later": "Nyere historikk",
+            "zoomIn": "Zoom inn",
+            "zoomOut": "Zoom ut",
+            "showAll": "Vis alt",
+            "following": "Følger nyeste data",
+            "followLatest": "Tilbake til nyeste"
           },
           "collecting": "Samler overføringsdata…",
-          "coverageGap": "Registreringen ble avbrutt.",
           "download": "Nedlasting",
           "lifetimeEmpty": "Samlet historikk er ikke tilgjengelig ennå.",
           "loading": "Laster inn aktivitet…",
-          "noSessionHistory": "Ingen overføring registrert i denne appøkten.",
+          "noSessionHistory": "Ingen nylig overføring registrert.",
           "noTraffic": "Ingen nettverkstrafikk akkurat nå.",
           "notAvailable": "Ikke tilgjengelig",
           "range": {
@@ -956,7 +982,7 @@
             "label": "Tidsrom for overføring",
             "latest": "Siste 60 sekunder",
             "lifetime": "Hele perioden",
-            "session": "Økt (60 s)"
+            "session": "Siste 60 s"
           },
           "retry": "Prøv igjen",
           "stale": {
@@ -1011,7 +1037,7 @@
           },
           "transferTitle": {
             "lifetime": "Samlet overføring",
-            "session": "Overføring i økten"
+            "session": "Nylig overføring"
           },
           "unavailable": "Samlet aktivitet er utilgjengelig.",
           "upload": "Opplasting"
@@ -1347,6 +1373,8 @@
       "advanced": "Avansert",
       "attentionGeneric": "Se loggene for detaljer.",
       "attentionTitle": "Dette programtillegget rapporterte et problem",
+      "runtimeStartFailed": "Kjøremiljøet for programtillegget kunne ikke starte",
+      "runtimeFailed": "Kjøremiljøet for programtillegget stoppet uventet",
       "author": "Utvikler",
       "back": "Alle programtillegg",
       "disabled": "Deaktivert",
@@ -1550,6 +1578,7 @@
     "lead": "Legg til små funksjoner i Motrix. Behold dem du stoler på, og slå av resten.",
     "logs": {
       "clear": "Tøm",
+      "clearFailed": "Kunne ikke tømme loggene. Prøv igjen.",
       "copy": "Kopier sladdede logger",
       "empty": "Ingen loggoppføringer ennå",
       "emptyFiltered": "Ingen oppføringer samsvarer med dette nivået.",
@@ -1819,6 +1848,14 @@
         "secret": "RPC-hemmelighet",
         "secretDesc": "Kreves for RPC-tilkoblinger.",
         "title": "RPC"
+      },
+      "configFile": {
+        "title": "Konfigurasjonsfil",
+        "serverTitle": "Serverens konfigurasjonsfil",
+        "openDirectory": "Åpne mappe",
+        "copyPath": "Kopier sti",
+        "copied": "Kopiert",
+        "actionFailed": "Handlingen kunne ikke fullføres. Prøv igjen."
       }
     },
     "appearance": {
@@ -3081,6 +3118,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Du kan migrere senere fra {{settings}} → {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

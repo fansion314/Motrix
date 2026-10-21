@@ -161,6 +161,7 @@ describe('WindowManager', () => {
     })
     const main = wm.open('main')
     const secondary = wm.open('add-task')
+    if (!main || !secondary) throw new Error('Expected both windows to open')
     expect(
       (
         main as unknown as {
@@ -189,6 +190,111 @@ describe('WindowManager', () => {
     vi.clearAllMocks()
   })
 
+  describe.each(['closing', 'destroyed'] as const)(
+    'shutdown: %s windows',
+    (phase) => {
+      it.each(['open', 'show', 'toggle', 'precreate', 'recreate'] as const)(
+        'ignores late %s requests for every window',
+        (action) => {
+          const loadUrl = vi.fn()
+          const deliverAddTask = vi.fn()
+          const wm = new WindowManager({
+            settingsManager: createMockSettingsManager(),
+            preloadPath: '/fake/preload.cjs',
+            loadUrl,
+            deliverAddTask,
+          })
+          const ids = ['main', 'add-task', 'onboarding'] as const
+          const windows = ids.map((id) => wm.open(id)!)
+          for (const win of windows) win.minimize()
+          if (phase === 'destroyed') wm.destroyAll()
+          else wm.setWillQuit(true)
+          vi.clearAllMocks()
+
+          for (const id of ids) wm[action](id)
+          wm.show('add-task', { mode: 'links' })
+          for (const win of windows) {
+            ;(win as unknown as { fireReadyToShow(): void }).fireReadyToShow()
+            expect(win.show).not.toHaveBeenCalled()
+            expect(win.showInactive).not.toHaveBeenCalled()
+            expect(win.focus).not.toHaveBeenCalled()
+            expect(win.restore).not.toHaveBeenCalled()
+            expect(win.destroy).not.toHaveBeenCalled()
+          }
+          expect(
+            (BrowserWindow as unknown as { instances: unknown[] }).instances
+          ).toHaveLength(3)
+          expect(loadUrl).not.toHaveBeenCalled()
+          expect(deliverAddTask).not.toHaveBeenCalled()
+        }
+      )
+    }
+  )
+
+  it('keeps shutdown terminal even before any windows have been created', () => {
+    const loadUrl = vi.fn()
+    const wm = new WindowManager({
+      settingsManager: createMockSettingsManager(),
+      preloadPath: '/fake/preload.cjs',
+      loadUrl,
+    })
+    wm.destroyAll()
+    wm.setWillQuit(false)
+
+    expect(wm.open('main')).toBeNull()
+    expect(wm.recreate('main')).toBeNull()
+    wm.precreate('onboarding')
+    wm.reconcileWindowRetention()
+    wm.closeAndRecycle('add-task')
+
+    expect(wm.getAllWindows()).toEqual([])
+    expect(loadUrl).not.toHaveBeenCalled()
+  })
+
+  it('does not maximize a pending background window after shutdown starts', () => {
+    const wm = new WindowManager({
+      settingsManager: createMockSettingsManager({
+        main: { x: 100, y: 100, width: 1024, height: 768, maximized: true },
+      }),
+      preloadPath: '/fake/preload.cjs',
+      loadUrl: vi.fn(),
+    })
+    const win = wm.open('main', { show: false })!
+    wm.setWillQuit(true)
+
+    ;(win as unknown as { fireOnce(event: string): void }).fireOnce('show')
+
+    expect(win.maximize).not.toHaveBeenCalled()
+    expect(win.showInactive).not.toHaveBeenCalled()
+  })
+
+  it('ignores an in-flight renderer load rejection once shutdown starts', async () => {
+    let rejectLoad!: (error: Error) => void
+    const lifecycle = {
+      created: vi.fn(),
+      released: vi.fn(),
+      dismissed: vi.fn(),
+      shown: vi.fn(),
+      loadFailed: vi.fn(),
+    }
+    const wm = new WindowManager({
+      settingsManager: createMockSettingsManager(),
+      preloadPath: '/fake/preload.cjs',
+      lifecycle,
+      loadUrl: () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectLoad = reject
+        }),
+    })
+    wm.open('main')
+    wm.setWillQuit(true)
+
+    rejectLoad(new Error('Renderer closed during shutdown'))
+    await Promise.resolve()
+
+    expect(lifecycle.loadFailed).not.toHaveBeenCalled()
+  })
+
   it.each(['show', 'open', 'toggle'] as const)(
     '%s restores a minimized Windows window instead of dismissing it',
     (action) => {
@@ -198,7 +304,7 @@ describe('WindowManager', () => {
         preloadPath: '/fake/preload.cjs',
         loadUrl: vi.fn(),
       })
-      const win = wm.open('main')
+      const win = wm.open('main')!
       win.show()
       win.minimize()
       expect(win.isMinimized()).toBe(true)
@@ -223,7 +329,7 @@ describe('WindowManager', () => {
         preloadPath: '/fake/preload.cjs',
         loadUrl: vi.fn(),
       })
-      const win = wm.open('main', { show: false })
+      const win = wm.open('main', { show: false })!
       vi.mocked(win.isMaximized).mockReturnValue(true)
 
       wm[action]('main')
@@ -242,7 +348,7 @@ describe('WindowManager', () => {
       loadUrl: vi.fn(),
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     expect(win).toBeDefined()
     expect(wm.get('main')).toBe(win)
   })
@@ -268,7 +374,7 @@ describe('WindowManager', () => {
         preloadPath: '/fake/preload.cjs',
         loadUrl: vi.fn(),
       })
-      const win = wm.open('main')
+      const win = wm.open('main')!
       expect(
         (win as unknown as { options: Record<string, unknown> }).options
       ).toMatchObject({
@@ -279,7 +385,7 @@ describe('WindowManager', () => {
       })
       expect(win.setMinimumSize).toHaveBeenCalledWith(minWidth, minHeight)
       for (const id of ['add-task', 'onboarding'] as const) {
-        expect(wm.open(id).setMinimumSize).not.toHaveBeenCalled()
+        expect(wm.open(id)!.setMinimumSize).not.toHaveBeenCalled()
       }
       expect(WINDOW_CONFIGS.main.minWidth).toBe(914)
       expect(WINDOW_CONFIGS.main.minHeight).toBe(672)
@@ -301,7 +407,7 @@ describe('WindowManager', () => {
         preloadPath: '/fake/preload.cjs',
         loadUrl: vi.fn(),
       })
-      expect(wm.open('main').setBounds).toHaveBeenCalledWith({
+      expect(wm.open('main')!.setBounds).toHaveBeenCalledWith({
         x: 100,
         y: 100,
         width,
@@ -318,7 +424,7 @@ describe('WindowManager', () => {
       platform: 'win32',
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const options = (win as unknown as { options: Record<string, unknown> })
       .options
     expect(options.titleBarStyle).toBe('hidden')
@@ -336,7 +442,7 @@ describe('WindowManager', () => {
       platform: 'win32',
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const options = (win as unknown as { options: Record<string, unknown> })
       .options
     expect(options.backgroundColor).toBe('#09090b')
@@ -350,7 +456,7 @@ describe('WindowManager', () => {
       platform: 'win32',
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const webContentsListeners = (
       win.webContents.on as unknown as ReturnType<typeof vi.fn>
     ).mock.calls
@@ -437,7 +543,7 @@ describe('WindowManager', () => {
       loadUrl: vi.fn(),
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const options = (win as unknown as { options: Record<string, unknown> })
       .options
 
@@ -510,7 +616,7 @@ describe('WindowManager', () => {
       preloadPath: '/fake/preload.cjs',
       loadUrl: vi.fn(),
     })
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const on = win.webContents.on as ReturnType<typeof vi.fn>
     const navigate = on.mock.calls.find(
       ([event]) => event === 'will-navigate'
@@ -545,7 +651,7 @@ describe('WindowManager', () => {
       platform: 'darwin',
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
 
     const options = (win as unknown as { options: Record<string, unknown> })
       .options
@@ -570,7 +676,7 @@ describe('WindowManager', () => {
       previewMacMenu: true,
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const setWindowButtonVisibility = vi.mocked(win.setWindowButtonVisibility)
 
     expect(liquidGlass.attach).toHaveBeenCalledWith('main', win)
@@ -592,7 +698,7 @@ describe('WindowManager', () => {
       platform: 'darwin',
     })
 
-    const win = wm.open('onboarding')
+    const win = wm.open('onboarding')!
 
     const options = (win as unknown as { options: Record<string, unknown> })
       .options
@@ -657,8 +763,8 @@ describe('WindowManager', () => {
       resolveOpenTarget,
     })
 
-    const first = wm.open('onboarding')
-    const recreated = wm.recreate('main')
+    const first = wm.open('onboarding')!
+    const recreated = wm.recreate('main')!
 
     expect(resolveOpenTarget).toHaveBeenCalledWith('main')
     expect(wm.get('main')).toBeNull()
@@ -679,8 +785,8 @@ describe('WindowManager', () => {
       loadUrl: vi.fn(),
     })
 
-    const win1 = wm.open('main')
-    const win2 = wm.open('main')
+    const win1 = wm.open('main')!
+    const win2 = wm.open('main')!
     expect(win1).toBe(win2)
     expect(win1.show).toHaveBeenCalled()
   })
@@ -726,7 +832,7 @@ describe('WindowManager', () => {
       },
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     wm.close('main')
 
     expect(win.hide).not.toHaveBeenCalled()
@@ -748,7 +854,7 @@ describe('WindowManager', () => {
       },
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     win.show()
     wm.toggle('main')
 
@@ -762,7 +868,7 @@ describe('WindowManager', () => {
       preloadPath: '/fake/preload.cjs',
       loadUrl: vi.fn(),
     })
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const closeListener = (
       win.on as unknown as ReturnType<typeof vi.fn>
     ).mock.calls.find(([event]) => event === 'close')?.[1] as
@@ -794,7 +900,7 @@ describe('WindowManager', () => {
         prewarmAddTask: () => false,
       },
     })
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const closeListener = (
       win.on as unknown as ReturnType<typeof vi.fn>
     ).mock.calls.find(([event]) => event === 'close')?.[1] as
@@ -824,7 +930,7 @@ describe('WindowManager', () => {
       loadUrl: vi.fn(),
       onSessionEnd,
     })
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const listeners = (win.on as unknown as ReturnType<typeof vi.fn>).mock.calls
     const querySessionEnd = listeners.find(
       ([event]) => event === 'query-session-end'
@@ -918,7 +1024,7 @@ describe('WindowManager', () => {
       loadUrl: vi.fn(),
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     expect(win.setBounds).toHaveBeenCalledWith(savedBounds)
   })
 
@@ -929,7 +1035,7 @@ describe('WindowManager', () => {
       preloadPath: '/fake/preload.cjs',
       loadUrl: vi.fn(),
     })
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const normalBounds = { x: 120, y: 80, width: 1100, height: 760 }
     vi.mocked(win.getNormalBounds).mockReturnValue(normalBounds)
     vi.mocked(win.isMaximized).mockReturnValue(true)
@@ -956,7 +1062,7 @@ describe('WindowManager', () => {
       loadUrl: vi.fn(),
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
 
     expect(win.setBounds).toHaveBeenCalledWith({
       x: 100,
@@ -986,7 +1092,7 @@ describe('WindowManager', () => {
         preloadPath: '/fake/preload.cjs',
         loadUrl: vi.fn(),
       })
-      const win = wm.open('main', { show: false })
+      const win = wm.open('main', { show: false })!
       ;(win as unknown as { fireReadyToShow(): void }).fireReadyToShow()
       expect(win.isVisible()).toBe(false)
       expect(win.maximize).not.toHaveBeenCalled()
@@ -1017,7 +1123,7 @@ describe('WindowManager', () => {
       loadUrl: vi.fn(),
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     expect(win.setBounds).not.toHaveBeenCalledWith(savedBounds)
     expect(win.center).toHaveBeenCalled()
   })
@@ -1030,7 +1136,7 @@ describe('WindowManager', () => {
       loadUrl: vi.fn(),
     })
 
-    const win = wm.open('main')
+    const win = wm.open('main')!
     const id = wm.getWindowIdBySender(win.webContents)
     expect(id).toBe('main')
   })
@@ -1063,8 +1169,8 @@ describe('WindowManager', () => {
       loadUrl: vi.fn(),
     })
 
-    const first = wm.open('main')
-    const second = wm.open('add-task')
+    const first = wm.open('main')!
+    const second = wm.open('add-task')!
     const firstSend = first.webContents.send as ReturnType<typeof vi.fn>
     firstSend.mockImplementationOnce(() => {
       throw new Error('render frame was disposed')
@@ -1203,7 +1309,7 @@ describe('WindowManager', () => {
           failures.push(reject)
         }),
     })
-    const win = wm.open('main')
+    const win = wm.open('main')!
     wm.reload('main')
     failures[0](new Error('superseded'))
     await Promise.resolve()

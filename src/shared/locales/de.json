@@ -7,7 +7,7 @@
     "submit": "Entsperren"
   },
   "operatorAdmin": {
-    "help": "Verwendung:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nDer Befehl kommuniziert ausschließlich über die Loopback-Schnittstelle des Containers mit dem laufenden Motrix-Server.",
+    "help": "Verwendung:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nDer Befehl kommuniziert ausschließlich über die Loopback-Schnittstelle des Containers mit dem laufenden Motrix-Server.",
     "errorPrefix": "motrix-admin: {{message}}",
     "usageHint": "Hinweise zur Verwendung erhalten Sie mit `motrix-admin --help`.",
     "pending": {
@@ -55,6 +55,20 @@
         "loopback": "Der laufende Motrix-Server ist über die Loopback-Schnittstelle des Containers nicht erreichbar.",
         "approvalNotReady": "Die Kopplungsfreigabe ist auf dem laufenden Motrix-Server noch nicht bereit."
       }
+    },
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
     }
   },
   "common": {
@@ -689,18 +703,17 @@
         },
         "activity": {
           "transferTitle": {
-            "session": "Übertragung dieser Sitzung",
+            "session": "Letzte Übertragung",
             "lifetime": "Gesamte Übertragung"
           },
           "download": "Download",
           "upload": "Upload",
           "loading": "Aktivität wird geladen…",
           "collecting": "Übertragungsdaten werden erfasst…",
-          "noSessionHistory": "In dieser App-Sitzung wurden keine Übertragungen erfasst.",
+          "noSessionHistory": "Keine kürzliche Übertragung aufgezeichnet.",
           "lifetimeEmpty": "Der Gesamtverlauf ist noch nicht verfügbar.",
           "noTraffic": "Derzeit kein Netzwerkverkehr.",
           "unavailable": "Die Gesamtaktivität ist nicht verfügbar.",
-          "coverageGap": "Die Erfassung wurde unterbrochen.",
           "retry": "Erneut versuchen",
           "notAvailable": "Nicht verfügbar",
           "stale": {
@@ -709,7 +722,7 @@
           },
           "range": {
             "label": "Übertragungszeitraum",
-            "session": "Sitzung (60 s)",
+            "session": "Letzte 60 s",
             "lifetime": "Gesamtzeit",
             "latest": "Letzte 60 Sekunden",
             "adaptive_one": "Adaptive Auflösung · {{count}} Messwert",
@@ -767,7 +780,18 @@
             "activeSeconds_other": "{{count}} Sekunden",
             "sampleCount_one": "{{count}} Messwert",
             "sampleCount_other": "{{count}} Messwerte",
-            "noDataQualityIssues": "Keine Warnungen zur Erfassung."
+            "noDataQualityIssues": "Keine Warnungen zur Erfassung.",
+            "noSamples": "Keine Messwerte",
+            "overview": "Verlaufsübersicht",
+            "rangeStart": "Bereichsanfang",
+            "rangeEnd": "Bereichsende",
+            "earlier": "Älterer Verlauf",
+            "later": "Neuerer Verlauf",
+            "zoomIn": "Vergrößern",
+            "zoomOut": "Verkleinern",
+            "showAll": "Alles anzeigen",
+            "following": "Neueste Daten verfolgen",
+            "followLatest": "Zu den neuesten Daten"
           }
         },
         "pieces": {
@@ -903,6 +927,8 @@
         "removeMixedTitle": "{{count}} Aufgaben entfernen?",
         "openFile": "Datei öffnen",
         "openFileFailed": "Die Datei konnte nicht geöffnet werden",
+        "openFileAppFailed": "Das System konnte diese Datei nicht öffnen. Prüfe, ob die Standard-App noch installiert ist, oder öffne den Ordner, um eine andere App auszuwählen.",
+        "openFileFailedHint": "Prüfe, ob die Datei noch vorhanden ist und du sie öffnen darfst.",
         "chooseFiles": "Dateien auswählen…",
         "queueOrder": "Download-Reihenfolge",
         "moveQueueTop": "An den Anfang",
@@ -1348,7 +1374,15 @@
         "historyCountHint": "Ältere Wiederherstellungsdatensätze werden entfernt.",
         "historyCountPositive": "Geben Sie eine Zahl größer als 0 ein."
       },
-      "description": "RPC, Fortschritt und Wiederherstellung"
+      "description": "RPC, Fortschritt und Wiederherstellung",
+      "configFile": {
+        "title": "Konfigurationsdatei",
+        "serverTitle": "Server-Konfigurationsdatei",
+        "openDirectory": "Ordner öffnen",
+        "copyPath": "Pfad kopieren",
+        "copied": "Kopiert",
+        "actionFailed": "Die Aktion konnte nicht abgeschlossen werden. Versuche es erneut."
+      }
     },
     "about": {
       "appIconAlt": "Motrix-App-Symbol",
@@ -2432,6 +2466,8 @@
       "accessHosts_other": "Kann {{count}} Websites lesen",
       "accessBroad": "Kann jede Website lesen",
       "attentionTitle": "Dieses Plugin hat ein Problem gemeldet",
+      "runtimeStartFailed": "Die Plugin-Laufzeitumgebung konnte nicht gestartet werden",
+      "runtimeFailed": "Die Plugin-Laufzeitumgebung wurde unerwartet beendet",
       "attentionGeneric": "Weitere Informationen finden Sie in den Protokollen.",
       "viewIssue": "Problem anzeigen",
       "removeTitle": "Plugin entfernen",
@@ -2461,6 +2497,7 @@
       },
       "copy": "Bereinigte Protokolle kopieren",
       "clear": "Leeren",
+      "clearFailed": "Die Protokolle konnten nicht gelöscht werden. Versuche es erneut.",
       "output": "Live-Ausgabe",
       "entryCount_one": "{{count}} Eintrag",
       "entryCount_other": "{{count}} Einträge",
@@ -3081,6 +3118,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Du kannst die Migration später unter {{settings}} → {{advanced}} starten.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

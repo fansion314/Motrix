@@ -373,13 +373,27 @@
         "unknownOption": "Άγνωστη επιλογή γραμμής εντολών."
       }
     },
-    "help": "Χρήση:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nΗ εντολή επικοινωνεί μόνο με τον εκτελούμενο διακομιστή Motrix μέσω της τοπικής διεπαφής loopback του περιέκτη.",
+    "help": "Χρήση:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nΗ εντολή επικοινωνεί μόνο με τον εκτελούμενο διακομιστή Motrix μέσω της τοπικής διεπαφής loopback του περιέκτη.",
     "pending": {
       "none": "Δεν υπάρχουν εκκρεμή αιτήματα σύζευξης.",
       "row": "{{userCode}}  {{clientName}}  {{clientVersion}}  λήγει σε {{ttl}}",
       "ttl": "{{minutes}} λεπ. {{seconds}} δευτ."
     },
-    "usageHint": "Εκτελέστε `motrix-admin --help` για οδηγίες χρήσης."
+    "usageHint": "Εκτελέστε `motrix-admin --help` για οδηγίες χρήσης.",
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
+    }
   },
   "operatorUnlock": {
     "error": "Μη έγκυρο διακριτικό χειριστή. Ελέγξτε το MOTRIX_OPERATOR_TOKEN ή το <dataDir>/operator-token στον κεντρικό υπολογιστή και δοκιμάστε ξανά.",
@@ -847,6 +861,8 @@
         "moveQueueUp": "Μετακίνηση προς τα πάνω στην ουρά",
         "openFile": "Άνοιγμα αρχείου",
         "openFileFailed": "Δεν ήταν δυνατό το άνοιγμα του αρχείου",
+        "openFileAppFailed": "Το σύστημα δεν μπόρεσε να ανοίξει αυτό το αρχείο. Ελέγξτε αν η προεπιλεγμένη εφαρμογή είναι ακόμη εγκατεστημένη ή ανοίξτε τον φάκελο για να επιλέξετε άλλη εφαρμογή.",
+        "openFileFailedHint": "Βεβαιωθείτε ότι το αρχείο υπάρχει ακόμη και ότι έχετε δικαίωμα να το ανοίξετε.",
         "openFolder": "Άνοιγμα φακέλου",
         "pause": "Παύση",
         "pauseTooltipBatch": "Παύση — επιλεγμένες εργασίες: {{n}} / {{total}}",
@@ -940,14 +956,24 @@
             "activeSeconds_other": "{{count}} δευτερόλεπτα",
             "noDataQualityIssues": "Δεν υπάρχουν προειδοποιήσεις παρακολούθησης.",
             "sampleCount_one": "{{count}} δείγμα",
-            "sampleCount_other": "{{count}} δείγματα"
+            "sampleCount_other": "{{count}} δείγματα",
+            "noSamples": "Χωρίς δείγματα",
+            "overview": "Επισκόπηση ιστορικού",
+            "rangeStart": "Αρχή εύρους",
+            "rangeEnd": "Τέλος εύρους",
+            "earlier": "Παλαιότερο ιστορικό",
+            "later": "Νεότερο ιστορικό",
+            "zoomIn": "Μεγέθυνση",
+            "zoomOut": "Σμίκρυνση",
+            "showAll": "Εμφάνιση όλων",
+            "following": "Παρακολούθηση νεότερων",
+            "followLatest": "Στα νεότερα"
           },
           "collecting": "Συλλογή δεδομένων μεταφοράς…",
-          "coverageGap": "Η παρακολούθηση διακόπηκε.",
           "download": "Λήψη",
           "lifetimeEmpty": "Το συνολικό ιστορικό δεν είναι ακόμη διαθέσιμο.",
           "loading": "Φόρτωση δραστηριότητας…",
-          "noSessionHistory": "Δεν καταγράφηκε μεταφορά σε αυτή τη συνεδρία της εφαρμογής.",
+          "noSessionHistory": "Δεν έχει καταγραφεί πρόσφατη μεταφορά.",
           "noTraffic": "Δεν υπάρχει κίνηση δικτύου αυτή τη στιγμή.",
           "notAvailable": "Μη διαθέσιμο",
           "range": {
@@ -956,7 +982,7 @@
             "label": "Χρονικό εύρος μεταφοράς",
             "latest": "Τελευταία 60 δευτερόλεπτα",
             "lifetime": "Συνολικά",
-            "session": "Συνεδρία (60 δευτ.)"
+            "session": "Τελευταία 60 δ."
           },
           "retry": "Επανάληψη",
           "stale": {
@@ -1011,7 +1037,7 @@
           },
           "transferTitle": {
             "lifetime": "Συνολική μεταφορά",
-            "session": "Μεταφορά συνεδρίας"
+            "session": "Πρόσφατη μεταφορά"
           },
           "unavailable": "Η συνολική δραστηριότητα δεν είναι διαθέσιμη.",
           "upload": "Αποστολή"
@@ -1347,6 +1373,8 @@
       "advanced": "Για προχωρημένους",
       "attentionGeneric": "Δείτε τις καταγραφές για λεπτομέρειες.",
       "attentionTitle": "Αυτό το πρόσθετο ανέφερε ένα πρόβλημα",
+      "runtimeStartFailed": "Δεν ήταν δυνατή η εκκίνηση του περιβάλλοντος εκτέλεσης της προσθήκης",
+      "runtimeFailed": "Το περιβάλλον εκτέλεσης της προσθήκης σταμάτησε απροσδόκητα",
       "author": "Δημιουργός",
       "back": "Όλα τα πρόσθετα",
       "disabled": "Απενεργοποιημένο",
@@ -1550,6 +1578,7 @@
     "lead": "Προσθέστε μικρές λειτουργίες στο Motrix. Κρατήστε όσες εμπιστεύεστε και απενεργοποιήστε τις υπόλοιπες.",
     "logs": {
       "clear": "Εκκαθάριση",
+      "clearFailed": "Δεν ήταν δυνατή η εκκαθάριση των αρχείων καταγραφής. Δοκιμάστε ξανά.",
       "copy": "Αντιγραφή αρχείων καταγραφής με απόκρυψη στοιχείων",
       "empty": "Δεν υπάρχουν ακόμη εγγραφές καταγραφής",
       "emptyFiltered": "Δεν υπάρχουν εγγραφές που να αντιστοιχούν σε αυτό το επίπεδο.",
@@ -1819,6 +1848,14 @@
         "secret": "Μυστικό RPC",
         "secretDesc": "Απαιτείται για τις συνδέσεις RPC.",
         "title": "RPC"
+      },
+      "configFile": {
+        "title": "Αρχείο ρυθμίσεων",
+        "serverTitle": "Αρχείο ρυθμίσεων διακομιστή",
+        "openDirectory": "Άνοιγμα φακέλου",
+        "copyPath": "Αντιγραφή διαδρομής",
+        "copied": "Αντιγράφηκε",
+        "actionFailed": "Η ενέργεια δεν ολοκληρώθηκε. Δοκιμάστε ξανά."
       }
     },
     "appearance": {
@@ -3081,6 +3118,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Μπορείτε να κάνετε τη μεταφορά αργότερα από {{settings}} → {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

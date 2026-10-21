@@ -377,13 +377,27 @@
         "unknownOption": "خيار سطر أوامر غير معروف."
       }
     },
-    "help": "الاستخدام:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nيتصل الأمر بخادم Motrix الجاري فقط عبر واجهة الاسترجاع داخل الحاوية.",
+    "help": "الاستخدام:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nيتصل الأمر بخادم Motrix الجاري فقط عبر واجهة الاسترجاع داخل الحاوية.",
     "pending": {
       "none": "لا توجد طلبات اقتران معلّقة.",
       "row": "{{userCode}}  {{clientName}}  {{clientVersion}}  تنتهي الصلاحية خلال {{ttl}}",
       "ttl": "{{minutes}} د {{seconds}} ث"
     },
-    "usageHint": "شغّل `motrix-admin --help` لعرض طريقة الاستخدام."
+    "usageHint": "شغّل `motrix-admin --help` لعرض طريقة الاستخدام.",
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
+    }
   },
   "operatorUnlock": {
     "error": "رمز المشغّل غير صالح. تحقق من MOTRIX_OPERATOR_TOKEN أو <dataDir>/operator-token على المضيف وحاول مجددًا.",
@@ -859,6 +873,8 @@
         "moveQueueUp": "نقل لأعلى في قائمة الانتظار",
         "openFile": "فتح الملف",
         "openFileFailed": "تعذّر فتح الملف",
+        "openFileAppFailed": "تعذّر على النظام فتح هذا الملف. تأكد من أن التطبيق الافتراضي لا يزال مثبّتًا، أو استخدم فتح المجلد لاختيار تطبيق آخر.",
+        "openFileFailedHint": "تأكد من أن الملف لا يزال موجودًا وأن لديك إذنًا بفتحه.",
         "openFolder": "فتح المجلد",
         "pause": "إيقاف مؤقت",
         "pauseTooltipBatch": "إيقاف مؤقت: {{n}} من المهام المحددة ({{total}})",
@@ -960,14 +976,24 @@
             "sampleCount_one": "العينات: {{count}}",
             "sampleCount_other": "العينات: {{count}}",
             "sampleCount_two": "العينات: {{count}}",
-            "sampleCount_zero": "العينات: {{count}}"
+            "sampleCount_zero": "العينات: {{count}}",
+            "noSamples": "لا توجد عينات",
+            "overview": "نظرة عامة على السجل",
+            "rangeStart": "بداية النطاق",
+            "rangeEnd": "نهاية النطاق",
+            "earlier": "سجل أقدم",
+            "later": "سجل أحدث",
+            "zoomIn": "تكبير",
+            "zoomOut": "تصغير",
+            "showAll": "عرض الكل",
+            "following": "متابعة الأحدث",
+            "followLatest": "العودة إلى الأحدث"
           },
           "collecting": "جارٍ جمع بيانات النقل…",
-          "coverageGap": "انقطع التتبع.",
           "download": "تنزيل",
           "lifetimeEmpty": "سجل المدة الكاملة غير متاح بعد.",
           "loading": "جارٍ تحميل النشاط…",
-          "noSessionHistory": "لم يُسجّل نقل بيانات في جلسة التطبيق هذه.",
+          "noSessionHistory": "لم يُسجَّل نقل حديث.",
           "noTraffic": "لا توجد حركة بيانات عبر الشبكة حاليًا.",
           "notAvailable": "غير متاح",
           "range": {
@@ -980,7 +1006,7 @@
             "label": "الفترة الزمنية للنقل",
             "latest": "آخر 60 ثانية",
             "lifetime": "المدة الكاملة",
-            "session": "الجلسة (60 ث)"
+            "session": "آخر 60 ثانية"
           },
           "retry": "إعادة المحاولة",
           "stale": {
@@ -1043,7 +1069,7 @@
           },
           "transferTitle": {
             "lifetime": "النقل طوال المدة",
-            "session": "النقل خلال الجلسة"
+            "session": "النقل الأخير"
           },
           "unavailable": "نشاط المدة الكاملة غير متاح.",
           "upload": "الرفع"
@@ -1399,6 +1425,8 @@
       "advanced": "متقدم",
       "attentionGeneric": "راجع السجلات للتفاصيل.",
       "attentionTitle": "أبلغت هذه الإضافة عن مشكلة",
+      "runtimeStartFailed": "تعذر بدء بيئة تشغيل الإضافة",
+      "runtimeFailed": "توقفت بيئة تشغيل الإضافة بشكل غير متوقع",
       "author": "المؤلف",
       "back": "كل الإضافات",
       "disabled": "معطّلة",
@@ -1618,6 +1646,7 @@
     "lead": "أضف ميزات صغيرة إلى Motrix. احتفظ بالإضافات التي تثق بها، وعطّل الباقي.",
     "logs": {
       "clear": "مسح",
+      "clearFailed": "تعذر مسح السجلات. حاول مرة أخرى.",
       "copy": "نسخ السجلات بعد حجب البيانات الحساسة",
       "empty": "لا توجد إدخالات في السجل بعد",
       "emptyFiltered": "لا توجد إدخالات تطابق هذا المستوى.",
@@ -1895,6 +1924,14 @@
         "secret": "رمز RPC السري",
         "secretDesc": "مطلوب لاتصالات RPC.",
         "title": "RPC"
+      },
+      "configFile": {
+        "title": "ملف الإعدادات",
+        "serverTitle": "ملف إعدادات الخادم",
+        "openDirectory": "فتح المجلد",
+        "copyPath": "نسخ المسار",
+        "copied": "تم النسخ",
+        "actionFailed": "تعذّر إكمال العملية. حاول مرة أخرى."
       }
     },
     "appearance": {
@@ -3169,6 +3206,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "يمكنك الترحيل لاحقًا من {{settings}} ← {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

@@ -373,13 +373,27 @@
         "unknownOption": "Onbekende opdrachtregeloptie."
       }
     },
-    "help": "Gebruik:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nDe opdracht communiceert alleen met de actieve Motrix-server via de loopbackinterface van de container.",
+    "help": "Gebruik:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nDe opdracht communiceert alleen met de actieve Motrix-server via de loopbackinterface van de container.",
     "pending": {
       "none": "Geen koppelingsverzoeken in behandeling.",
       "row": "{{userCode}}  {{clientName}}  {{clientVersion}}  verloopt over {{ttl}}",
       "ttl": "{{minutes}}m {{seconds}}s"
     },
-    "usageHint": "Voer `motrix-admin --help` uit voor gebruiksinstructies."
+    "usageHint": "Voer `motrix-admin --help` uit voor gebruiksinstructies.",
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
+    }
   },
   "operatorUnlock": {
     "error": "Ongeldig operatortoken. Controleer MOTRIX_OPERATOR_TOKEN of <dataDir>/operator-token op de host en probeer het opnieuw.",
@@ -847,6 +861,8 @@
         "moveQueueUp": "Omhoog in wachtrij",
         "openFile": "Bestand openen",
         "openFileFailed": "Het bestand kon niet worden geopend",
+        "openFileAppFailed": "Het systeem kon dit bestand niet openen. Controleer of de standaardapp nog is geïnstalleerd of open de map om een andere app te kiezen.",
+        "openFileFailedHint": "Controleer of het bestand nog bestaat en of je toestemming hebt om het te openen.",
         "openFolder": "Map openen",
         "pause": "Pauzeren",
         "pauseTooltipBatch": "{{n}} van de {{total}} geselecteerde taken pauzeren",
@@ -940,14 +956,24 @@
             "activeSeconds_other": "{{count}} seconden",
             "noDataQualityIssues": "Geen registratiewaarschuwingen.",
             "sampleCount_one": "{{count}} meetpunt",
-            "sampleCount_other": "{{count}} meetpunten"
+            "sampleCount_other": "{{count}} meetpunten",
+            "noSamples": "Geen meetpunten",
+            "overview": "Geschiedenisoverzicht",
+            "rangeStart": "Begin van bereik",
+            "rangeEnd": "Einde van bereik",
+            "earlier": "Oudere geschiedenis",
+            "later": "Nieuwere geschiedenis",
+            "zoomIn": "Inzoomen",
+            "zoomOut": "Uitzoomen",
+            "showAll": "Alles tonen",
+            "following": "Nieuwste gegevens volgen",
+            "followLatest": "Terug naar nieuwste"
           },
           "collecting": "Overdrachtsgegevens verzamelen…",
-          "coverageGap": "De registratie is onderbroken.",
           "download": "Download",
           "lifetimeEmpty": "De geschiedenis over de gehele looptijd is nog niet beschikbaar.",
           "loading": "Activiteit laden…",
-          "noSessionHistory": "Geen gegevensoverdracht geregistreerd in deze appsessie.",
+          "noSessionHistory": "Geen recente overdracht vastgelegd.",
           "noTraffic": "Momenteel geen netwerkverkeer.",
           "notAvailable": "Niet beschikbaar",
           "range": {
@@ -956,7 +982,7 @@
             "label": "Tijdsbereik van gegevensoverdracht",
             "latest": "Laatste 60 seconden",
             "lifetime": "Gehele looptijd",
-            "session": "Sessie (60 s)"
+            "session": "Laatste 60 s"
           },
           "retry": "Opnieuw proberen",
           "stale": {
@@ -1011,7 +1037,7 @@
           },
           "transferTitle": {
             "lifetime": "Overdracht over de gehele looptijd",
-            "session": "Overdracht in deze sessie"
+            "session": "Recente overdracht"
           },
           "unavailable": "Activiteit over de gehele looptijd is niet beschikbaar.",
           "upload": "Upload"
@@ -1347,6 +1373,8 @@
       "advanced": "Geavanceerd",
       "attentionGeneric": "Bekijk de logboeken voor details.",
       "attentionTitle": "Deze plug-in heeft een probleem gemeld",
+      "runtimeStartFailed": "De uitvoeromgeving van de plug-in kon niet starten",
+      "runtimeFailed": "De uitvoeromgeving van de plug-in is onverwacht gestopt",
       "author": "Auteur",
       "back": "Alle plug-ins",
       "disabled": "Uitgeschakeld",
@@ -1550,6 +1578,7 @@
     "lead": "Voeg kleine functies toe aan Motrix. Laat de plug-ins die je vertrouwt ingeschakeld en schakel de rest uit.",
     "logs": {
       "clear": "Wissen",
+      "clearFailed": "De logboeken konden niet worden gewist. Probeer het opnieuw.",
       "copy": "Geredigeerde logboeken kopiëren",
       "empty": "Nog geen logboekvermeldingen",
       "emptyFiltered": "Geen vermeldingen op dit niveau.",
@@ -1819,6 +1848,14 @@
         "secret": "RPC-geheim",
         "secretDesc": "Vereist voor RPC-verbindingen.",
         "title": "RPC"
+      },
+      "configFile": {
+        "title": "Configuratiebestand",
+        "serverTitle": "Serverconfiguratiebestand",
+        "openDirectory": "Map openen",
+        "copyPath": "Pad kopiëren",
+        "copied": "Gekopieerd",
+        "actionFailed": "De actie kon niet worden voltooid. Probeer het opnieuw."
       }
     },
     "appearance": {
@@ -3081,6 +3118,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Je kunt later migreren via {{settings}} → {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

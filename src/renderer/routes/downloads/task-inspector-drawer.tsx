@@ -1,5 +1,6 @@
 import { CopyButton } from '@renderer/components/desktop-kit/copy-button'
 import { InspectorDrawer } from '@renderer/components/desktop-kit/inspector-drawer'
+import { MiddleEllipsis } from '@renderer/components/desktop-kit/middle-ellipsis'
 import type { SelectionStore } from '@renderer/components/desktop-kit/selection/types'
 import {
   ActivityIcon,
@@ -27,6 +28,7 @@ import {
 import { LegacyFreshDownload } from '@renderer/features/legacy-import/legacy-fresh-download'
 import { createTaskInspectorActivitySnapshotCache } from '@renderer/hooks/use-task-inspector-activity'
 import { transport } from '@renderer/lib/transport'
+import { formatNativePath } from '@shared/lib/path-display'
 import { Commands } from '@shared/protocol/commands'
 import type { DownloadTask } from '@shared/types/task'
 import { TaskType } from '@shared/types/task'
@@ -69,6 +71,10 @@ export function TaskInspectorDrawer({
   const snap = useDownloadsView((s) => s.inspectorSnap)
   const setSnap = useDownloadsView((s) => s.setInspectorSnap)
   const single = selected.length === 1 ? selected[0] : null
+  const taskPath = formatNativePath(
+    single?.finalPath || single?.diskPath || '',
+    transport.platform
+  )
   const isBt = single?.type === TaskType.Bt || single?.type === TaskType.Magnet
   const showPieces = single !== null && canInspectPieces(single)
   const subtab = useDownloadsView((s) => s.inspectorTab)
@@ -153,14 +159,17 @@ export function TaskInspectorDrawer({
                             }
                           >
                             <DiskIcon className="me-1 size-3.5 shrink-0 text-muted-foreground" />
-                            <span className="truncate">
-                              {single.finalPath || single.diskPath}
-                            </span>
+                            <MiddleEllipsis
+                              text={taskPath}
+                              maxChars={64}
+                              className="font-sans!"
+                            />
                           </Button>
                           <CopyButton
                             variant="ghost"
+                            aria-label={t('panel.downloads.action.copyPath')}
                             className="ms-1 h-4.5 w-4.5 shrink-0 rounded-md p-0 has-[>svg]:px-0 [&_svg:not([class*='size-'])]:size-3"
-                            content={single.finalPath || single.diskPath}
+                            content={taskPath}
                           />
                         </div>
                       )}

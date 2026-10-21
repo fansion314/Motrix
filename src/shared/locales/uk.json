@@ -375,13 +375,27 @@
         "unknownOption": "Невідомий параметр командного рядка."
       }
     },
-    "help": "Використання:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nКоманда звертається лише до запущеного сервера Motrix через петльовий інтерфейс контейнера.",
+    "help": "Використання:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nКоманда звертається лише до запущеного сервера Motrix через петльовий інтерфейс контейнера.",
     "pending": {
       "none": "Немає запитів на сполучення, що очікують рішення.",
       "row": "{{userCode}}  {{clientName}}  {{clientVersion}}  спливає через {{ttl}}",
       "ttl": "{{minutes}} хв {{seconds}} с"
     },
-    "usageHint": "Виконайте `motrix-admin --help`, щоб переглянути довідку."
+    "usageHint": "Виконайте `motrix-admin --help`, щоб переглянути довідку.",
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
+    }
   },
   "operatorUnlock": {
     "error": "Некоректний токен оператора. Перевірте MOTRIX_OPERATOR_TOKEN або <dataDir>/operator-token на хості та спробуйте ще раз.",
@@ -853,6 +867,8 @@
         "moveQueueUp": "Перемістити вище в черзі",
         "openFile": "Відкрити файл",
         "openFileFailed": "Не вдалося відкрити файл",
+        "openFileAppFailed": "Системі не вдалося відкрити цей файл. Перевірте, чи досі встановлено типову програму, або відкрийте теку, щоб вибрати іншу програму.",
+        "openFileFailedHint": "Перевірте, чи файл досі існує і чи маєте ви дозвіл на його відкриття.",
         "openFolder": "Відкрити теку",
         "pause": "Призупинити",
         "pauseTooltipBatch": "Призупинити {{n}} з {{total}} вибраних",
@@ -950,14 +966,24 @@
             "sampleCount_few": "{{count}} вимірювання",
             "sampleCount_many": "{{count}} вимірювань",
             "sampleCount_one": "{{count}} вимірювання",
-            "sampleCount_other": "{{count}} вимірювання"
+            "sampleCount_other": "{{count}} вимірювання",
+            "noSamples": "Немає вимірювань",
+            "overview": "Огляд історії",
+            "rangeStart": "Початок діапазону",
+            "rangeEnd": "Кінець діапазону",
+            "earlier": "Раніша історія",
+            "later": "Пізніша історія",
+            "zoomIn": "Збільшити",
+            "zoomOut": "Зменшити",
+            "showAll": "Показати все",
+            "following": "Відстеження нових даних",
+            "followLatest": "До останніх даних"
           },
           "collecting": "Збирання даних про передавання…",
-          "coverageGap": "Відстеження переривалося.",
           "download": "Завантаження",
           "lifetimeEmpty": "Історія за весь час ще недоступна.",
           "loading": "Завантаження даних активності…",
-          "noSessionHistory": "У цьому сеансі програми передавання не зафіксовано.",
+          "noSessionHistory": "Нещодавні передачі не записані.",
           "noTraffic": "Зараз немає мережевого трафіку.",
           "notAvailable": "Недоступно",
           "range": {
@@ -968,7 +994,7 @@
             "label": "Період передавання даних",
             "latest": "Останні 60 секунд",
             "lifetime": "За весь час",
-            "session": "Сеанс (60 с)"
+            "session": "Останні 60 с"
           },
           "retry": "Спробувати ще раз",
           "stale": {
@@ -1027,7 +1053,7 @@
           },
           "transferTitle": {
             "lifetime": "Передавання за весь час",
-            "session": "Передавання за сеанс"
+            "session": "Нещодавня передача"
           },
           "unavailable": "Дані активності за весь час недоступні.",
           "upload": "Вивантаження"
@@ -1373,6 +1399,8 @@
       "advanced": "Додатково",
       "attentionGeneric": "Подробиці дивіться в журналах.",
       "attentionTitle": "Цей плагін повідомив про проблему",
+      "runtimeStartFailed": "Не вдалося запустити середовище виконання плагіна",
+      "runtimeFailed": "Середовище виконання плагіна несподівано зупинилося",
       "author": "Автор",
       "back": "Усі плагіни",
       "disabled": "Вимкнено",
@@ -1584,6 +1612,7 @@
     "lead": "Додавайте невеликі можливості до Motrix. Залишайте довірені плагіни, решту вимикайте.",
     "logs": {
       "clear": "Очистити",
+      "clearFailed": "Не вдалося очистити журнали. Спробуйте ще раз.",
       "copy": "Копіювати журнали з прихованими даними",
       "empty": "У журналі ще немає записів",
       "emptyFiltered": "Немає записів цього рівня.",
@@ -1857,6 +1886,14 @@
         "secret": "Секрет RPC",
         "secretDesc": "Потрібен для RPC-з'єднань.",
         "title": "RPC"
+      },
+      "configFile": {
+        "title": "Файл налаштувань",
+        "serverTitle": "Файл налаштувань сервера",
+        "openDirectory": "Відкрити теку",
+        "copyPath": "Копіювати шлях",
+        "copied": "Скопійовано",
+        "actionFailed": "Не вдалося виконати дію. Спробуйте ще раз."
       }
     },
     "appearance": {
@@ -3125,6 +3162,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Ви можете виконати перенесення пізніше в розділі {{settings}} → {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

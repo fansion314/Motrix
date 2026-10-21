@@ -7,7 +7,7 @@
     "submit": "잠금 해제"
   },
   "operatorAdmin": {
-    "help": "사용법:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\n이 명령은 컨테이너 루프백을 통해 실행 중인 Motrix 서버와만 통신합니다.",
+    "help": "사용법:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\n이 명령은 컨테이너 루프백을 통해 실행 중인 Motrix 서버와만 통신합니다.",
     "errorPrefix": "motrix-admin: {{message}}",
     "usageHint": "사용법을 보려면 `motrix-admin --help`를 실행하세요.",
     "pending": {
@@ -55,6 +55,20 @@
         "loopback": "컨테이너 루프백에서 실행 중인 Motrix 서버에 연결할 수 없습니다.",
         "approvalNotReady": "실행 중인 Motrix 서버의 페어링 승인이 아직 준비되지 않았습니다."
       }
+    },
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
     }
   },
   "common": {
@@ -686,18 +700,17 @@
         },
         "activity": {
           "transferTitle": {
-            "session": "세션 전송량",
+            "session": "최근 전송",
             "lifetime": "전체 전송량"
           },
           "download": "다운로드",
           "upload": "업로드",
           "loading": "활동을 불러오는 중…",
           "collecting": "전송 데이터를 수집하는 중…",
-          "noSessionHistory": "이번 앱 세션에 기록된 전송량이 없습니다.",
+          "noSessionHistory": "최근 전송 기록이 없습니다.",
           "lifetimeEmpty": "아직 전체 기간 기록을 사용할 수 없습니다.",
           "noTraffic": "현재 네트워크 트래픽이 없습니다.",
           "unavailable": "전체 기간 활동을 사용할 수 없습니다.",
-          "coverageGap": "기록 수집이 중단되었습니다.",
           "retry": "다시 시도",
           "notAvailable": "사용할 수 없음",
           "stale": {
@@ -706,7 +719,7 @@
           },
           "range": {
             "label": "전송 시간 범위",
-            "session": "세션(60초)",
+            "session": "최근 60초",
             "lifetime": "전체 기간",
             "latest": "최근 60초",
             "adaptive_other": "적응형 해상도 · 표본 {{count}}개"
@@ -759,7 +772,18 @@
             "accessibleSummary": "{{range}}, {{start}}~{{end}}. 최근 다운로드 {{download}}, 업로드 {{upload}}. 전체 기간 평균 다운로드 {{average}}, 최고 다운로드 {{peak}}, 실제 전송 시간 {{activeDuration}}. {{sampleLabel}}. {{state}}",
             "activeSeconds_other": "{{count}}초",
             "sampleCount_other": "표본 {{count}}개",
-            "noDataQualityIssues": "기록 관련 경고가 없습니다."
+            "noDataQualityIssues": "기록 관련 경고가 없습니다.",
+            "noSamples": "샘플 없음",
+            "overview": "전체 기록 개요",
+            "rangeStart": "범위 시작",
+            "rangeEnd": "범위 끝",
+            "earlier": "이전 기록",
+            "later": "이후 기록",
+            "zoomIn": "확대",
+            "zoomOut": "축소",
+            "showAll": "전체 보기",
+            "following": "최신 데이터 추적 중",
+            "followLatest": "최신으로 이동"
           }
         },
         "pieces": {
@@ -891,6 +915,8 @@
         "removeMixedTitle": "작업 {{count}}개를 제거하시겠습니까?",
         "openFile": "파일 열기",
         "openFileFailed": "파일을 열지 못했습니다",
+        "openFileAppFailed": "시스템에서 이 파일을 열 수 없습니다. 기본 앱이 여전히 설치되어 있는지 확인하거나 폴더를 열어 다른 앱을 선택하세요.",
+        "openFileFailedHint": "파일이 여전히 존재하고 파일을 열 권한이 있는지 확인하세요.",
         "chooseFiles": "파일 선택…",
         "queueOrder": "다운로드 순서",
         "moveQueueTop": "맨 앞으로 이동",
@@ -1334,7 +1360,15 @@
         "historyCountHint": "오래된 복구 기록은 제거됩니다.",
         "historyCountPositive": "0보다 큰 숫자를 입력하세요."
       },
-      "description": "RPC, 진행 상황 및 복구"
+      "description": "RPC, 진행 상황 및 복구",
+      "configFile": {
+        "title": "설정 파일",
+        "serverTitle": "서버 설정 파일",
+        "openDirectory": "폴더 열기",
+        "copyPath": "경로 복사",
+        "copied": "복사됨",
+        "actionFailed": "작업을 완료하지 못했습니다. 다시 시도하세요."
+      }
     },
     "about": {
       "appIconAlt": "Motrix 앱 아이콘",
@@ -2414,6 +2448,8 @@
       "accessHosts_other": "웹사이트 {{count}}개 읽기 가능",
       "accessBroad": "모든 웹사이트 읽기 가능",
       "attentionTitle": "이 플러그인이 문제를 보고했습니다",
+      "runtimeStartFailed": "플러그인 실행 환경을 시작할 수 없습니다",
+      "runtimeFailed": "플러그인 실행 환경이 예기치 않게 중지되었습니다",
       "attentionGeneric": "자세한 내용은 로그를 확인하세요.",
       "viewIssue": "문제 보기",
       "removeTitle": "플러그인 제거",
@@ -2443,6 +2479,7 @@
       },
       "copy": "민감 정보를 가린 로그 복사",
       "clear": "지우기",
+      "clearFailed": "로그를 지울 수 없습니다. 다시 시도하세요.",
       "output": "실시간 출력",
       "entryCount_other": "항목 {{count}}개",
       "empty": "아직 로그 항목이 없습니다",
@@ -3059,6 +3096,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "나중에 {{settings}} → {{advanced}}에서 마이그레이션할 수 있습니다.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

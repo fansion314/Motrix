@@ -7,7 +7,7 @@
     "submit": "Unlock"
   },
   "operatorAdmin": {
-    "help": "Usage:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nThe command talks only to the running Motrix server over container loopback.",
+    "help": "Usage:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nThe command talks only to the running Motrix server over container loopback.",
     "errorPrefix": "motrix-admin: {{message}}",
     "usageHint": "Run `motrix-admin --help` for usage.",
     "pending": {
@@ -55,6 +55,20 @@
         "loopback": "The running Motrix server is unavailable on container loopback.",
         "approvalNotReady": "Pairing approval is not ready in the running Motrix server."
       }
+    },
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
     }
   },
   "common": {
@@ -689,18 +703,17 @@
         },
         "activity": {
           "transferTitle": {
-            "session": "Session transfer",
+            "session": "Recent transfer",
             "lifetime": "Lifetime transfer"
           },
           "download": "Download",
           "upload": "Upload",
           "loading": "Loading activity…",
           "collecting": "Collecting transfer data…",
-          "noSessionHistory": "No transfer recorded in this app session.",
+          "noSessionHistory": "No recent transfer recorded.",
           "lifetimeEmpty": "Lifetime history is not available yet.",
           "noTraffic": "No network traffic right now.",
           "unavailable": "Lifetime activity is unavailable.",
-          "coverageGap": "Tracking was interrupted.",
           "retry": "Retry",
           "notAvailable": "Not available",
           "stale": {
@@ -709,7 +722,7 @@
           },
           "range": {
             "label": "Transfer time range",
-            "session": "Session(60s)",
+            "session": "Last 60s",
             "lifetime": "Lifetime",
             "latest": "Latest 60 seconds",
             "adaptive_one": "Adaptive resolution · {{count}} sample",
@@ -767,7 +780,18 @@
             "activeSeconds_other": "{{count}} seconds",
             "sampleCount_one": "{{count}} sample",
             "sampleCount_other": "{{count}} samples",
-            "noDataQualityIssues": "No tracking warnings."
+            "noDataQualityIssues": "No tracking warnings.",
+            "noSamples": "No samples",
+            "overview": "History overview",
+            "rangeStart": "Range start",
+            "rangeEnd": "Range end",
+            "earlier": "Earlier history",
+            "later": "Later history",
+            "zoomIn": "Zoom in",
+            "zoomOut": "Zoom out",
+            "showAll": "Show all",
+            "following": "Following latest",
+            "followLatest": "Back to latest"
           }
         },
         "pieces": {
@@ -903,6 +927,8 @@
         "removeMixedTitle": "Remove {{count}} tasks?",
         "openFile": "Open file",
         "openFileFailed": "Could not open file",
+        "openFileAppFailed": "The system could not open this file. Check that its default app is still installed, or use Open folder to choose another app.",
+        "openFileFailedHint": "Check that the file still exists and you have permission to open it.",
         "chooseFiles": "Choose files…",
         "queueOrder": "Download order",
         "moveQueueTop": "Move to Front",
@@ -1348,7 +1374,15 @@
         "historyCountHint": "Older recovery records are removed.",
         "historyCountPositive": "Enter a number greater than 0."
       },
-      "description": "RPC, progress and recovery"
+      "description": "RPC, progress and recovery",
+      "configFile": {
+        "title": "Configuration file",
+        "serverTitle": "Server configuration file",
+        "openDirectory": "Open folder",
+        "copyPath": "Copy path",
+        "copied": "Copied",
+        "actionFailed": "Couldn’t complete the action. Try again."
+      }
     },
     "about": {
       "appIconAlt": "Motrix app icon",
@@ -2432,6 +2466,8 @@
       "accessHosts_other": "Can read {{count}} websites",
       "accessBroad": "Can read any website",
       "attentionTitle": "This plugin reported a problem",
+      "runtimeStartFailed": "Plugin runtime could not start",
+      "runtimeFailed": "Plugin runtime stopped unexpectedly",
       "attentionGeneric": "See logs for details.",
       "viewIssue": "View issue",
       "removeTitle": "Remove plugin",
@@ -2461,6 +2497,7 @@
       },
       "copy": "Copy redacted logs",
       "clear": "Clear",
+      "clearFailed": "Couldn’t clear logs. Try again.",
       "output": "Live output",
       "entryCount_one": "{{count}} entry",
       "entryCount_other": "{{count}} entries",
@@ -3081,6 +3118,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "You can migrate later from {{settings}} → {{advanced}}.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

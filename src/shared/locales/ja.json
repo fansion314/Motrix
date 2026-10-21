@@ -7,7 +7,7 @@
     "submit": "ロックを解除"
   },
   "operatorAdmin": {
-    "help": "使い方:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nこのコマンドは、コンテナーのループバック経由で、実行中の Motrix サーバーとのみ通信します。",
+    "help": "使い方:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nこのコマンドは、コンテナーのループバック経由で、実行中の Motrix サーバーとのみ通信します。",
     "errorPrefix": "motrix-admin: {{message}}",
     "usageHint": "使い方を確認するには `motrix-admin --help` を実行してください。",
     "pending": {
@@ -55,6 +55,20 @@
         "loopback": "コンテナーのループバックから実行中の Motrix サーバーに接続できません。",
         "approvalNotReady": "実行中の Motrix サーバーでペアリング承認の準備ができていません。"
       }
+    },
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
     }
   },
   "common": {
@@ -686,18 +700,17 @@
         },
         "activity": {
           "transferTitle": {
-            "session": "セッションの転送量",
+            "session": "最近の転送",
             "lifetime": "全期間の転送量"
           },
           "download": "ダウンロード",
           "upload": "アップロード",
           "loading": "アクティビティを読み込み中…",
           "collecting": "転送データを収集中…",
-          "noSessionHistory": "アプリのこのセッションには転送記録がありません。",
+          "noSessionHistory": "最近の転送記録はありません。",
           "lifetimeEmpty": "全期間の履歴はまだありません。",
           "noTraffic": "現在、ネットワーク通信はありません。",
           "unavailable": "全期間のアクティビティを取得できません。",
-          "coverageGap": "記録が中断されました。",
           "retry": "再試行",
           "notAvailable": "利用不可",
           "stale": {
@@ -706,7 +719,7 @@
           },
           "range": {
             "label": "転送量の表示期間",
-            "session": "セッション（60 秒）",
+            "session": "直近60秒",
             "lifetime": "全期間",
             "latest": "直近 60 秒",
             "adaptive_other": "解像度を自動調整 · {{count}} サンプル"
@@ -759,7 +772,18 @@
             "accessibleSummary": "{{range}}：{{start}} から {{end}} まで。直近のダウンロード {{download}}、アップロード {{upload}}。全期間の平均ダウンロード {{average}}、最大ダウンロード {{peak}}、転送時間 {{activeDuration}}。{{sampleLabel}}。{{state}}",
             "activeSeconds_other": "{{count}} 秒",
             "sampleCount_other": "{{count}} サンプル",
-            "noDataQualityIssues": "記録に関する警告はありません。"
+            "noDataQualityIssues": "記録に関する警告はありません。",
+            "noSamples": "サンプルなし",
+            "overview": "履歴の概要",
+            "rangeStart": "範囲の開始",
+            "rangeEnd": "範囲の終了",
+            "earlier": "以前の履歴",
+            "later": "新しい履歴",
+            "zoomIn": "拡大",
+            "zoomOut": "縮小",
+            "showAll": "全体を表示",
+            "following": "最新データに追従中",
+            "followLatest": "最新に戻る"
           }
         },
         "pieces": {
@@ -891,6 +915,8 @@
         "removeMixedTitle": "タスク {{count}} 件を削除しますか？",
         "openFile": "ファイルを開く",
         "openFileFailed": "ファイルを開けませんでした",
+        "openFileAppFailed": "システムでこのファイルを開けませんでした。既定のアプリがまだインストールされているか確認するか、フォルダーを開いて別のアプリを選んでください。",
+        "openFileFailedHint": "ファイルが存在し、開く権限があることを確認してください。",
         "chooseFiles": "ファイルを選択…",
         "queueOrder": "ダウンロード順序",
         "moveQueueTop": "先頭に移動",
@@ -1334,7 +1360,15 @@
         "historyCountHint": "古い復旧記録は削除されます。",
         "historyCountPositive": "0 より大きい数値を入力してください。"
       },
-      "description": "RPC、進捗と復旧"
+      "description": "RPC、進捗と復旧",
+      "configFile": {
+        "title": "設定ファイル",
+        "serverTitle": "サーバー設定ファイル",
+        "openDirectory": "保存先フォルダーを開く",
+        "copyPath": "パスをコピー",
+        "copied": "コピーしました",
+        "actionFailed": "操作を完了できませんでした。もう一度お試しください。"
+      }
     },
     "about": {
       "appIconAlt": "Motrix アプリのアイコン",
@@ -2414,6 +2448,8 @@
       "accessHosts_other": "{{count}} 件の Web サイトを読み取り可能",
       "accessBroad": "すべての Web サイトを読み取り可能",
       "attentionTitle": "このプラグインが問題を報告しました",
+      "runtimeStartFailed": "プラグインの実行環境を起動できませんでした",
+      "runtimeFailed": "プラグインの実行環境が予期せず停止しました",
       "attentionGeneric": "詳細はログを確認してください。",
       "viewIssue": "問題を表示",
       "removeTitle": "プラグインを削除",
@@ -2443,6 +2479,7 @@
       },
       "copy": "機密情報を除いてログをコピー",
       "clear": "クリア",
+      "clearFailed": "ログを消去できませんでした。もう一度お試しください。",
       "output": "リアルタイム出力",
       "entryCount_other": "{{count}} 件",
       "empty": "ログはまだありません",
@@ -3059,6 +3096,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "後で「{{settings}} → {{advanced}}」から移行できます。",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",

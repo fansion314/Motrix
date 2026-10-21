@@ -1,6 +1,10 @@
 import type { ElectronApplication, Locator } from '@playwright/test'
-import { DownloadErrorCode } from '@shared/errors'
+import { DownloadErrorCode, ErrorCode } from '@shared/errors'
 import { Commands } from '@shared/protocol/commands'
+import {
+  makeProtocolFailure,
+  makeProtocolSuccess,
+} from '@shared/protocol/errors'
 import { Events } from '@shared/protocol/events'
 import { Queries } from '@shared/protocol/queries'
 import {
@@ -297,8 +301,8 @@ test('default columns keep the download speed fully visible at minimum window si
     }),
   ])
   const list = mainWindow.getByTestId('virtual-list-container')
-  const header = list.getByRole('columnheader').nth(4)
-  const speed = list.locator('[data-task-id]').getByRole('gridcell').nth(4)
+  const header = list.getByRole('columnheader', { name: /Download speed/ })
+  const speed = list.getByRole('gridcell', { name: '999.9 MB/s', exact: true })
   await expect(speed).toHaveText('999.9 MB/s')
   await header.getByRole('button').click()
   await expect(header).toHaveAttribute('aria-sort', 'descending')
@@ -317,9 +321,11 @@ test('default columns keep the download speed fully visible at minimum window si
           const text = range.getBoundingClientRect()
           return (
             rect.left >= bounds.left &&
-            rect.right <= bounds.right - 8 &&
+            rect.right <= bounds.right &&
             text.left >= rect.left + 8 &&
-            text.right <= rect.right - 8 &&
+            // Cell padding also keeps the text clear of the scrollbar when
+            // the speed column ends at the viewport edge.
+            text.right <= Math.min(rect.right, bounds.right) - 8 &&
             viewport.scrollLeft === 0
           )
         })
@@ -1341,6 +1347,10 @@ test('native list controls preserve selection through context menus, column chan
 
   await grid.getByRole('button', { name: 'Name', exact: true }).focus()
   await mainWindow.keyboard.press('Shift+Tab')
+  await expect(
+    grid.getByRole('checkbox', { name: 'Select All Tasks' })
+  ).toBeFocused()
+  await mainWindow.keyboard.press('Shift+Tab')
   await expect(grid).toBeFocused()
   await expect(grid).toHaveAttribute('data-keyboard-focus', 'true')
   expect(
@@ -1864,28 +1874,32 @@ test('context actions open files, select download files, reorder the queue and c
     files: Queries.GetTaskFiles,
     select: Commands.SetSelectedFiles,
   }
-  await electronApp.evaluate(({ ipcMain }, channels) => {
-    const calls: Array<{ channel: string; payload: unknown }> = []
-    Object.assign(globalThis, { menuActionCalls: calls })
-    for (const channel of Object.values(channels)) {
-      ipcMain.removeHandler(channel)
-      ipcMain.handle(channel, (_event, payload) => {
-        calls.push({ channel, payload })
-        if (channel === channels.files)
-          return [0, 1, 2].map((index) => ({
-            index,
-            path: `File ${index}.bin`,
-            size: 1000,
-            selected: index === 0,
-            completedBytes: 0,
-            uris: [],
-          }))
-        if (channel === channels.move)
-          return { moved: payload.taskIds, unchanged: [], failed: [] }
-        return undefined
-      })
-    }
-  }, channels)
+  await electronApp.evaluate(
+    ({ ipcMain }, { channels, openResult }) => {
+      const calls: Array<{ channel: string; payload: unknown }> = []
+      Object.assign(globalThis, { menuActionCalls: calls })
+      for (const channel of Object.values(channels)) {
+        ipcMain.removeHandler(channel)
+        ipcMain.handle(channel, (_event, payload) => {
+          calls.push({ channel, payload })
+          if (channel === channels.open) return openResult
+          if (channel === channels.files)
+            return [0, 1, 2].map((index) => ({
+              index,
+              path: `File ${index}.bin`,
+              size: 1000,
+              selected: index === 0,
+              completedBytes: 0,
+              uris: [],
+            }))
+          if (channel === channels.move)
+            return { moved: payload.taskIds, unchanged: [], failed: [] }
+          return undefined
+        })
+      }
+    },
+    { channels, openResult: makeProtocolSuccess(null) }
+  )
   const getCalls = () =>
     electronApp.evaluate(
       () =>
@@ -1947,7 +1961,8 @@ test('context actions open files, select download files, reorder the queue and c
   await row('menu-bt').click({ button: 'right' })
   await mainWindow
     .getByRole('menuitem', { name: 'Download order', exact: true })
-    .hover()
+    .focus()
+  await mainWindow.keyboard.press('ArrowRight')
   await expect(
     mainWindow.getByRole('menuitem', { name: 'Move to Front', exact: true })
   ).toBeVisible()
@@ -2016,14 +2031,18 @@ test('inspector opens a completed file in a compact window', async ({
   await setTaskInspectorContentSize(electronApp, mainWindow, 1280, 900)
   await mainWindow.getByRole('link', { name: 'Downloads', exact: true }).click()
   await expect(mainWindow.getByTestId('downloads-loading')).toHaveCount(0)
-  await electronApp.evaluate(({ ipcMain }, channel) => {
-    const calls: unknown[] = []
-    Object.assign(globalThis, { inspectorOpenFileCalls: calls })
-    ipcMain.removeHandler(channel)
-    ipcMain.handle(channel, (_event, payload) => {
-      calls.push(payload)
-    })
-  }, Commands.OpenTaskFile)
+  await electronApp.evaluate(
+    ({ ipcMain }, { channel, result }) => {
+      const calls: unknown[] = []
+      Object.assign(globalThis, { inspectorOpenFileCalls: calls })
+      ipcMain.removeHandler(channel)
+      ipcMain.handle(channel, (_event, payload) => {
+        calls.push(payload)
+        return result
+      })
+    },
+    { channel: Commands.OpenTaskFile, result: makeProtocolSuccess(null) }
+  )
   await publish(electronApp, [
     makeDownloadTask({
       id: 'inspector-completed',
@@ -2064,6 +2083,168 @@ test('inspector opens a completed file in a compact window', async ({
   await inspector.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(inspector).toHaveCount(0)
 })
+
+for (const surface of ['inspector', 'context menu'] as const) {
+  test(`Open file explains an unavailable default app from the ${surface}`, async ({
+    electronApp,
+    mainWindow,
+  }, testInfo) => {
+    await waitForEngineReady(mainWindow)
+    await setTaskInspectorContentSize(electronApp, mainWindow, 1280, 900)
+    await mainWindow
+      .getByRole('link', { name: 'Downloads', exact: true })
+      .click()
+    await expect(mainWindow.getByTestId('downloads-loading')).toHaveCount(0)
+    await electronApp.evaluate(
+      ({ ipcMain }, { channel, failure, success }) => {
+        let failed = false
+        ipcMain.removeHandler(channel)
+        ipcMain.handle(channel, () => {
+          if (failed) return success
+          failed = true
+          return failure
+        })
+      },
+      {
+        channel: Commands.OpenTaskFile,
+        failure: makeProtocolFailure({
+          code: ErrorCode.TaskOpenAppFailed,
+          message: 'No application available',
+        }),
+        success: makeProtocolSuccess(null),
+      }
+    )
+    await publish(electronApp, [
+      makeDownloadTask({
+        id: 'open-file-app-failure',
+        name: 'Completed.bin',
+        status: TaskStatus.Completed,
+        fileCount: 1,
+        finalPath: '/downloads/Completed.bin',
+        diskPath: '/downloads/Completed.bin',
+      }),
+    ])
+    const row = mainWindow.locator('[data-task-id="open-file-app-failure"]')
+    if (surface === 'inspector') {
+      await row.dblclick()
+      await mainWindow
+        .getByRole('button', { name: 'Open file', exact: true })
+        .click()
+    } else {
+      await row.click({ button: 'right' })
+      await mainWindow
+        .getByRole('menuitem', { name: 'Open file', exact: true })
+        .click()
+    }
+    await expect(
+      mainWindow.getByText('Could not open file', { exact: true })
+    ).toBeVisible()
+    await expect(
+      mainWindow.getByText(
+        'The system could not open this file. Check that its default app is still installed, or use Open folder to choose another app.',
+        { exact: true }
+      )
+    ).toBeVisible()
+    await expect(
+      mainWindow.getByText(
+        /Error invoking remote method|No application available|AppError/
+      )
+    ).toHaveCount(0)
+    await expect
+      .poll(() =>
+        mainWindow
+          .getByText('Could not open file', { exact: true })
+          .evaluate(
+            (title) =>
+              getComputedStyle(title.parentElement!.parentElement!).opacity
+          )
+      )
+      .toBe('1')
+    await mainWindow.screenshot({
+      path: testInfo.outputPath('open-file-app-failure.png'),
+      animations: 'disabled',
+    })
+    if (surface === 'inspector') {
+      await expect(
+        mainWindow.getByRole('button', { name: 'Open file', exact: true })
+      ).toBeEnabled()
+      await mainWindow
+        .getByRole('button', { name: 'Open file', exact: true })
+        .click()
+    } else {
+      await row.click({ button: 'right' })
+      await mainWindow
+        .getByRole('menuitem', { name: 'Open file', exact: true })
+        .click()
+      await expect(mainWindow.getByRole('menu')).toHaveCount(0)
+    }
+  })
+}
+
+for (const surface of ['context menu', 'More menu'] as const) {
+  test(`Re-download is available from the ${surface} and opens confirmation`, async ({
+    electronApp,
+    mainWindow,
+  }, testInfo) => {
+    await waitForEngineReady(mainWindow)
+    await setTaskInspectorContentSize(electronApp, mainWindow, 1280, 900)
+    await mainWindow
+      .getByRole('link', { name: 'Downloads', exact: true })
+      .click()
+    await expect(mainWindow.getByTestId('downloads-loading')).toHaveCount(0)
+    await electronApp.evaluate(({ ipcMain }, channel) => {
+      ipcMain.removeHandler(channel)
+      ipcMain.handle(channel, () => ({ exists: true }))
+    }, Queries.CheckTaskFileExists)
+    await publish(electronApp, [
+      makeDownloadTask({
+        id: 'redownload-menu',
+        name: 'Completed.bin',
+        status: TaskStatus.Completed,
+        fileCount: 1,
+        uris: ['https://example.test/Completed.bin'],
+        saveDir: '/downloads',
+        finalName: 'Completed.bin',
+        finalPath: '/downloads/Completed.bin',
+        diskPath: '/downloads/Completed.bin',
+      }),
+    ])
+    const row = mainWindow.locator('[data-task-id="redownload-menu"]')
+    if (surface === 'context menu') await row.click({ button: 'right' })
+    else {
+      await row.click()
+      await mainWindow
+        .getByRole('button', { name: 'More', exact: true })
+        .click()
+    }
+    const action = mainWindow.getByRole('menuitem', {
+      name: 'Re-download',
+      exact: true,
+    })
+    await expect(action).toBeVisible()
+    await expect(action).toBeEnabled()
+    await mainWindow.screenshot({
+      path: testInfo.outputPath('redownload-menu.png'),
+      animations: 'disabled',
+    })
+    await action.click()
+    const dialog = mainWindow.getByRole('alertdialog', {
+      name: 'File Already Exists',
+    })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('Completed.bin')
+    await expect(
+      dialog.getByRole('button', { name: 'Re-download', exact: true })
+    ).toBeEnabled()
+    await mainWindow.screenshot({
+      path: testInfo.outputPath('redownload-confirmation.png'),
+      animations: 'disabled',
+    })
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(row).toBeVisible()
+  })
+}
 
 for (const [locale, downloads, createdColumn] of [
   ['en-US', 'Downloads', 'Date created'],

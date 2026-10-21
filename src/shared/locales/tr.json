@@ -7,7 +7,7 @@
     "submit": "Kilidi aç"
   },
   "operatorAdmin": {
-    "help": "Kullanım:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n\nKomut yalnızca çalışan Motrix sunucusuyla, kapsayıcının geri döngü bağlantısı üzerinden iletişim kurar.",
+    "help": "Kullanım:\n  motrix-admin pairing pending [--json]\n  motrix-admin pairing approve <user-code> [--json]\n  motrix-admin pairing deny <user-code> [--json]\n  motrix-admin extension pair\n\nKomut yalnızca çalışan Motrix sunucusuyla, kapsayıcının geri döngü bağlantısı üzerinden iletişim kurar.",
     "errorPrefix": "motrix-admin: {{message}}",
     "usageHint": "Kullanım bilgisi için `motrix-admin --help` komutunu çalıştırın.",
     "pending": {
@@ -55,6 +55,20 @@
         "loopback": "Çalışan Motrix sunucusuna kapsayıcının geri döngü bağlantısından ulaşılamıyor.",
         "approvalNotReady": "Çalışan Motrix sunucusunda eşleştirme onayı henüz hazır değil."
       }
+    },
+    "extension": {
+      "heading": "Pending browser Extension pairing requests",
+      "identityNotice": "Verify that you initiated this request. Origin and claimed identity alone do not prove who is connecting. Terminal recording can capture the pairing code.",
+      "row": "{{index}}. {{browser}} [{{identity}}] Origin: {{origin}}; claimed ID: {{claimedId}}; Server: {{authority}}; {{seconds}} s remaining",
+      "select": "Enter the number of one request (Ctrl+C to exit): ",
+      "code": "Pairing code: {{code}}",
+      "instructions": "Type this code into the browser Extension. It expires at the original deadline. Ctrl+C closes this view without approving or denying the request.",
+      "none": "No pending Extension pairing requests. Start pairing in the Extension, then run this command again. If requests remain absent, check the remote Extension configuration.",
+      "ended": "The selected pairing request has ended. Check the Extension for its outcome.",
+      "ttyRequired": "Extension pairing requires interactive input, output and error terminals. Piping, redirection and JSON output are not supported.",
+      "cancelled": "Pairing code view closed. No approval or denial was sent.",
+      "invalidSelection": "Select exactly one listed request by its number.",
+      "unavailable": "The selected request expired, ended or changed. Start a new pairing attempt in the Extension."
     }
   },
   "common": {
@@ -689,18 +703,17 @@
         },
         "activity": {
           "transferTitle": {
-            "session": "Oturum aktarımı",
+            "session": "Son aktarım",
             "lifetime": "Tüm zamanlardaki aktarım"
           },
           "download": "İndirme",
           "upload": "Gönderme",
           "loading": "Etkinlik yükleniyor…",
           "collecting": "Aktarım verileri toplanıyor…",
-          "noSessionHistory": "Bu uygulama oturumunda aktarım kaydedilmedi.",
+          "noSessionHistory": "Yakın zamanda kaydedilmiş aktarım yok.",
           "lifetimeEmpty": "Tüm zamanların geçmişi henüz kullanılamıyor.",
           "noTraffic": "Şu anda ağ trafiği yok.",
           "unavailable": "Tüm zamanların etkinliği kullanılamıyor.",
-          "coverageGap": "İzleme kesintiye uğradı.",
           "retry": "Yeniden dene",
           "notAvailable": "Kullanılamıyor",
           "stale": {
@@ -709,7 +722,7 @@
           },
           "range": {
             "label": "Aktarım zaman aralığı",
-            "session": "Oturum (60 sn)",
+            "session": "Son 60 sn",
             "lifetime": "Tüm zamanlar",
             "latest": "Son 60 saniye",
             "adaptive_one": "Uyarlanabilir çözünürlük · {{count}} örnek",
@@ -767,7 +780,18 @@
             "activeSeconds_other": "{{count}} saniye",
             "sampleCount_one": "{{count}} örnek",
             "sampleCount_other": "{{count}} örnek",
-            "noDataQualityIssues": "İzleme uyarısı yok."
+            "noDataQualityIssues": "İzleme uyarısı yok.",
+            "noSamples": "Örnek yok",
+            "overview": "Geçmişe genel bakış",
+            "rangeStart": "Aralık başlangıcı",
+            "rangeEnd": "Aralık sonu",
+            "earlier": "Daha eski geçmiş",
+            "later": "Daha yeni geçmiş",
+            "zoomIn": "Yakınlaştır",
+            "zoomOut": "Uzaklaştır",
+            "showAll": "Tümünü göster",
+            "following": "En son veriler izleniyor",
+            "followLatest": "En son verilere dön"
           }
         },
         "pieces": {
@@ -903,6 +927,8 @@
         "removeMixedTitle": "{{count}} görev listeden kaldırılsın mı?",
         "openFile": "Dosyayı aç",
         "openFileFailed": "Dosya açılamadı",
+        "openFileAppFailed": "Sistem bu dosyayı açamadı. Varsayılan uygulamanın hâlâ yüklü olduğunu kontrol edin veya başka bir uygulama seçmek için klasörü açın.",
+        "openFileFailedHint": "Dosyanın hâlâ var olduğunu ve onu açma izninizin bulunduğunu kontrol edin.",
         "chooseFiles": "Dosyaları seç…",
         "queueOrder": "İndirme sırası",
         "moveQueueTop": "Başa Taşı",
@@ -1348,7 +1374,15 @@
         "historyCountHint": "Daha eski kurtarma kayıtları kaldırılır.",
         "historyCountPositive": "0’dan büyük bir sayı girin."
       },
-      "description": "RPC, ilerleme ve kurtarma"
+      "description": "RPC, ilerleme ve kurtarma",
+      "configFile": {
+        "title": "Yapılandırma dosyası",
+        "serverTitle": "Sunucu yapılandırma dosyası",
+        "openDirectory": "Klasörü aç",
+        "copyPath": "Yolu kopyala",
+        "copied": "Kopyalandı",
+        "actionFailed": "İşlem tamamlanamadı. Tekrar deneyin."
+      }
     },
     "about": {
       "appIconAlt": "Motrix uygulama simgesi",
@@ -2432,6 +2466,8 @@
       "accessHosts_other": "{{count}} web sitesini okuyabilir",
       "accessBroad": "Herhangi bir web sitesini okuyabilir",
       "attentionTitle": "Bu eklenti bir sorun bildirdi",
+      "runtimeStartFailed": "Eklenti çalışma ortamı başlatılamadı",
+      "runtimeFailed": "Eklenti çalışma ortamı beklenmedik şekilde durdu",
       "attentionGeneric": "Ayrıntılar için günlüklere bakın.",
       "viewIssue": "Sorunu görüntüle",
       "removeTitle": "Eklentiyi kaldır",
@@ -2461,6 +2497,7 @@
       },
       "copy": "Hassas verileri gizlenmiş günlükleri kopyala",
       "clear": "Temizle",
+      "clearFailed": "Günlükler temizlenemedi. Tekrar deneyin.",
       "output": "Canlı çıktı",
       "entryCount_one": "{{count}} kayıt",
       "entryCount_other": "{{count}} kayıt",
@@ -3081,6 +3118,7 @@
     "preserveFiles": "Downloaded files stay in their original location.",
     "chooseTasks": "Choose downloads",
     "skip": "Not now",
+    "skippedHint": "Daha sonra {{settings}} → {{advanced}} bölümünden taşıma yapabilirsiniz.",
     "back": "Back",
     "loading": "Looking for your old downloads…",
     "empty": "There are no tasks to migrate from this folder.",
